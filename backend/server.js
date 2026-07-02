@@ -1,163 +1,98 @@
-require("dotenv").config();
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const compression = require('compression');
+const connectDB = require('./config/db');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { logRequest } = require('./utils/logger');
 
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const helmet = require("helmet");
-const compression = require("compression");
-const morgan = require("morgan");
-const http = require("http");
-const { Server } = require("socket.io");
+// Load environment variables
+dotenv.config();
 
-const admin = require("firebase-admin");
-
+// Initialize express
 const app = express();
-const server = http.createServer(app);
 
-/* ===========================================================
-   Middleware
-=========================================================== */
+// Connect to MongoDB
+connectDB();
 
-app.use(cors());
+// Middleware
 app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  credentials: true,
+  optionsSuccessStatus: 200,
+}));
 app.use(compression());
-app.use(morgan("dev"));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(morgan('dev'));
+app.use(logRequest);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-/* ===========================================================
-   Firebase
-=========================================================== */
-
-let firebaseStatus = "Not Initialized";
-
-try {
-  if (
-    process.env.FIREBASE_PROJECT_ID &&
-    process.env.FIREBASE_CLIENT_EMAIL &&
-    process.env.FIREBASE_PRIVATE_KEY
-  ) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-      }),
-    });
-
-    firebaseStatus = "Initialized";
-
-    console.log("✅ Firebase Admin Initialized");
-  } else {
-    console.log("⚠ Firebase ENV variables missing.");
-  }
-} catch (err) {
-  console.log("❌ Firebase Initialization Failed");
-  console.log(err.message);
-}
-
-/* ===========================================================
-   MongoDB
-=========================================================== */
-
-let mongoStatus = "Disconnected";
-
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    mongoStatus = "Connected";
-    console.log("✅ MongoDB Connected");
-  })
-  .catch((err) => {
-    console.log("❌ MongoDB Connection Failed");
-    console.log(err.message);
-  });
-
-mongoose.connection.on("connected", () => {
-  mongoStatus = "Connected";
-});
-
-mongoose.connection.on("disconnected", () => {
-  mongoStatus = "Disconnected";
-});
-
-/* ===========================================================
-   Socket.IO
-=========================================================== */
-
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
-
-io.on("connection", (socket) => {
-  console.log("🟢", socket.id);
-
-  socket.on("disconnect", () => {
-    console.log("🔴", socket.id);
-  });
-});
-
-/* ===========================================================
-   Routes
-=========================================================== */
-
-app.get("/", (req, res) => {
+// Health check route
+app.get('/api/health', (req, res) => {
   res.json({
-    success: true,
-    message: "BartaOne Backend Running",
+    status: 'ok',
+    message: 'BartaOne API is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
   });
 });
 
-app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    server: "Running",
-    mongodb: mongoStatus,
-    firebase: firebaseStatus,
-    node: process.version,
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV,
-    timestamp: new Date(),
-  });
-});
+// Import routes
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const channelRoutes = require('./routes/channelRoutes');
+const articleRoutes = require('./routes/articleRoutes');
+const videoRoutes = require('./routes/videoRoutes');
+const liveRoutes = require('./routes/liveRoutes');
+const translateRoutes = require('./routes/translateRoutes');
 
-/* ===========================================================
-   404
-=========================================================== */
+// Use routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/channels', channelRoutes);
+app.use('/api/articles', articleRoutes);
+app.use('/api/videos', videoRoutes);
+app.use('/api/live', liveRoutes);
+app.use('/api/translate', translateRoutes);
 
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Route Not Found",
-  });
-});
+// 404 handler
+app.use(notFoundHandler);
 
-/* ===========================================================
-   Error Handler
-=========================================================== */
+// Error handling middleware
+app.use(errorHandler);
 
-app.use((err, req, res, next) => {
-  console.error(err);
-
-  res.status(500).json({
-    success: false,
-    message: err.message,
-  });
-});
-
-/* ===========================================================
-   Start Server
-=========================================================== */
-
+// Start server
 const PORT = process.env.PORT || 5000;
-
-server.listen(PORT, () => {
-  console.log("------------------------------------");
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌐 http://localhost:${PORT}`);
-  console.log(`❤️ http://localhost:${PORT}/api/health`);
-  console.log("------------------------------------");
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 API URL: http://localhost:${PORT}/api`);
+  console.log(`🩺 Health Check: http://localhost:${PORT}/api/health`);
 });
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('💥 Unhandled Rejection:', err);
+  // Close server & exit process
+  server.close(() => process.exit(1));
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
+  // Close server & exit process
+  server.close(() => process.exit(1));
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('👋 SIGTERM received. Shutting down gracefully...');
+  server.close(() => {
+    console.log('💤 Process terminated!');
+  });
+});
+
+module.exports = app;
