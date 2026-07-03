@@ -2,6 +2,8 @@
   "expo": {
     "name": "BartaOne",
     "slug": "BartaOne",
+    "owner": "my_sag",
+    "scheme": "com.my",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -42,7 +44,11 @@
         }
       ],
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "expo-web-browser",
+      "expo-audio",
+      "expo-video",
+      "expo-router"
     ],
     "extra": {
       "eas": {

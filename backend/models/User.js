@@ -1,3 +1,4 @@
+// backend/models/User.js
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
@@ -27,6 +28,7 @@ const UserSchema = new mongoose.Schema({
   phone: {
     type: String,
     trim: true,
+    default: '',
   },
   profilePicture: {
     type: String,
@@ -37,22 +39,10 @@ const UserSchema = new mongoose.Schema({
     default: 'en',
   },
   location: {
-    state: {
-      type: String,
-      trim: true,
-    },
-    district: {
-      type: String,
-      trim: true,
-    },
-    city: {
-      type: String,
-      trim: true,
-    },
-    area: {
-      type: String,
-      trim: true,
-    },
+    state: { type: String, trim: true },
+    district: { type: String, trim: true },
+    city: { type: String, trim: true },
+    area: { type: String, trim: true },
   },
   isVerified: {
     type: Boolean,
@@ -71,42 +61,20 @@ const UserSchema = new mongoose.Schema({
     ref: 'Article',
   }],
   preferences: {
-    notifications: {
-      type: Boolean,
-      default: true,
-    },
-    darkMode: {
-      type: Boolean,
-      default: false,
-    },
-    autoPlay: {
-      type: Boolean,
-      default: true,
-    },
-    saveData: {
-      type: Boolean,
-      default: false,
-    },
+    notifications: { type: Boolean, default: true },
+    darkMode: { type: Boolean, default: false },
+    autoPlay: { type: Boolean, default: true },
+    saveData: { type: Boolean, default: false },
   },
   lastLogin: {
     type: Date,
     default: Date.now,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  timestamps: true, // This automatically adds createdAt and updatedAt
 });
 
-// Update timestamp on save
-UserSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
+// Remove the manual pre('save') middleware - timestamps: true handles it automatically
 
 // Virtual for full name
 UserSchema.virtual('fullName').get(function() {
@@ -122,5 +90,9 @@ UserSchema.methods.isOwner = function() {
 UserSchema.methods.isAdmin = function() {
   return this.role === 'admin';
 };
+
+// Ensure virtuals are included in JSON output
+UserSchema.set('toJSON', { virtuals: true });
+UserSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('User', UserSchema);

@@ -1,10 +1,11 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { 
-  onAuthStateChanged, 
+import {
+  onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
@@ -13,10 +14,8 @@ import {
 import { auth } from '../services/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Create Auth Context
 const AuthContext = createContext();
 
-// Auth Provider Component
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,46 +23,51 @@ export function AuthProvider({ children }) {
   const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
-    // Check for stored user role
     const loadUserRole = async () => {
       try {
         const role = await AsyncStorage.getItem('userRole');
-        if (role) {
-          setUserRole(role);
-        }
-      } catch (error) {
-        console.error('Error loading user role:', error);
+        if (role) setUserRole(role);
+      } catch (err) {
+        console.error('Error loading user role:', err);
       }
     };
 
     loadUserRole();
 
-    // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // User is signed in
         setUser(firebaseUser);
         setError(null);
-        
-        // Get user role from custom claims or stored data
+
         try {
-          const token = await firebaseUser.getIdTokenResult();
-          const role = token.claims?.role || await AsyncStorage.getItem('userRole') || 'viewer';
+          // Get fresh Firebase ID token and store it — this is what api.js sends
+          // as the Bearer token. Firebase auto-refreshes it when it nears expiry,
+          // and onAuthStateChanged fires again so we re-save it here.
+          const idToken = await firebaseUser.getIdToken();
+          await AsyncStorage.setItem('authToken', idToken);
+
+          // Get role from custom claims, falling back to stored value or default
+          const tokenResult = await firebaseUser.getIdTokenResult();
+          const role =
+            tokenResult.claims?.role ||
+            (await AsyncStorage.getItem('userRole')) ||
+            'viewer';
+
           setUserRole(role);
           await AsyncStorage.setItem('userRole', role);
-        } catch (error) {
-          console.error('Error getting user role:', error);
+        } catch (err) {
+          console.error('Error saving auth token or role:', err);
         }
       } else {
-        // User is signed out
         setUser(null);
         setUserRole(null);
+        await AsyncStorage.removeItem('authToken');
         await AsyncStorage.removeItem('userRole');
       }
+
       setIsLoading(false);
     });
 
-    // Cleanup subscription
     return () => unsubscribe();
   }, []);
 
@@ -73,11 +77,16 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      // Save ID token immediately so any call made right after login has it
+      const idToken = await userCredential.user.getIdToken();
+      await AsyncStorage.setItem('authToken', idToken);
+
       setUser(userCredential.user);
       return userCredential.user;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -89,47 +98,50 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update profile with display name
-      await updateProfile(userCredential.user, {
-        displayName: displayName,
-      });
 
-      // Store user role
+      await updateProfile(userCredential.user, { displayName });
+
+      // Save ID token right away
+      const idToken = await userCredential.user.getIdToken();
+      await AsyncStorage.setItem('authToken', idToken);
+
       await AsyncStorage.setItem('userRole', role);
       setUserRole(role);
 
-      // Send email verification
       await sendEmailVerification(userCredential.user);
 
       setUser(userCredential.user);
       return userCredential.user;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Google Login
+  // Google login
   const loginWithGoogle = async () => {
     setIsLoading(true);
     setError(null);
     try {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
+
+      const idToken = await userCredential.user.getIdToken();
+      await AsyncStorage.setItem('authToken', idToken);
+
       setUser(userCredential.user);
       return userCredential.user;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Logout
+  // Logout — clear both token and role
   const logout = async () => {
     setIsLoading(true);
     setError(null);
@@ -137,10 +149,11 @@ export function AuthProvider({ children }) {
       await signOut(auth);
       setUser(null);
       setUserRole(null);
+      await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('userRole');
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -152,61 +165,45 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       await sendPasswordResetEmail(auth, email);
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Update user profile
+  // Update Firebase profile fields (displayName, photoURL)
   const updateUserProfile = async (updates) => {
     setIsLoading(true);
     setError(null);
     try {
-      if (auth.currentUser) {
-        await updateProfile(auth.currentUser, updates);
-        // Refresh user object
-        const updatedUser = auth.currentUser;
-        setUser(updatedUser);
-        return updatedUser;
-      }
-      throw new Error('No user logged in');
-    } catch (error) {
-      setError(error.message);
-      throw error;
+      if (!auth.currentUser) throw new Error('No user logged in');
+      await updateProfile(auth.currentUser, updates);
+      setUser(auth.currentUser);
+      return auth.currentUser;
+    } catch (err) {
+      setError(err.message);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Set user role
+  // Set role manually (e.g. after role-selection screen)
   const setRole = async (role) => {
     try {
       await AsyncStorage.setItem('userRole', role);
       setUserRole(role);
-    } catch (error) {
-      console.error('Error setting user role:', error);
+    } catch (err) {
+      console.error('Error setting user role:', err);
     }
   };
 
-  // Check if user is authenticated
-  const isAuthenticated = () => {
-    return !!user;
-  };
+  const isAuthenticated = () => !!user;
+  const isOwner = () => userRole === 'owner';
+  const isViewer = () => userRole === 'viewer';
 
-  // Check if user is a channel owner
-  const isOwner = () => {
-    return userRole === 'owner';
-  };
-
-  // Check if user is a viewer
-  const isViewer = () => {
-    return userRole === 'viewer';
-  };
-
-  // Context value
   const value = {
     user,
     userRole,
@@ -224,19 +221,12 @@ export function AuthProvider({ children }) {
     isViewer,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// Custom hook to use auth context
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }
 

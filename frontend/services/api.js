@@ -8,7 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds timeout
+  timeout: 30000,
 });
 
 // Request interceptor to add auth token
@@ -16,6 +16,8 @@ api.interceptors.request.use(
   async (config) => {
     try {
       const token = await AsyncStorage.getItem('authToken');
+      console.log('🔑 [api.js] interceptor token:', token ? 'EXISTS ✅' : 'NULL ❌');
+      console.log('🌐 [api.js] request URL:', config.baseURL + config.url);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -37,34 +39,29 @@ api.interceptors.response.use(
   },
   async (error) => {
     if (error.response) {
-      // Server responded with error status
       const { status, data } = error.response;
-      
-      // Handle 401 Unauthorized
+      console.error('❌ [api.js] response error:', status, data);
+
       if (status === 401) {
-        // Clear token and redirect to login
         await AsyncStorage.removeItem('authToken');
-        // Navigation will handle redirect
       }
-      
-      // Return error message from server if available
+
       throw new Error(data?.message || 'An error occurred');
     } else if (error.request) {
-      // Request was made but no response received
+      console.error('❌ [api.js] no response received. Is the server reachable?');
       throw new Error('Network error. Please check your connection.');
     } else {
-      // Something else happened
       throw new Error(error.message || 'An unexpected error occurred');
     }
   }
 );
 
-// API Methods
-
 // Auth APIs
 export const authAPI = {
-  login: (email, password) => api.post('/auth/login', { email, password }),
-  register: (userData) => api.post('/auth/register', userData),
+  login: (userData, config = {}) =>
+  api.post('/auth/login', userData, config),
+  register: (userData, config = {}) =>
+  api.post('/auth/register', userData, config),
   logout: () => api.post('/auth/logout'),
   verifyEmail: (token) => api.post('/auth/verify-email', { token }),
   resetPassword: (email) => api.post('/auth/reset-password', { email }),
@@ -141,18 +138,18 @@ export const liveAPI = {
   getViewers: (id) => api.get(`/live/${id}/viewers`),
 };
 
-// Translation APIs - Updated for MyMemory
+// Translation APIs
 export const translateAPI = {
-  translate: (text, targetLang, sourceLang) => 
+  translate: (text, targetLang, sourceLang) =>
     api.post('/translate', { text, targetLang, sourceLang }),
-  translateBatch: (texts, targetLang) => 
+  translateBatch: (texts, targetLang) =>
     api.post('/translate/batch', { texts, targetLang }),
-  translateArticle: (article, targetLang) => 
+  translateArticle: (article, targetLang) =>
     api.post('/translate/article', { article, targetLang }),
-  detectLanguage: (text) => 
+  detectLanguage: (text) =>
     api.post('/translate/detect', { text }),
   getStatus: (text, targetLang) =>
-    api.get(`/translate/status`, { params: { text, targetLang } }),
+    api.get('/translate/status', { params: { text, targetLang } }),
 };
 
 // Location APIs
@@ -175,9 +172,9 @@ export const notificationAPI = {
 
 // Search API
 export const searchAPI = {
-  search: (query, type = 'all') => 
+  search: (query, type = 'all') =>
     api.get(`/search?q=${query}&type=${type}`),
-  getSuggestions: (query) => 
+  getSuggestions: (query) =>
     api.get(`/search/suggestions?q=${query}`),
 };
 
@@ -187,18 +184,14 @@ export const uploadAPI = {
     const formData = new FormData();
     formData.append('image', file);
     return api.post('/upload/image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
   uploadVideo: (file) => {
     const formData = new FormData();
     formData.append('video', file);
     return api.post('/upload/video', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
   uploadMultiple: (files) => {
@@ -207,14 +200,11 @@ export const uploadAPI = {
       formData.append(`file${index}`, file);
     });
     return api.post('/upload/multiple', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
 };
 
-// Export all APIs
 export default {
   auth: authAPI,
   user: userAPI,

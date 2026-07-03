@@ -1,15 +1,10 @@
-const admin = require('../config/firebaseAdmin');
+const { getAuth } = require('../config/firebaseAdmin');
 const { sendError } = require('../utils/response');
 
-/**
- * Middleware to verify Firebase ID token
- * Extracts token from Authorization header, verifies it, and attaches user info to req
- */
 const verifyFirebaseToken = async (req, res, next) => {
   try {
-    // Get token from Authorization header
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return sendError(res, 401, 'No token provided. Please authenticate.');
     }
@@ -20,11 +15,10 @@ const verifyFirebaseToken = async (req, res, next) => {
       return sendError(res, 401, 'No token provided. Please authenticate.');
     }
 
-    // Verify the token with Firebase Admin
     try {
-      const decodedToken = await admin.auth().verifyIdToken(token);
-      
-      // Attach user info to request
+      const decodedToken = await getAuth().verifyIdToken(token);
+      console.log('✅ [verifyFirebaseToken] verified uid:', decodedToken.uid);
+
       req.user = {
         uid: decodedToken.uid,
         email: decodedToken.email,
@@ -36,37 +30,36 @@ const verifyFirebaseToken = async (req, res, next) => {
 
       next();
     } catch (error) {
-      console.error('Token verification error:', error);
-      
+      console.error('❌ [verifyFirebaseToken] code:', error.code);
+      console.error('❌ [verifyFirebaseToken] message:', error.message);
+
       if (error.code === 'auth/id-token-expired') {
         return sendError(res, 401, 'Token expired. Please refresh your session.');
       }
-      
       if (error.code === 'auth/id-token-revoked') {
         return sendError(res, 401, 'Token revoked. Please login again.');
       }
-      
+      if (error.code === 'auth/argument-error') {
+        return sendError(res, 401, 'Malformed token. Please login again.');
+      }
+
       return sendError(res, 401, 'Invalid token. Please authenticate again.');
     }
   } catch (error) {
-    console.error('Firebase auth middleware error:', error);
+    console.error('❌ [verifyFirebaseToken] middleware error:', error);
     return sendError(res, 500, 'Authentication error');
   }
 };
 
-/**
- * Optional middleware - Verifies token if present, but doesn't require it
- */
 const optionalFirebaseToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split('Bearer ')[1];
-      
       if (token) {
         try {
-          const decodedToken = await admin.auth().verifyIdToken(token);
+          const decodedToken = await getAuth().verifyIdToken(token);
           req.user = {
             uid: decodedToken.uid,
             email: decodedToken.email,
@@ -76,22 +69,18 @@ const optionalFirebaseToken = async (req, res, next) => {
             ...decodedToken,
           };
         } catch (error) {
-          // Token is invalid, but we don't block the request
-          console.warn('Optional token verification failed:', error.message);
+          console.warn('⚠️ [optionalFirebaseToken]:', error.code, error.message);
         }
       }
     }
-    
+
     next();
   } catch (error) {
-    console.error('Optional Firebase auth middleware error:', error);
+    console.error('❌ [optionalFirebaseToken] middleware error:', error);
     next();
   }
 };
 
-/**
- * Middleware to check if user has required role
- */
 const requireRole = (roles) => {
   return async (req, res, next) => {
     try {
@@ -99,10 +88,9 @@ const requireRole = (roles) => {
         return sendError(res, 401, 'Authentication required');
       }
 
-      // Get user from database to check role
       const User = require('../models/User');
       const user = await User.findOne({ firebaseUid: req.user.uid });
-      
+
       if (!user) {
         return sendError(res, 404, 'User not found');
       }
@@ -111,19 +99,15 @@ const requireRole = (roles) => {
         return sendError(res, 403, 'Insufficient permissions');
       }
 
-      // Attach user document to request
       req.userDoc = user;
       next();
     } catch (error) {
-      console.error('Role verification error:', error);
+      console.error('❌ [requireRole] error:', error);
       return sendError(res, 500, 'Role verification failed');
     }
   };
 };
 
-/**
- * Middleware to check if user owns a channel
- */
 const requireChannelOwner = async (req, res, next) => {
   try {
     if (!req.user) {
@@ -132,13 +116,12 @@ const requireChannelOwner = async (req, res, next) => {
 
     const User = require('../models/User');
     const Channel = require('../models/Channel');
-    
+
     const user = await User.findOne({ firebaseUid: req.user.uid });
     if (!user) {
       return sendError(res, 404, 'User not found');
     }
 
-    // Check if user has a channel
     const channel = await Channel.findOne({ ownerId: user._id });
     if (!channel) {
       return sendError(res, 404, 'No channel found for this user');
@@ -148,7 +131,7 @@ const requireChannelOwner = async (req, res, next) => {
     req.channel = channel;
     next();
   } catch (error) {
-    console.error('Channel owner verification error:', error);
+    console.error('❌ [requireChannelOwner] error:', error);
     return sendError(res, 500, 'Channel verification failed');
   }
 };
