@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// screens/Dashboard.jsx - Update the imports
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,13 +9,16 @@ import {
   RefreshControl,
   SafeAreaView,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
-import { getChannelByOwner } from '../../services/channelService';
-import { getChannelStats } from '../../services/api';
+import { getChannelByOwner, getChannelStats } from '../../services/channelService';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
+
+// ... rest of the component remains the same
 
 const { width } = Dimensions.get('window');
 
@@ -36,28 +40,41 @@ export default function Dashboard({ navigation }) {
   }, []);
 
   const loadDashboardData = async () => {
-    setIsLoading(true);
     try {
+      setIsLoading(true);
+      console.log('📊 Loading dashboard data...');
+      
       // Get channel by owner
-      const channelData = await getChannelByOwner(user.uid);
-      setChannel(channelData);
+      const channelData = await getChannelByOwner();
+      console.log('📊 Channel data:', channelData);
       
       if (channelData) {
+        setChannel(channelData);
+        
         // Get stats
-        const statsData = await getChannelStats(channelData._id);
-        setStats(statsData);
+        try {
+          const statsData = await getChannelStats(channelData._id || channelData.id);
+          console.log('📊 Stats data:', statsData);
+          setStats(statsData);
+        } catch (statsError) {
+          console.log('⚠️ Error loading stats:', statsError);
+          // Keep default stats
+        }
+      } else {
+        setChannel(null);
       }
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      console.error('❌ Error loading dashboard:', error);
+      Alert.alert('Error', 'Failed to load dashboard data');
     } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
     await loadDashboardData();
-    setRefreshing(false);
   };
 
   const quickActions = [
@@ -66,28 +83,52 @@ export default function Dashboard({ navigation }) {
       icon: 'create-outline',
       title: 'Write Article',
       color: '#FF6B6B',
-      onPress: () => navigation.navigate('UploadArticle'),
+      onPress: () => {
+        if (!channel) {
+          Alert.alert('No Channel', 'Please create a channel first');
+          return;
+        }
+        navigation.navigate('UploadArticle');
+      },
     },
     {
       id: '2',
       icon: 'videocam-outline',
       title: 'Upload Video',
       color: '#4ECDC4',
-      onPress: () => navigation.navigate('UploadVideo'),
+      onPress: () => {
+        if (!channel) {
+          Alert.alert('No Channel', 'Please create a channel first');
+          return;
+        }
+        navigation.navigate('UploadVideo');
+      },
     },
     {
       id: '3',
       icon: 'radio-outline',
       title: 'Go Live',
       color: '#45B7D1',
-      onPress: () => navigation.navigate('GoLive'),
+      onPress: () => {
+        if (!channel) {
+          Alert.alert('No Channel', 'Please create a channel first');
+          return;
+        }
+        navigation.navigate('GoLive');
+      },
     },
     {
       id: '4',
       icon: 'people-outline',
       title: 'Subscribers',
       color: '#96CEB4',
-      onPress: () => navigation.navigate('Subscribers'),
+      onPress: () => {
+        if (!channel) {
+          Alert.alert('No Channel', 'Please create a channel first');
+          return;
+        }
+        navigation.navigate('Subscribers');
+      },
     },
   ];
 
@@ -95,35 +136,42 @@ export default function Dashboard({ navigation }) {
     {
       id: '1',
       label: 'Articles',
-      value: stats.articles,
+      value: stats.articles || 0,
       icon: 'newspaper-outline',
       color: '#FF6B6B',
     },
     {
       id: '2',
       label: 'Videos',
-      value: stats.videos,
+      value: stats.videos || 0,
       icon: 'videocam-outline',
       color: '#4ECDC4',
     },
     {
       id: '3',
       label: 'Live Streams',
-      value: stats.live,
+      value: stats.live || 0,
       icon: 'radio-outline',
       color: '#45B7D1',
     },
     {
       id: '4',
       label: 'Followers',
-      value: stats.followers,
+      value: stats.followers || 0,
       icon: 'people-outline',
       color: '#96CEB4',
     },
   ];
 
   if (isLoading) {
-    return <Loader message="Loading dashboard..." />;
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#C8001A" />
+          <Text style={styles.loadingText}>Loading dashboard...</Text>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   if (!channel) {
@@ -147,12 +195,13 @@ export default function Dashboard({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
       >
         {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Welcome back!</Text>
-            <Text style={styles.channelName}>{channel.channelName}</Text>
+            <Text style={styles.channelName}>{channel.channelName || channel.name || 'My Channel'}</Text>
             <View style={styles.verifiedContainer}>
               {channel.isVerified && (
                 <>
@@ -243,6 +292,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
+  },
+  content: {
+    paddingBottom: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+    fontSize: 16,
   },
   header: {
     flexDirection: 'row',

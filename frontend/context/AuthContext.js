@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -21,6 +21,7 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  const isSigningUp = useRef(false); // ← blocks auth listener during signup
 
   useEffect(() => {
     const loadUserRole = async () => {
@@ -35,6 +36,17 @@ export function AuthProvider({ children }) {
     loadUserRole();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Skip listener entirely while signup flow is in progress.
+      // ViewerSignup (and any other signup screen) sets this flag before
+      // calling createUserWithEmailAndPassword and clears it after the
+      // backend /register call completes, ensuring the user exists in
+      // MongoDB before any profile fetch is attempted.
+      if (isSigningUp.current) {
+        console.log('⏭️ [AuthContext] Skipping auth state change — signup in progress');
+        setIsLoading(false);
+        return;
+      }
+
       if (firebaseUser) {
         setUser(firebaseUser);
         setError(null);
@@ -200,6 +212,14 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Call setSigningUp(true) before createUserWithEmailAndPassword in any
+  // signup screen, and setSigningUp(false) after the backend /register
+  // call succeeds (or in the catch block). This prevents onAuthStateChanged
+  // from firing a profile fetch before the user exists in MongoDB.
+  const setSigningUp = (val) => {
+    isSigningUp.current = val;
+  };
+
   const isAuthenticated = () => !!user;
   const isOwner = () => userRole === 'owner';
   const isViewer = () => userRole === 'viewer';
@@ -216,6 +236,7 @@ export function AuthProvider({ children }) {
     resetPassword,
     updateUserProfile,
     setRole,
+    setSigningUp,
     isAuthenticated,
     isOwner,
     isViewer,

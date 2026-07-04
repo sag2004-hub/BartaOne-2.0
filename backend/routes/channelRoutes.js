@@ -18,14 +18,19 @@ const {
 
 // Public routes
 router.get('/', asyncHandler(getAllChannels));
-router.get('/:id', asyncHandler(getChannelById));
-router.get('/:id/stats', asyncHandler(getChannelStats));
 
 // Protected routes - require authentication
 router.use(verifyFirebaseToken);
 
-// Owner channel routes
-router.get('/owner/my-channel', asyncHandler(getChannelByOwner));
+// ⚠️ Literal routes MUST come before /:id dynamic routes
+// Otherwise Express treats "owner" and "subscribers" as ObjectId values → 500 error
+router.get('/owner', asyncHandler(getChannelByOwner));
+router.get('/subscribers/list', asyncHandler(getSubscribers));
+
+// Dynamic /:id routes — always last
+router.get('/:id', asyncHandler(getChannelById));
+router.get('/:id/stats', asyncHandler(getChannelStats));
+
 router.post('/', uploadChannelMedia, asyncHandler(createChannel));
 router.put('/:id', uploadChannelMedia, asyncHandler(updateChannel));
 router.delete('/:id', asyncHandler(deleteChannel));
@@ -33,8 +38,5 @@ router.delete('/:id', asyncHandler(deleteChannel));
 // Subscription routes
 router.post('/:id/subscribe', asyncHandler(subscribeChannel));
 router.delete('/:id/subscribe', asyncHandler(unsubscribeChannel));
-
-// Subscribers routes
-router.get('/subscribers/list', asyncHandler(getSubscribers));
 
 module.exports = router;

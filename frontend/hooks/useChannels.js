@@ -1,9 +1,9 @@
+// hooks/useChannels.js
 import { useState, useEffect, useCallback } from 'react';
-import { channelService } from '../services/channelService';
+import { channelAPI } from '../services/api';
 
-// Hook to fetch and manage channels
 export function useChannels(initialParams = {}) {
-  const [channels, setChannels] = useState([]);
+  const [channels, setChannels] = useState([]); // ✅ Always initialize as empty array
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
@@ -16,14 +16,63 @@ export function useChannels(initialParams = {}) {
     try {
       const mergedParams = { ...params, ...newParams };
       setParams(mergedParams);
-      const response = await channelService.getAll(mergedParams);
-      setChannels(response.data || response || []);
-      setTotalCount(response.total || response.length || 0);
-      setHasMore(response.hasMore || false);
-      return response;
+      const response = await channelAPI.getAll(mergedParams);
+      
+      console.log('📦 useChannels response:', response);
+      
+      // ✅ Handle different response structures
+      let channelsData = [];
+      let total = 0;
+      let hasMoreData = false;
+      
+      // Check if response is an array directly
+      if (Array.isArray(response)) {
+        channelsData = response;
+        total = response.length;
+        hasMoreData = false;
+      } 
+      // Check if response has a data property that is an array
+      else if (response && typeof response === 'object') {
+        if (Array.isArray(response.data)) {
+          channelsData = response.data;
+          total = response.total || response.data.length;
+          hasMoreData = response.hasMore || false;
+        } else if (Array.isArray(response.channels)) {
+          channelsData = response.channels;
+          total = response.total || response.channels.length;
+          hasMoreData = response.hasMore || false;
+        } else if (Array.isArray(response.results)) {
+          channelsData = response.results;
+          total = response.total || response.results.length;
+          hasMoreData = response.hasMore || false;
+        } else {
+          // If it's an object but no array found, try to extract
+          const values = Object.values(response);
+          const arrayValue = values.find(v => Array.isArray(v));
+          if (arrayValue) {
+            channelsData = arrayValue;
+            total = arrayValue.length;
+          }
+        }
+      }
+      
+      // ✅ Ensure channelsData is always an array
+      channelsData = Array.isArray(channelsData) ? channelsData : [];
+      
+      console.log('📦 Channels data length:', channelsData.length);
+      
+      setChannels(channelsData);
+      setTotalCount(total || channelsData.length);
+      setHasMore(hasMoreData || false);
+      
+      return { data: channelsData, total, hasMore: hasMoreData };
+      
     } catch (err) {
-      setError(err.message);
-      console.error('Error fetching channels:', err);
+      console.error('❌ Error fetching channels:', err);
+      setError(err.message || 'Failed to fetch channels');
+      setChannels([]); // ✅ Set to empty array on error
+      setTotalCount(0);
+      setHasMore(false);
       throw err;
     } finally {
       setLoading(false);
@@ -37,12 +86,27 @@ export function useChannels(initialParams = {}) {
     const nextPage = (params.page || 1) + 1;
     setLoading(true);
     try {
-      const response = await channelService.getAll({
+      const response = await channelAPI.getAll({
         ...params,
         page: nextPage,
       });
-      setChannels(prev => [...prev, ...(response.data || response || [])]);
-      setHasMore(response.hasMore || false);
+      
+      // ✅ Handle response similarly
+      let newChannels = [];
+      if (Array.isArray(response)) {
+        newChannels = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        newChannels = response.data;
+      } else if (response?.channels && Array.isArray(response.channels)) {
+        newChannels = response.channels;
+      } else if (response?.results && Array.isArray(response.results)) {
+        newChannels = response.results;
+      }
+      
+      newChannels = Array.isArray(newChannels) ? newChannels : [];
+      
+      setChannels(prev => [...(Array.isArray(prev) ? prev : []), ...newChannels]);
+      setHasMore(response?.hasMore || false);
       setParams(prev => ({ ...prev, page: nextPage }));
     } catch (err) {
       setError(err.message);
@@ -59,7 +123,7 @@ export function useChannels(initialParams = {}) {
   // Get single channel by ID
   const getChannel = useCallback(async (id) => {
     try {
-      const channel = await channelService.getById(id);
+      const channel = await channelAPI.getById(id);
       return channel;
     } catch (err) {
       setError(err.message);
@@ -67,12 +131,19 @@ export function useChannels(initialParams = {}) {
     }
   }, []);
 
-  // Get channel by owner
-  const getOwnerChannel = useCallback(async () => {
+  // Get channels by category
+  const getByCategory = useCallback(async (category) => {
     setLoading(true);
     try {
-      const channel = await channelService.getByOwner();
-      return channel;
+      const results = await channelAPI.getByCategory(category);
+      let categoryResults = [];
+      if (Array.isArray(results)) {
+        categoryResults = results;
+      } else if (results?.data && Array.isArray(results.data)) {
+        categoryResults = results.data;
+      }
+      setChannels(Array.isArray(categoryResults) ? categoryResults : []);
+      return categoryResults;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -81,59 +152,40 @@ export function useChannels(initialParams = {}) {
     }
   }, []);
 
-  // Create channel
-  const createChannel = useCallback(async (channelData) => {
+  // Search channels
+  const searchChannels = useCallback(async (query) => {
+    setLoading(true);
     try {
-      const newChannel = await channelService.create(channelData);
-      setChannels(prev => [newChannel, ...prev]);
-      setTotalCount(prev => prev + 1);
-      return newChannel;
+      const results = await channelAPI.search(query);
+      let searchResults = [];
+      if (Array.isArray(results)) {
+        searchResults = results;
+      } else if (results?.data && Array.isArray(results.data)) {
+        searchResults = results.data;
+      }
+      setChannels(Array.isArray(searchResults) ? searchResults : []);
+      return searchResults;
     } catch (err) {
       setError(err.message);
       throw err;
-    }
-  }, []);
-
-  // Update channel
-  const updateChannel = useCallback(async (id, channelData) => {
-    try {
-      const updated = await channelService.update(id, channelData);
-      setChannels(prev => 
-        prev.map(channel => 
-          channel._id === id ? updated : channel
-        )
-      );
-      return updated;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
-
-  // Delete channel
-  const deleteChannel = useCallback(async (id) => {
-    try {
-      await channelService.delete(id);
-      setChannels(prev => prev.filter(channel => channel._id !== id));
-      setTotalCount(prev => Math.max(prev - 1, 0));
-    } catch (err) {
-      setError(err.message);
-      throw err;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   // Subscribe to channel
-  const subscribeChannel = useCallback(async (id) => {
+  const subscribe = useCallback(async (id) => {
     try {
-      const result = await channelService.subscribe(id);
+      const result = await channelAPI.subscribe(id);
       // Update local state
-      setChannels(prev => 
-        prev.map(channel => 
+      setChannels(prev => {
+        const currentChannels = Array.isArray(prev) ? prev : [];
+        return currentChannels.map(channel => 
           channel._id === id 
-            ? { ...channel, followers: (channel.followers || 0) + 1, isSubscribed: true }
+            ? { ...channel, isSubscribed: true, subscribers: (channel.subscribers || 0) + 1 }
             : channel
-        )
-      );
+        );
+      });
       return result;
     } catch (err) {
       setError(err.message);
@@ -142,17 +194,18 @@ export function useChannels(initialParams = {}) {
   }, []);
 
   // Unsubscribe from channel
-  const unsubscribeChannel = useCallback(async (id) => {
+  const unsubscribe = useCallback(async (id) => {
     try {
-      const result = await channelService.unsubscribe(id);
+      const result = await channelAPI.unsubscribe(id);
       // Update local state
-      setChannels(prev => 
-        prev.map(channel => 
+      setChannels(prev => {
+        const currentChannels = Array.isArray(prev) ? prev : [];
+        return currentChannels.map(channel => 
           channel._id === id 
-            ? { ...channel, followers: Math.max((channel.followers || 0) - 1, 0), isSubscribed: false }
+            ? { ...channel, isSubscribed: false, subscribers: Math.max((channel.subscribers || 0) - 1, 0) }
             : channel
-        )
-      );
+        );
+      });
       return result;
     } catch (err) {
       setError(err.message);
@@ -160,45 +213,8 @@ export function useChannels(initialParams = {}) {
     }
   }, []);
 
-  // Get nearby channels
-  const getNearby = useCallback(async (latitude, longitude, radius = 10) => {
-    setLoading(true);
-    try {
-      const results = await channelService.getNearby(latitude, longitude, radius);
-      setChannels(results);
-      return results;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Get channel subscribers
-  const getSubscribers = useCallback(async () => {
-    try {
-      const subscribers = await channelService.getSubscribers();
-      return subscribers;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
-
-  // Get channel stats
-  const getStats = useCallback(async (id) => {
-    try {
-      const stats = await channelService.getStats(id);
-      return stats;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
-
   return {
-    channels,
+    channels,      // ✅ Always returns an array
     loading,
     error,
     totalCount,
@@ -208,90 +224,10 @@ export function useChannels(initialParams = {}) {
     loadMore,
     refresh,
     getChannel,
-    getOwnerChannel,
-    createChannel,
-    updateChannel,
-    deleteChannel,
-    subscribeChannel,
-    unsubscribeChannel,
-    getNearby,
-    getSubscribers,
-    getStats,
-  };
-}
-
-// Hook for a single channel with its content
-export function useChannel(channelId) {
-  const [channel, setChannel] = useState(null);
-  const [articles, setArticles] = useState([]);
-  const [videos, setVideos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-
-  useEffect(() => {
-    if (channelId) {
-      loadChannel();
-    }
-  }, [channelId]);
-
-  const loadChannel = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Load channel details
-      const channelData = await channelService.getById(channelId);
-      setChannel(channelData);
-      setIsSubscribed(channelData.isSubscribed || false);
-
-      // Load channel content
-      const [articlesData, videosData] = await Promise.all([
-        articleService.getByChannel(channelId),
-        videoService.getByChannel(channelId),
-      ]);
-      setArticles(articlesData);
-      setVideos(videosData);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const refresh = () => loadChannel();
-
-  const toggleSubscribe = async () => {
-    try {
-      if (isSubscribed) {
-        await channelService.unsubscribe(channelId);
-        setIsSubscribed(false);
-        setChannel(prev => ({ 
-          ...prev, 
-          followers: Math.max((prev?.followers || 0) - 1, 0) 
-        }));
-      } else {
-        await channelService.subscribe(channelId);
-        setIsSubscribed(true);
-        setChannel(prev => ({ 
-          ...prev, 
-          followers: (prev?.followers || 0) + 1 
-        }));
-      }
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  };
-
-  return {
-    channel,
-    articles,
-    videos,
-    loading,
-    error,
-    isSubscribed,
-    refresh,
-    toggleSubscribe,
+    getByCategory,
+    searchChannels,
+    subscribe,
+    unsubscribe,
   };
 }
 

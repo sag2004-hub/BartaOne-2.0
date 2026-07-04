@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { userAPI } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,7 +8,7 @@ const UserContext = createContext();
 
 // User Provider Component
 export function UserProvider({ children }) {
-  const { user } = useAuth();
+  const { user, setSigningUp } = useAuth();
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,9 +24,34 @@ export function UserProvider({ children }) {
     notifications: true,
   });
 
+  // When this is true, the next user change (from signup) will be ignored.
+  // ViewerSignup calls setSigningUp(true) before createUserWithEmailAndPassword
+  // and setSigningUp(false) after /register succeeds, but UserContext needs its
+  // own guard because it reacts to `user` independently of AuthContext's listener.
+  const skipProfileLoad = useRef(false);
+
+  // Expose a way for signup screens to suppress the profile load.
+  // Usage in ViewerSignup:
+  //   const { suppressNextProfileLoad } = useUser();  ← optional helper
+  // OR simply rely on setSigningUp from AuthContext (see below).
+  const suppressNextProfileLoad = () => {
+    skipProfileLoad.current = true;
+  };
+
+  const resumeProfileLoad = () => {
+    skipProfileLoad.current = false;
+  };
+
   // Load user profile when auth user changes
   useEffect(() => {
     if (user) {
+      if (skipProfileLoad.current) {
+        // Signup is in progress — user exists in Firebase but not yet in MongoDB.
+        // Do nothing; ViewerSignup will call loadUserProfile() manually after
+        // /register succeeds, or navigation to ViewerHome will trigger a fresh load.
+        console.log('⏭️ [UserContext] Skipping profile load — signup in progress');
+        return;
+      }
       loadUserProfile();
       loadPreferences();
     } else {
@@ -103,17 +128,17 @@ export function UserProvider({ children }) {
       const updatedPrefs = { ...preferences, ...newPrefs };
       setPreferences(updatedPrefs);
       await AsyncStorage.setItem('userPreferences', JSON.stringify(updatedPrefs));
-      
+
       // If language changed, update user profile
       if (newPrefs.language && newPrefs.language !== preferences.language) {
         await updateProfile({ preferredLanguage: newPrefs.language });
       }
-      
+
       // If location changed, update user profile
       if (newPrefs.location) {
         await updateProfile({ location: newPrefs.location });
       }
-      
+
       return updatedPrefs;
     } catch (error) {
       console.error('Error updating preferences:', error);
@@ -166,6 +191,8 @@ export function UserProvider({ children }) {
     updateLanguage,
     toggleNotifications,
     clearUserData,
+    suppressNextProfileLoad, // ← call this before signup starts
+    resumeProfileLoad,       // ← call this after /register succeeds
   };
 
   return (

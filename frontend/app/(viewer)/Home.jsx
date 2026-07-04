@@ -24,8 +24,8 @@ const { width } = Dimensions.get('window');
 
 export default function Home({ navigation }) {
   const { user } = useAuth();
-  const { articles, loading: articlesLoading, fetchArticles } = useArticles();
-  const { channels, loading: channelsLoading, fetchChannels } = useChannels();
+  const { articles = [], loading: articlesLoading, fetchArticles } = useArticles();
+  const { channels = [], loading: channelsLoading, fetchChannels } = useChannels();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -44,10 +44,14 @@ export default function Home({ navigation }) {
   }, []);
 
   const loadData = async () => {
-    await Promise.all([
-      fetchArticles({ category: selectedCategory }),
-      fetchChannels(),
-    ]);
+    try {
+      await Promise.all([
+        fetchArticles({ category: selectedCategory }),
+        fetchChannels(),
+      ]);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
   };
 
   const onRefresh = async () => {
@@ -56,9 +60,10 @@ export default function Home({ navigation }) {
     setRefreshing(false);
   };
 
+  // ✅ FIX: Safe filter with null check
   const filteredArticles = selectedCategory === 'all'
-    ? articles
-    : articles.filter(article => article.category === selectedCategory);
+    ? (articles || [])
+    : (articles || []).filter(article => article?.category === selectedCategory);
 
   const renderHeader = () => (
     <View style={styles.header}>
@@ -113,7 +118,8 @@ export default function Home({ navigation }) {
   );
 
   const renderFeatured = () => {
-    const featuredArticles = articles.filter(a => a.isFeatured).slice(0, 3);
+    // ✅ FIX: Safe filter with null check
+    const featuredArticles = (articles || []).filter(a => a?.isFeatured).slice(0, 3);
     if (featuredArticles.length === 0) return null;
 
     return (
@@ -131,9 +137,9 @@ export default function Home({ navigation }) {
         >
           {featuredArticles.map((article) => (
             <TouchableOpacity
-              key={article._id}
+              key={article._id || article.id}
               style={styles.featuredCard}
-              onPress={() => navigation.navigate('ArticleDetails', { articleId: article._id })}
+              onPress={() => navigation.navigate('ArticleDetails', { articleId: article._id || article.id })}
             >
               <Image
                 source={{ uri: article.image || 'https://via.placeholder.com/300x200' }}
@@ -144,10 +150,10 @@ export default function Home({ navigation }) {
                   <Text style={styles.featuredBadgeText}>Featured</Text>
                 </View>
                 <Text style={styles.featuredTitle} numberOfLines={2}>
-                  {article.title}
+                  {article.title || 'Untitled'}
                 </Text>
                 <Text style={styles.featuredSource}>
-                  {article.channel?.channelName || 'Unknown Channel'}
+                  {article.channel?.channelName || article.channel?.name || 'Unknown Channel'}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -157,43 +163,52 @@ export default function Home({ navigation }) {
     );
   };
 
-  const renderChannels = () => (
-    <View style={styles.channelsSection}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Local Channels</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Search')}>
-          <Text style={styles.seeAllText}>View All</Text>
-        </TouchableOpacity>
+  const renderChannels = () => {
+    // ✅ FIX: Safe check for channels
+    if (!channels || channels.length === 0) return null;
+    
+    return (
+      <View style={styles.channelsSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Local Channels</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Search')}>
+            <Text style={styles.seeAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.channelsContainer}
+        >
+          {channels.slice(0, 5).map((channel) => (
+            <ChannelCard
+              key={channel._id || channel.id}
+              channel={channel}
+              onPress={() => navigation.navigate('ChannelDetails', { channelId: channel._id || channel.id })}
+            />
+          ))}
+        </ScrollView>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.channelsContainer}
-      >
-        {channels.slice(0, 5).map((channel) => (
-          <ChannelCard
-            key={channel._id}
-            channel={channel}
-            onPress={() => navigation.navigate('ChannelDetails', { channelId: channel._id })}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
+    );
+  };
 
-  if (articlesLoading && articles.length === 0) {
+  // Loading state
+  if (articlesLoading && (!articles || articles.length === 0)) {
     return <Loader message="Loading news..." />;
   }
+
+  // Ensure filteredArticles is always an array
+  const safeFilteredArticles = filteredArticles || [];
 
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={filteredArticles}
-        keyExtractor={(item) => item._id}
+        data={safeFilteredArticles}
+        keyExtractor={(item, index) => item?._id || item?.id || `article-${index}`}
         renderItem={({ item }) => (
           <NewsCard
             article={item}
-            onPress={() => navigation.navigate('ArticleDetails', { articleId: item._id })}
+            onPress={() => navigation.navigate('ArticleDetails', { articleId: item?._id || item?.id })}
           />
         )}
         ListHeaderComponent={

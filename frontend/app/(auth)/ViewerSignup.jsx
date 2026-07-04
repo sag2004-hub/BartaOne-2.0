@@ -1,4 +1,3 @@
-// screens/ViewerSignup.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -27,6 +26,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { authAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';   // ← ADD
+import { useUser } from '../../context/UserContext';   // ← ADD
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const { width: SW, height: SH } = Dimensions.get('window');
@@ -282,6 +283,10 @@ export default function ViewerSignup({ navigation }) {
   const theme = isDarkMode ? THEMES.dark : THEMES.light;
   const { colors } = theme;
 
+  // ── Context hooks ──────────────────────────────────────────────────────
+  const { setSigningUp } = useAuth();                                      // ← ADD
+  const { suppressNextProfileLoad, resumeProfileLoad } = useUser();        // ← ADD
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -312,7 +317,6 @@ export default function ViewerSignup({ navigation }) {
 
   // ── Animation Effects ──
   useEffect(() => {
-    // Header animation
     Animated.parallel([
       Animated.timing(headerFade, {
         toValue: 1,
@@ -328,7 +332,6 @@ export default function ViewerSignup({ navigation }) {
       }),
     ]).start();
 
-    // Red line expansion
     Animated.sequence([
       Animated.delay(180),
       Animated.parallel([
@@ -346,7 +349,6 @@ export default function ViewerSignup({ navigation }) {
       ]),
     ]).start();
 
-    // Title slide up
     Animated.sequence([
       Animated.delay(260),
       Animated.parallel([
@@ -365,7 +367,6 @@ export default function ViewerSignup({ navigation }) {
       ]),
     ]).start();
 
-    // Button animation
     Animated.sequence([
       Animated.delay(500),
       Animated.parallel([
@@ -384,7 +385,6 @@ export default function ViewerSignup({ navigation }) {
       ]),
     ]).start();
 
-    // Footer animation
     Animated.sequence([
       Animated.delay(600),
       Animated.timing(footerFade, {
@@ -413,7 +413,6 @@ export default function ViewerSignup({ navigation }) {
     }).start();
   };
 
-  // Scroll to a specific input when it gains focus
   const scrollToInput = (ref) => {
     setTimeout(() => {
       ref.current?.measureLayout(scrollViewRef.current, (x, y) => {
@@ -423,21 +422,19 @@ export default function ViewerSignup({ navigation }) {
   };
 
   const handleSignup = async () => {
+    // ── Validation ──────────────────────────────────────────────────────
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
-
     if (password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
-
     if (!termsAccepted) {
       Alert.alert('Error', 'Please accept the Terms & Conditions');
       return;
@@ -445,103 +442,83 @@ export default function ViewerSignup({ navigation }) {
 
     setIsLoading(true);
 
+    // 🔒 Block both contexts BEFORE Firebase creates the user.
+    // This prevents onAuthStateChanged (AuthContext) and the user useEffect
+    // (UserContext) from firing a GET /profile while the user doesn't yet
+    // exist in MongoDB.
+    setSigningUp(true);
+    suppressNextProfileLoad();
+
     try {
       console.log('📝 ===== STARTING VIEWER SIGNUP =====');
       console.log('📧 Email:', email);
       console.log('👤 Name:', name);
-      console.log('🔑 Role: viewer');
 
       // 1. Create user in Firebase Auth
       console.log('1️⃣ Creating Firebase user...');
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log('✅ Firebase user created. UID:', userCredential.user.uid);
 
-      // 2. Update profile
+      // 2. Update display name
       console.log('2️⃣ Updating profile...');
-      await updateProfile(userCredential.user, {
-        displayName: name,
-      });
+      await updateProfile(userCredential.user, { displayName: name });
       console.log('✅ Profile updated');
 
-      // 3. Get Firebase token
+      // 3. Get fresh Firebase token
       console.log('3️⃣ Getting Firebase token...');
       const idToken = await userCredential.user.getIdToken(true);
-      console.log('✅ Token obtained. Length:', idToken.length);
+      console.log('✅ Token obtained.');
 
-      // 4. SAVE TOKEN TO ASYNCSTORAGE (CRITICAL!)
+      // 4. Persist token
       console.log('4️⃣ Saving token to AsyncStorage...');
       await AsyncStorage.setItem('authToken', idToken);
-      console.log('✅ Token saved to AsyncStorage');
+      console.log('✅ Token saved');
 
-      // 5. Register in backend
+      // 5. Register user in MongoDB via backend
       console.log('5️⃣ Registering in backend...');
-      console.log('📤 Sending request to:', 'http://192.168.29.16:5000/api/auth/register');
-      
       const response = await authAPI.register(
-        {
-          name,
-          email,
-          role: 'viewer',
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
+        { name, email, role: 'viewer' },
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+      console.log('✅ Backend response:', response.data);
+
+      // ✅ User now exists in MongoDB — safe to unblock both contexts
+      setSigningUp(false);
+      resumeProfileLoad();
+
+      console.log('7️⃣ Navigating to home...');
+      Alert.alert(
+        'Success',
+        'Account created successfully!',
+        [
+          {
+            text: 'Continue',
+            onPress: () => navigation.replace('ViewerHome'),
           },
-        }
+        ]
       );
 
-      console.log('✅ Backend response status:', response.status);
-      console.log('✅ Backend response data:', JSON.stringify(response.data, null, 2));
-
-      // 6. WAIT for user to be saved in MongoDB (CRITICAL!)
-      console.log('6️⃣ Waiting for user to be saved in database...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('✅ User should be saved now');
-
-      // 7. Verify user was created by fetching profile
-      console.log('7️⃣ Verifying user was created...');
-      try {
-        const profileResponse = await authAPI.getProfile({
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
-        console.log('✅ Profile verified:', profileResponse.data);
-      } catch (profileError) {
-        console.warn('⚠️ Profile not yet available, but continuing...');
-      }
-
-      console.log('✅ Viewer signup complete!');
-
-      Alert.alert('Success', 'Account created successfully!');
-      navigation.replace('ViewerHome');
-
     } catch (error) {
-      console.error('❌ ===== VIEWER SIGNUP ERROR =====');
+      // 🔓 Always unblock on error so normal auth flow resumes
+      setSigningUp(false);
+      resumeProfileLoad();
+
+      console.error('❌ ===== SIGNUP ERROR =====');
       console.error('❌ Error message:', error.message);
-      console.error('❌ Error code:', error.code);
-      
+
       if (error.response) {
         console.error('❌ Response status:', error.response.status);
-        console.error('❌ Response data:', JSON.stringify(error.response.data, null, 2));
+        console.error('❌ Response data:', error.response.data);
       }
-      
-      if (error.request) {
-        console.error('❌ No response received. Check if backend is running.');
-        console.error('❌ Request URL:', error.config?.url);
-        console.error('❌ Request baseURL:', error.config?.baseURL);
-      }
-      
-      // Show user-friendly error message
+
       let errorMessage = 'Something went wrong. Please try again.';
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       Alert.alert('Signup Failed', errorMessage);
-      
     } finally {
       setIsLoading(false);
     }
@@ -578,10 +555,7 @@ export default function ViewerSignup({ navigation }) {
               <Animated.View
                 style={[
                   styles.header,
-                  { 
-                    opacity: headerFade, 
-                    transform: [{ translateY: headerSlide }] 
-                  },
+                  { opacity: headerFade, transform: [{ translateY: headerSlide }] },
                 ]}
               >
                 <Text style={styles.headerLabel}>Viewer Signup</Text>
@@ -592,10 +566,7 @@ export default function ViewerSignup({ navigation }) {
               <Animated.View
                 style={[
                   styles.underlineContainer,
-                  { 
-                    opacity: lineFade, 
-                    transform: [{ scaleX: lineScale }] 
-                  },
+                  { opacity: lineFade, transform: [{ scaleX: lineScale }] },
                 ]}
               >
                 <View style={styles.underline} />
@@ -607,10 +578,7 @@ export default function ViewerSignup({ navigation }) {
                 <Animated.View
                   style={[
                     styles.welcomeSection,
-                    { 
-                      opacity: titleFade, 
-                      transform: [{ translateY: titleSlide }] 
-                    },
+                    { opacity: titleFade, transform: [{ translateY: titleSlide }] },
                   ]}
                 >
                   <Text style={styles.welcomeText}>
@@ -630,9 +598,7 @@ export default function ViewerSignup({ navigation }) {
                   delay={340}
                   colors={colors}
                   returnKeyType="next"
-                  onSubmitEditing={() => {
-                    emailInputRef.current?.focus();
-                  }}
+                  onSubmitEditing={() => emailInputRef.current?.focus()}
                   onFocus={() => {
                     setTimeout(() => {
                       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
@@ -651,9 +617,7 @@ export default function ViewerSignup({ navigation }) {
                   delay={400}
                   colors={colors}
                   returnKeyType="next"
-                  onSubmitEditing={() => {
-                    passwordInputRef.current?.focus();
-                  }}
+                  onSubmitEditing={() => passwordInputRef.current?.focus()}
                   onFocus={() => scrollToInput(emailInputRef)}
                 />
 
@@ -668,9 +632,7 @@ export default function ViewerSignup({ navigation }) {
                   delay={460}
                   colors={colors}
                   returnKeyType="next"
-                  onSubmitEditing={() => {
-                    confirmPasswordInputRef.current?.focus();
-                  }}
+                  onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
                   onFocus={() => scrollToInput(passwordInputRef)}
                   rightElement={
                     <TouchableOpacity
@@ -714,11 +676,8 @@ export default function ViewerSignup({ navigation }) {
                 />
 
                 {/* Terms & Conditions Checkbox */}
-                <Animated.View 
-                  style={{ 
-                    opacity: btnFade, 
-                    transform: [{ translateY: btnSlide }] 
-                  }}
+                <Animated.View
+                  style={{ opacity: btnFade, transform: [{ translateY: btnSlide }] }}
                 >
                   <TouchableOpacity
                     style={styles.checkboxContainer}
@@ -727,10 +686,10 @@ export default function ViewerSignup({ navigation }) {
                   >
                     <View style={[
                       styles.checkbox,
-                      { 
+                      {
                         borderColor: termsAccepted ? colors.accent : colors.border,
-                        backgroundColor: termsAccepted ? colors.accent : 'transparent'
-                      }
+                        backgroundColor: termsAccepted ? colors.accent : 'transparent',
+                      },
                     ]}>
                       {termsAccepted && (
                         <Ionicons name="checkmark" size={scale(16)} color="#FFFFFF" />
@@ -738,7 +697,7 @@ export default function ViewerSignup({ navigation }) {
                     </View>
                     <Text style={[styles.checkboxText, { color: colors.secondary }]}>
                       I agree to the{' '}
-                      <Text 
+                      <Text
                         style={[styles.checkboxLink, { color: colors.accent }]}
                         onPress={() => setTermsModalVisible(true)}
                       >
@@ -751,19 +710,13 @@ export default function ViewerSignup({ navigation }) {
                 {/* Signup Button */}
                 <Animated.View
                   style={[
-                    { 
-                      opacity: btnFade, 
-                      transform: [{ translateY: btnSlide }, { scale: btnScale }] 
-                    },
+                    { opacity: btnFade, transform: [{ translateY: btnSlide }, { scale: btnScale }] },
                   ]}
                 >
                   <TouchableOpacity
                     style={[
                       styles.signupButton,
-                      { 
-                        backgroundColor: colors.accent, 
-                        opacity: isLoading ? 0.75 : 1 
-                      },
+                      { backgroundColor: colors.accent, opacity: isLoading ? 0.75 : 1 },
                     ]}
                     onPress={handleSignup}
                     onPressIn={handlePressIn}
@@ -776,11 +729,7 @@ export default function ViewerSignup({ navigation }) {
                     ) : (
                       <>
                         <Text style={styles.signupButtonText}>Create Account</Text>
-                        <Ionicons 
-                          name="arrow-forward" 
-                          size={scale(18)} 
-                          color="#FFFFFF" 
-                        />
+                        <Ionicons name="arrow-forward" size={scale(18)} color="#FFFFFF" />
                       </>
                     )}
                   </TouchableOpacity>
@@ -788,24 +737,16 @@ export default function ViewerSignup({ navigation }) {
 
                 {/* Footer */}
                 <Animated.View
-                  style={[
-                    styles.footerInScroll,
-                    { 
-                      opacity: footerFade,
-                    },
-                  ]}
+                  style={[styles.footerInScroll, { opacity: footerFade }]}
                 >
                   <Text style={[styles.footerText, { color: colors.muted }]}>
                     Already have an account?{' '}
                   </Text>
                   <TouchableOpacity onPress={() => navigation.navigate('ViewerLogin')}>
-                    <Text style={[styles.loginText, { color: colors.accent }]}>
-                      Log In
-                    </Text>
+                    <Text style={[styles.loginText, { color: colors.accent }]}>Log In</Text>
                   </TouchableOpacity>
                 </Animated.View>
 
-                {/* Extra bottom padding to ensure scrollability */}
                 <View style={styles.extraBottomPadding} />
               </View>
             </View>
@@ -813,7 +754,7 @@ export default function ViewerSignup({ navigation }) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ─── Terms & Conditions Modal ─────────────────────────────────────── */}
+      {/* ─── Terms & Conditions Modal ───────────────────────────────────── */}
       <Modal
         visible={termsModalVisible}
         animationType="slide"
@@ -995,8 +936,6 @@ const createStyles = (colors) => StyleSheet.create({
   extraBottomPadding: {
     height: verticalScale(60),
   },
-
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -1035,8 +974,6 @@ const createStyles = (colors) => StyleSheet.create({
     paddingTop: verticalScale(20),
     paddingBottom: verticalScale(30),
   },
-
-  // Terms
   termsSectionTitle: {
     fontSize: moderateScale(16),
     fontWeight: '700',

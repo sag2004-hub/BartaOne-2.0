@@ -38,3 +38,133 @@
 2026-07-03 10:15:52 [INFO]: ❌ GET /api/users/profile - 404 (274ms) {"status":404,"duration":274,"ip":"::ffff:192.168.29.173"}
 2026-07-03 10:22:18 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
 2026-07-03 10:22:18 [INFO]: ❌ GET /api/users/profile - 404 (41ms) {"status":404,"duration":41,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:15:58 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:15:59 [INFO]: ❌ GET /api/users/profile - 404 (238ms) {"status":404,"duration":238,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:16:00 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"sag","email":"raj@gmail.com","role":"viewer"}}
+2026-07-03 11:16:00 [INFO]: ❌ POST /api/auth/register - 500 (13ms) {"status":500,"duration":13,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:20:08 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:20:08 [INFO]: ❌ GET /api/users/profile - 404 (203ms) {"status":404,"duration":203,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:20:09 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"sag","email":"raj@gmail.com","role":"viewer"}}
+2026-07-03 11:20:09 [INFO]: ✅ POST /api/auth/register - 201 (159ms) {"status":201,"duration":159,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:20:11 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:20:11 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:20:11 [INFO]: ✅ GET /api/articles?category=all - 200 (91ms) {"status":200,"duration":91,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:20:11 [INFO]: ✅ GET /api/channels - 200 (85ms) {"status":200,"duration":85,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:23:55 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:23:55 [INFO]: ✅ GET /api/users/profile - 200 (49ms) {"status":200,"duration":49,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:24:18 [INFO]: 📥 POST /api/auth/login {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"email":"raj@gmail.com"}}
+2026-07-03 11:24:18 [INFO]: ✅ POST /api/auth/login - 200 (123ms) {"status":200,"duration":123,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:24:18 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:24:18 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:24:19 [INFO]: ✅ GET /api/channels - 200 (133ms) {"status":200,"duration":133,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:24:19 [INFO]: ✅ GET /api/articles?category=all - 200 (125ms) {"status":200,"duration":125,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:25:46 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:25:47 [INFO]: ✅ GET /api/users/profile - 200 (58ms) {"status":200,"duration":58,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:26:33 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:26:33 [INFO]: ❌ GET /api/users/profile - 404 (57ms) {"status":404,"duration":57,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:26:34 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"Raj Yadav","email":"Raj@gmail.com","role":"viewer"}}
+2026-07-03 11:26:34 [INFO]: ✅ POST /api/auth/register - 201 (177ms) {"status":201,"duration":177,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:26:36 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:26:36 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:26:36 [INFO]: ✅ GET /api/articles?category=all - 200 (91ms) {"status":200,"duration":91,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:26:36 [INFO]: ✅ GET /api/channels - 200 (86ms) {"status":200,"duration":86,"ip":"::ffff:192.168.29.173"}
+2026-07-03 11:27:48 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 11:27:48 [INFO]: ✅ GET /api/users/profile - 200 (41ms) {"status":200,"duration":41,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:51:21 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:51:21 [INFO]: ❌ GET /api/users/profile - 404 (277ms) {"status":404,"duration":277,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:51:22 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"raj","email":"raj@gmail.com","role":"viewer"}}
+2026-07-03 17:51:22 [INFO]: ❌ POST /api/auth/register - 400 (106ms) {"status":400,"duration":106,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:52:15 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:52:15 [INFO]: ❌ GET /api/users/profile - 404 (46ms) {"status":404,"duration":46,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:52:16 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"raj","email":"raj@gmail.com","role":"viewer"}}
+2026-07-03 17:52:16 [INFO]: ✅ POST /api/auth/register - 201 (164ms) {"status":201,"duration":164,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:52:18 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:52:18 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:52:18 [INFO]: ✅ GET /api/channels - 200 (79ms) {"status":200,"duration":79,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:52:18 [INFO]: ✅ GET /api/articles?category=all - 200 (91ms) {"status":200,"duration":91,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:52:37 [INFO]: 📥 GET /api/live {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:52:37 [INFO]: ✅ GET /api/live - 200 (82ms) {"status":200,"duration":82,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:53:29 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:53:29 [INFO]: ✅ GET /api/users/profile - 200 (49ms) {"status":200,"duration":49,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:53:29 [INFO]: 📥 POST /api/auth/login {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"email":"raj@gmail.com"}}
+2026-07-03 17:53:29 [INFO]: ✅ POST /api/auth/login - 200 (90ms) {"status":200,"duration":90,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:53:30 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:53:30 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:53:30 [INFO]: ✅ GET /api/articles?category=all - 200 (81ms) {"status":200,"duration":81,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:53:30 [INFO]: ✅ GET /api/channels - 200 (75ms) {"status":200,"duration":75,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:56:05 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:56:05 [INFO]: ❌ GET /api/users/profile - 404 (41ms) {"status":404,"duration":41,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:56:06 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"Sagnik Dutta","email":"skvanish509@gmail.com","role":"viewer"}}
+2026-07-03 17:56:06 [INFO]: ✅ POST /api/auth/register - 201 (143ms) {"status":201,"duration":143,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:56:09 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:56:09 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 17:56:09 [INFO]: ✅ GET /api/articles?category=all - 200 (79ms) {"status":200,"duration":79,"ip":"::ffff:192.168.29.173"}
+2026-07-03 17:56:09 [INFO]: ✅ GET /api/channels - 200 (82ms) {"status":200,"duration":82,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:00:54 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:00:54 [INFO]: ❌ GET /api/users/profile - 404 (48ms) {"status":404,"duration":48,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:00:55 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"raj","email":"raj@gmail.com","role":"viewer"}}
+2026-07-03 18:00:55 [INFO]: ✅ POST /api/auth/register - 201 (138ms) {"status":201,"duration":138,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:00:59 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:00:59 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:00:59 [INFO]: ✅ GET /api/channels - 200 (81ms) {"status":200,"duration":81,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:00:59 [INFO]: ✅ GET /api/articles?category=all - 200 (72ms) {"status":200,"duration":72,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:15:00 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:15:00 [INFO]: ❌ GET /api/users/profile - 404 (42ms) {"status":404,"duration":42,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:15:01 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"raj ","email":"raj@gmail.com","role":"viewer"}}
+2026-07-03 18:15:01 [INFO]: ✅ POST /api/auth/register - 201 (132ms) {"status":201,"duration":132,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:15:04 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:15:04 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:15:05 [INFO]: ✅ GET /api/articles?category=all - 200 (82ms) {"status":200,"duration":82,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:15:05 [INFO]: ✅ GET /api/channels - 200 (78ms) {"status":200,"duration":78,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:17:06 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:17:06 [INFO]: 📥 GET /api/articles?category=lifestyle {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:17:06 [INFO]: ✅ GET /api/articles?category=lifestyle - 200 (78ms) {"status":200,"duration":78,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:17:06 [INFO]: ✅ GET /api/channels - 200 (85ms) {"status":200,"duration":85,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:17:49 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:17:49 [INFO]: ❌ GET /api/users/profile - 404 (40ms) {"status":404,"duration":40,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:17:50 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"sag","email":"sag@gmail.com","role":"viewer"}}
+2026-07-03 18:17:50 [INFO]: ✅ POST /api/auth/register - 201 (132ms) {"status":201,"duration":132,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:17:53 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:17:53 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:17:54 [INFO]: ✅ GET /api/channels - 200 (80ms) {"status":200,"duration":80,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:17:54 [INFO]: ✅ GET /api/articles?category=all - 200 (76ms) {"status":200,"duration":76,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:19:50 [INFO]: 📥 GET /api/live {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:19:50 [INFO]: ✅ GET /api/live - 200 (88ms) {"status":200,"duration":88,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:21:57 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"raj","email":"raj@gmail.com","role":"viewer"}}
+2026-07-03 18:21:58 [INFO]: ✅ POST /api/auth/register - 201 (135ms) {"status":201,"duration":135,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:21:59 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:21:59 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:21:59 [INFO]: ✅ GET /api/articles?category=all - 200 (76ms) {"status":200,"duration":76,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:21:59 [INFO]: ✅ GET /api/channels - 200 (78ms) {"status":200,"duration":78,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:43:16 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:43:16 [INFO]: ✅ GET /api/users/profile - 200 (40ms) {"status":200,"duration":40,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:43:16 [INFO]: 📥 POST /api/auth/login {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"email":"raj@gmail.com"}}
+2026-07-03 18:43:16 [INFO]: ✅ POST /api/auth/login - 200 (94ms) {"status":200,"duration":94,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:43:16 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:43:16 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:43:17 [INFO]: ✅ GET /api/articles?category=all - 200 (77ms) {"status":200,"duration":77,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:43:17 [INFO]: ✅ GET /api/channels - 200 (83ms) {"status":200,"duration":83,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:44:10 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-03 18:44:10 [INFO]: ❌ GET /api/users/profile - 404 (39ms) {"status":404,"duration":39,"ip":"::ffff:192.168.29.173"}
+2026-07-03 18:44:11 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"Belda Barta","email":"beldabarta@gmail.com","phone":"8420046508","role":"owner"}}
+2026-07-03 18:44:11 [INFO]: ✅ POST /api/auth/register - 201 (126ms) {"status":201,"duration":126,"ip":"::ffff:192.168.29.173"}
+2026-07-03 19:36:38 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"Belda Barta","email":"beldabarta@gmail.com","phone":"8420046508","role":"owner"}}
+2026-07-03 19:36:38 [INFO]: ✅ POST /api/auth/register - 201 (366ms) {"status":201,"duration":366,"ip":"::ffff:192.168.29.173"}
+2026-07-03 19:37:26 [INFO]: 📥 POST /api/auth/login {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"email":"beldabarta@gmail.com"}}
+2026-07-03 19:37:26 [INFO]: ✅ POST /api/auth/login - 200 (82ms) {"status":200,"duration":82,"ip":"::ffff:192.168.29.173"}
+2026-07-03 19:40:22 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.245","userAgent":"okhttp/4.12.0"}
+2026-07-03 19:40:22 [INFO]: ❌ GET /api/users/profile - 404 (41ms) {"status":404,"duration":41,"ip":"::ffff:192.168.29.245"}
+2026-07-03 19:43:35 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.245","userAgent":"okhttp/4.12.0"}
+2026-07-03 19:43:35 [INFO]: ❌ GET /api/channels/owner - 500 (13ms) {"status":500,"duration":13,"ip":"::ffff:192.168.29.245"}
+2026-07-03 19:44:14 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.245","userAgent":"okhttp/4.12.0"}
+2026-07-03 19:44:14 [INFO]: ❌ GET /api/users/profile - 404 (48ms) {"status":404,"duration":48,"ip":"::ffff:192.168.29.245"}
+2026-07-03 19:46:57 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.245","userAgent":"okhttp/4.12.0"}
+2026-07-03 19:46:57 [INFO]: ❌ GET /api/channels/owner - 500 (5ms) {"status":500,"duration":5,"ip":"::ffff:192.168.29.245"}
+2026-07-03 19:55:18 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.245","userAgent":"okhttp/4.12.0"}
+2026-07-03 19:55:18 [INFO]: ❌ GET /api/channels/owner - 500 (2ms) {"status":500,"duration":2,"ip":"::ffff:192.168.29.245"}
+2026-07-03 20:04:08 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.245","userAgent":"okhttp/4.12.0"}
+2026-07-03 20:04:08 [INFO]: ❌ GET /api/channels/owner - 500 (144ms) {"status":500,"duration":144,"ip":"::ffff:192.168.29.245"}
+2026-07-03 20:06:23 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.245","userAgent":"okhttp/4.12.0"}
+2026-07-03 20:06:24 [INFO]: ❌ GET /api/channels/owner - 404 (338ms) {"status":404,"duration":338,"ip":"::ffff:192.168.29.245"}
+2026-07-03 20:08:50 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.245","userAgent":"okhttp/4.12.0"}
+2026-07-03 20:08:50 [INFO]: ❌ GET /api/channels/owner - 404 (48ms) {"status":404,"duration":48,"ip":"::ffff:192.168.29.245"}

@@ -1,11 +1,69 @@
-import api from './api';
+// services/channelService.js
+import { channelAPI } from './api';
 
-// Channel Service
+// Export individual functions
+export const getChannelByOwner = async () => {
+  try {
+    console.log('📡 Fetching channel by owner...');
+    const response = await channelAPI.getByOwner(); // must call GET /channels/owner/my-channel
+    console.log('📡 Channel response status:', response.status);
+    console.log('📡 Channel response data:', response.data);
+    
+    // Handle different response structures
+    if (response.data?.data) {
+      return response.data.data;
+    }
+    if (response.data?.channel) {
+      return response.data.channel;
+    }
+    return response.data || null;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.log('📡 No channel found for this owner (404)');
+      return null;
+    }
+    console.error('❌ Error fetching channel by owner:', error);
+    throw error;
+  }
+};
+
+export const getChannelStats = async (channelId) => {
+  try {
+    console.log('📡 Fetching channel stats for:', channelId);
+    const response = await channelAPI.getStats(channelId);
+    console.log('📡 Stats response:', response.data);
+    
+    // Handle different response structures
+    if (response.data?.data) {
+      return response.data.data;
+    }
+    if (response.data?.stats) {
+      return response.data.stats;
+    }
+    return response.data || {
+      articles: 0,
+      videos: 0,
+      live: 0,
+      followers: 0,
+      views: 0,
+    };
+  } catch (error) {
+    console.error('❌ Error fetching channel stats:', error);
+    return {
+      articles: 0,
+      videos: 0,
+      live: 0,
+      followers: 0,
+      views: 0,
+    };
+  }
+};
+
+// Full channel service object
 export const channelService = {
-  // Get all channels with filters
   getAll: async (params = {}) => {
     try {
-      const response = await api.channel.getAll(params);
+      const response = await channelAPI.getAll(params);
       return response.data;
     } catch (error) {
       console.error('Error fetching channels:', error);
@@ -13,10 +71,9 @@ export const channelService = {
     }
   },
 
-  // Get channel by ID
   getById: async (id) => {
     try {
-      const response = await api.channel.getById(id);
+      const response = await channelAPI.getById(id);
       return response.data;
     } catch (error) {
       console.error('Error fetching channel:', error);
@@ -24,54 +81,11 @@ export const channelService = {
     }
   },
 
-  // Get channel by owner
-  getByOwner: async () => {
+  getByOwner: getChannelByOwner,
+
+  create: async (data) => {
     try {
-      const response = await api.channel.getByOwner();
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching owner channel:', error);
-      throw error;
-    }
-  },
-
-  // Create channel
-  create: async (channelData) => {
-    try {
-      const formData = new FormData();
-      
-      // Add text fields
-      Object.keys(channelData).forEach(key => {
-        if (key !== 'logo' && key !== 'banner') {
-          formData.append(key, channelData[key]);
-        }
-      });
-
-      // Add logo if exists
-      if (channelData.logo) {
-        const logoData = {
-          uri: channelData.logo.uri,
-          type: channelData.logo.type || 'image/jpeg',
-          name: channelData.logo.fileName || 'logo.jpg',
-        };
-        formData.append('logo', logoData);
-      }
-
-      // Add banner if exists
-      if (channelData.banner) {
-        const bannerData = {
-          uri: channelData.banner.uri,
-          type: channelData.banner.type || 'image/jpeg',
-          name: channelData.banner.fileName || 'banner.jpg',
-        };
-        formData.append('banner', bannerData);
-      }
-
-      const response = await api.channel.create(formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await channelAPI.create(data);
       return response.data;
     } catch (error) {
       console.error('Error creating channel:', error);
@@ -79,43 +93,9 @@ export const channelService = {
     }
   },
 
-  // Update channel
-  update: async (id, channelData) => {
+  update: async (id, data) => {
     try {
-      const formData = new FormData();
-      
-      // Add text fields
-      Object.keys(channelData).forEach(key => {
-        if (key !== 'logo' && key !== 'banner') {
-          formData.append(key, channelData[key]);
-        }
-      });
-
-      // Add logo if exists
-      if (channelData.logo) {
-        const logoData = {
-          uri: channelData.logo.uri,
-          type: channelData.logo.type || 'image/jpeg',
-          name: channelData.logo.fileName || 'logo.jpg',
-        };
-        formData.append('logo', logoData);
-      }
-
-      // Add banner if exists
-      if (channelData.banner) {
-        const bannerData = {
-          uri: channelData.banner.uri,
-          type: channelData.banner.type || 'image/jpeg',
-          name: channelData.banner.fileName || 'banner.jpg',
-        };
-        formData.append('banner', bannerData);
-      }
-
-      const response = await api.channel.update(id, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await channelAPI.update(id, data);
       return response.data;
     } catch (error) {
       console.error('Error updating channel:', error);
@@ -123,10 +103,9 @@ export const channelService = {
     }
   },
 
-  // Delete channel
   delete: async (id) => {
     try {
-      const response = await api.channel.delete(id);
+      const response = await channelAPI.delete(id);
       return response.data;
     } catch (error) {
       console.error('Error deleting channel:', error);
@@ -134,10 +113,9 @@ export const channelService = {
     }
   },
 
-  // Subscribe to channel
   subscribe: async (id) => {
     try {
-      const response = await api.channel.subscribe(id);
+      const response = await channelAPI.subscribe(id);
       return response.data;
     } catch (error) {
       console.error('Error subscribing to channel:', error);
@@ -145,10 +123,9 @@ export const channelService = {
     }
   },
 
-  // Unsubscribe from channel
   unsubscribe: async (id) => {
     try {
-      const response = await api.channel.unsubscribe(id);
+      const response = await channelAPI.unsubscribe(id);
       return response.data;
     } catch (error) {
       console.error('Error unsubscribing from channel:', error);
@@ -156,10 +133,9 @@ export const channelService = {
     }
   },
 
-  // Get subscribers
   getSubscribers: async () => {
     try {
-      const response = await api.channel.getSubscribers();
+      const response = await channelAPI.getSubscribers();
       return response.data;
     } catch (error) {
       console.error('Error fetching subscribers:', error);
@@ -167,47 +143,17 @@ export const channelService = {
     }
   },
 
-  // Get channel stats
-  getStats: async (id) => {
-    try {
-      const response = await api.channel.getStats(id);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching channel stats:', error);
-      throw error;
-    }
-  },
+  getStats: getChannelStats,
 
-  // Get nearby channels
-  getNearby: async (latitude, longitude, radius = 10) => {
+  search: async (query) => {
     try {
-      const response = await api.channel.getAll({
-        latitude,
-        longitude,
-        radius,
-        nearby: true,
-      });
+      const response = await channelAPI.search(query);
       return response.data;
     } catch (error) {
-      console.error('Error fetching nearby channels:', error);
+      console.error('Error searching channels:', error);
       throw error;
     }
   },
 };
-
-// Export individual functions for convenience
-export const {
-  getAll: getChannels,
-  getById: getChannelById,
-  getByOwner: getOwnerChannel,
-  create: createChannel,
-  update: updateChannel,
-  delete: deleteChannel,
-  subscribe: subscribeChannel,
-  unsubscribe: unsubscribeChannel,
-  getSubscribers: getChannelSubscribers,
-  getStats: getChannelStats,
-  getNearby: getNearbyChannels,
-} = channelService;
 
 export default channelService;

@@ -1,10 +1,11 @@
+// hooks/useArticles.js
 import { useState, useEffect, useCallback } from 'react';
 import { articleService } from '../services/articleService';
 import { useTranslation } from './useTranslation';
 
 // Hook to fetch and manage articles
 export function useArticles(initialParams = {}) {
-  const [articles, setArticles] = useState([]);
+  const [articles, setArticles] = useState([]); // ✅ Always initialize as empty array
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
@@ -18,13 +19,62 @@ export function useArticles(initialParams = {}) {
       const mergedParams = { ...params, ...newParams };
       setParams(mergedParams);
       const response = await articleService.getAll(mergedParams);
-      setArticles(response.data || response || []);
-      setTotalCount(response.total || response.length || 0);
-      setHasMore(response.hasMore || false);
-      return response;
+      
+      console.log('📦 useArticles response:', response);
+      
+      // ✅ Handle different response structures
+      let articlesData = [];
+      let total = 0;
+      let hasMoreData = false;
+      
+      // Check if response is an array directly
+      if (Array.isArray(response)) {
+        articlesData = response;
+        total = response.length;
+        hasMoreData = false;
+      } 
+      // Check if response has a data property that is an array
+      else if (response && typeof response === 'object') {
+        if (Array.isArray(response.data)) {
+          articlesData = response.data;
+          total = response.total || response.data.length;
+          hasMoreData = response.hasMore || false;
+        } else if (Array.isArray(response.articles)) {
+          articlesData = response.articles;
+          total = response.total || response.articles.length;
+          hasMoreData = response.hasMore || false;
+        } else if (Array.isArray(response.results)) {
+          articlesData = response.results;
+          total = response.total || response.results.length;
+          hasMoreData = response.hasMore || false;
+        } else {
+          // If it's an object but no array found, try to extract
+          const values = Object.values(response);
+          const arrayValue = values.find(v => Array.isArray(v));
+          if (arrayValue) {
+            articlesData = arrayValue;
+            total = arrayValue.length;
+          }
+        }
+      }
+      
+      // ✅ Ensure articlesData is always an array
+      articlesData = Array.isArray(articlesData) ? articlesData : [];
+      
+      console.log('📦 Articles data length:', articlesData.length);
+      
+      setArticles(articlesData);
+      setTotalCount(total || articlesData.length);
+      setHasMore(hasMoreData || false);
+      
+      return { data: articlesData, total, hasMore: hasMoreData };
+      
     } catch (err) {
-      setError(err.message);
-      console.error('Error fetching articles:', err);
+      console.error('❌ Error fetching articles:', err);
+      setError(err.message || 'Failed to fetch articles');
+      setArticles([]); // ✅ Set to empty array on error
+      setTotalCount(0);
+      setHasMore(false);
       throw err;
     } finally {
       setLoading(false);
@@ -42,8 +92,23 @@ export function useArticles(initialParams = {}) {
         ...params,
         page: nextPage,
       });
-      setArticles(prev => [...prev, ...(response.data || response || [])]);
-      setHasMore(response.hasMore || false);
+      
+      // ✅ Handle response similarly
+      let newArticles = [];
+      if (Array.isArray(response)) {
+        newArticles = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        newArticles = response.data;
+      } else if (response?.articles && Array.isArray(response.articles)) {
+        newArticles = response.articles;
+      } else if (response?.results && Array.isArray(response.results)) {
+        newArticles = response.results;
+      }
+      
+      newArticles = Array.isArray(newArticles) ? newArticles : [];
+      
+      setArticles(prev => [...(Array.isArray(prev) ? prev : []), ...newArticles]);
+      setHasMore(response?.hasMore || false);
       setParams(prev => ({ ...prev, page: nextPage }));
     } catch (err) {
       setError(err.message);
@@ -73,13 +138,14 @@ export function useArticles(initialParams = {}) {
     try {
       const result = await articleService.like(id);
       // Update local state
-      setArticles(prev => 
-        prev.map(article => 
+      setArticles(prev => {
+        const currentArticles = Array.isArray(prev) ? prev : [];
+        return currentArticles.map(article => 
           article._id === id 
             ? { ...article, likes: (article.likes || 0) + 1, isLiked: true }
             : article
-        )
-      );
+        );
+      });
       return result;
     } catch (err) {
       setError(err.message);
@@ -92,13 +158,14 @@ export function useArticles(initialParams = {}) {
     try {
       const result = await articleService.unlike(id);
       // Update local state
-      setArticles(prev => 
-        prev.map(article => 
+      setArticles(prev => {
+        const currentArticles = Array.isArray(prev) ? prev : [];
+        return currentArticles.map(article => 
           article._id === id 
             ? { ...article, likes: Math.max((article.likes || 0) - 1, 0), isLiked: false }
             : article
-        )
-      );
+        );
+      });
       return result;
     } catch (err) {
       setError(err.message);
@@ -110,7 +177,10 @@ export function useArticles(initialParams = {}) {
   const createArticle = useCallback(async (articleData) => {
     try {
       const newArticle = await articleService.create(articleData);
-      setArticles(prev => [newArticle, ...prev]);
+      setArticles(prev => {
+        const currentArticles = Array.isArray(prev) ? prev : [];
+        return [newArticle, ...currentArticles];
+      });
       setTotalCount(prev => prev + 1);
       return newArticle;
     } catch (err) {
@@ -123,11 +193,12 @@ export function useArticles(initialParams = {}) {
   const updateArticle = useCallback(async (id, articleData) => {
     try {
       const updated = await articleService.update(id, articleData);
-      setArticles(prev => 
-        prev.map(article => 
+      setArticles(prev => {
+        const currentArticles = Array.isArray(prev) ? prev : [];
+        return currentArticles.map(article => 
           article._id === id ? updated : article
-        )
-      );
+        );
+      });
       return updated;
     } catch (err) {
       setError(err.message);
@@ -139,7 +210,10 @@ export function useArticles(initialParams = {}) {
   const deleteArticle = useCallback(async (id) => {
     try {
       await articleService.delete(id);
-      setArticles(prev => prev.filter(article => article._id !== id));
+      setArticles(prev => {
+        const currentArticles = Array.isArray(prev) ? prev : [];
+        return currentArticles.filter(article => article._id !== id);
+      });
       setTotalCount(prev => Math.max(prev - 1, 0));
     } catch (err) {
       setError(err.message);
@@ -152,8 +226,17 @@ export function useArticles(initialParams = {}) {
     setLoading(true);
     try {
       const results = await articleService.search(query);
-      setArticles(results);
-      return results;
+      // ✅ Handle response
+      let searchResults = [];
+      if (Array.isArray(results)) {
+        searchResults = results;
+      } else if (results?.data && Array.isArray(results.data)) {
+        searchResults = results.data;
+      } else if (results?.articles && Array.isArray(results.articles)) {
+        searchResults = results.articles;
+      }
+      setArticles(Array.isArray(searchResults) ? searchResults : []);
+      return searchResults;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -167,8 +250,15 @@ export function useArticles(initialParams = {}) {
     setLoading(true);
     try {
       const results = await articleService.getByCategory(category);
-      setArticles(results);
-      return results;
+      // ✅ Handle response
+      let categoryResults = [];
+      if (Array.isArray(results)) {
+        categoryResults = results;
+      } else if (results?.data && Array.isArray(results.data)) {
+        categoryResults = results.data;
+      }
+      setArticles(Array.isArray(categoryResults) ? categoryResults : []);
+      return categoryResults;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -182,8 +272,15 @@ export function useArticles(initialParams = {}) {
     setLoading(true);
     try {
       const results = await articleService.getTrending();
-      setArticles(results);
-      return results;
+      // ✅ Handle response
+      let trendingResults = [];
+      if (Array.isArray(results)) {
+        trendingResults = results;
+      } else if (results?.data && Array.isArray(results.data)) {
+        trendingResults = results.data;
+      }
+      setArticles(Array.isArray(trendingResults) ? trendingResults : []);
+      return trendingResults;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -193,7 +290,7 @@ export function useArticles(initialParams = {}) {
   }, []);
 
   return {
-    articles,
+    articles,      // ✅ Always returns an array
     loading,
     error,
     totalCount,
@@ -235,7 +332,7 @@ export function useArticle(articleId) {
       const data = await articleService.getById(articleId);
       
       // Check if translation is needed
-      const shouldTranslate = userLanguage !== 'en' && data.language !== userLanguage;
+      const shouldTranslate = userLanguage !== 'en' && data?.language !== userLanguage;
       if (shouldTranslate) {
         const translated = await translateArticle(data, userLanguage);
         setArticle(translated);

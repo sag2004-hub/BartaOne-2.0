@@ -26,6 +26,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { authAPI } from '../../services/api';
+import { useUser } from '../../context/UserContext'; // adjust path
+import { useAuth } from '../../context/AuthContext';
+
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const { width: SW, height: SH } = Dimensions.get('window');
@@ -298,6 +301,8 @@ export default function OwnerSignup({ navigation }) {
   const btnSlide = useRef(new Animated.Value(20)).current;
   const footerFade = useRef(new Animated.Value(0)).current;
   const btnScale = useRef(new Animated.Value(1)).current;
+  const { setSigningUp } = useAuth();
+  const { suppressNextProfileLoad, resumeProfileLoad } = useUser();
 
   // ── Animation Effects ──
   useEffect(() => {
@@ -403,22 +408,18 @@ export default function OwnerSignup({ navigation }) {
   };
 
   const handleSignup = async () => {
-    // Validation
     if (!name || !email || !phone || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
-
     if (password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
-
     if (!termsAccepted) {
       Alert.alert('Error', 'Please accept the Terms & Conditions');
       return;
@@ -426,91 +427,53 @@ export default function OwnerSignup({ navigation }) {
 
     setIsLoading(true);
 
+    // ✅ Set BOTH guards BEFORE Firebase user creation
+    setSigningUp(true);
+    suppressNextProfileLoad();
+
     try {
       console.log('📝 ===== STARTING OWNER SIGNUP =====');
-      console.log('📧 Email:', email);
-      console.log('👤 Name:', name);
-      console.log('📱 Phone:', phone);
-      console.log('🔑 Role: owner');
 
-      // 1. Create user in Firebase Auth
-      console.log('1️⃣ Creating Firebase user...');
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log('✅ Firebase user created. UID:', userCredential.user.uid);
 
-      // 2. Update profile
-      console.log('2️⃣ Updating profile...');
-      await updateProfile(userCredential.user, {
-        displayName: name,
-      });
+      await updateProfile(userCredential.user, { displayName: name });
       console.log('✅ Profile updated');
 
-      // 3. Get Firebase token
-      console.log('3️⃣ Getting Firebase token...');
       const idToken = await userCredential.user.getIdToken(true);
-      console.log('✅ Token obtained. Length:', idToken.length);
-      console.log('🔑 Token starts with:', idToken.substring(0, 20) + '...');
+      console.log('✅ Token obtained');
 
-      // 4. Register in backend
-      console.log('4️⃣ Registering in backend...');
-      console.log('📤 Sending request to:', authAPI.register);
-      
       const response = await authAPI.register(
-        {
-          name,
-          email,
-          phone,
-          role: 'owner',
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        }
+        { name, email, phone, role: 'owner' },
+        { headers: { Authorization: `Bearer ${idToken}` } }
       );
-
       console.log('✅ Backend response:', JSON.stringify(response.data, null, 2));
-      console.log('✅ Owner signup complete!');
+
+      // ✅ Release guards AFTER backend confirms user exists
+      setSigningUp(false);
+      resumeProfileLoad();
 
       Alert.alert(
         'Success',
         'Channel owner account created! Now create your channel.',
-        [
-          {
-            text: 'Create Channel',
-            onPress: () => navigation.replace('CreateChannel'),
-          },
-        ]
+        [{ text: 'Create Channel', onPress: () => navigation.replace('CreateChannel') }]
       );
 
     } catch (error) {
-      console.error('❌ ===== OWNER SIGNUP ERROR =====');
-      console.error('❌ Error object:', error);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error code:', error.code);
-      
-      if (error.response) {
-        console.error('❌ Response status:', error.response.status);
-        console.error('❌ Response data:', JSON.stringify(error.response.data, null, 2));
-        console.error('❌ Response headers:', error.response.headers);
-      }
-      
-      if (error.request) {
-        console.error('❌ No response received. Check if backend is running.');
-        console.error('❌ Request URL:', error.config?.url);
-        console.error('❌ Request baseURL:', error.config?.baseURL);
-      }
-      
-      // Show user-friendly error message
+      console.error('❌ Owner signup error:', error.message);
+
+      // ✅ Always release guards on failure too
+      setSigningUp(false);
+      resumeProfileLoad();
+
       let errorMessage = 'Something went wrong. Please try again.';
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
       Alert.alert('Signup Failed', errorMessage);
-      
+
     } finally {
       setIsLoading(false);
     }
@@ -592,7 +555,7 @@ export default function OwnerSignup({ navigation }) {
                 {/* Name Input */}
                 <AnimatedInput
                   icon="person-outline"
-                  placeholder="Full Name"
+                  placeholder="Channel Name"
                   value={name}
                   onChangeText={setName}
                   delay={340}
@@ -607,7 +570,7 @@ export default function OwnerSignup({ navigation }) {
                 <AnimatedInput
                   inputRef={emailInputRef}
                   icon="mail-outline"
-                  placeholder="Email Address"
+                  placeholder="Channel Email Address"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
