@@ -124,32 +124,56 @@ exports.createChannel = async (req, res) => {
       channelName,
       description,
       language,
-      location,
       category,
     } = req.body;
 
+    // location may arrive as a JSON string (from React Native FormData)
+    let location = {};
+    if (req.body.location) {
+      try {
+        location = typeof req.body.location === 'string'
+          ? JSON.parse(req.body.location)
+          : req.body.location;
+      } catch (e) {
+        console.warn('Could not parse location field:', e.message);
+      }
+    }
+
+    console.log('📍 Location parsed:', location);
+    console.log('📁 Files received:', req.files ? Object.keys(req.files) : 'none');
+
     // Upload logo if provided
-    let logoUrl = null;
+    let logoUrl = 'https://via.placeholder.com/100';
     if (req.files && req.files.logo) {
-      const result = await uploadToCloudinary(req.files.logo[0].buffer, 'channels/logos');
-      logoUrl = result.secure_url;
+      try {
+        const result = await uploadToCloudinary(req.files.logo[0].buffer, 'channels/logos');
+        logoUrl = result.secure_url;
+        console.log('✅ Logo uploaded:', logoUrl);
+      } catch (uploadErr) {
+        console.error('⚠️ Logo upload failed, using placeholder:', uploadErr.message);
+      }
     }
 
     // Upload banner if provided
     let bannerUrl = null;
     if (req.files && req.files.banner) {
-      const result = await uploadToCloudinary(req.files.banner[0].buffer, 'channels/banners');
-      bannerUrl = result.secure_url;
+      try {
+        const result = await uploadToCloudinary(req.files.banner[0].buffer, 'channels/banners');
+        bannerUrl = result.secure_url;
+        console.log('✅ Banner uploaded:', bannerUrl);
+      } catch (uploadErr) {
+        console.error('⚠️ Banner upload failed:', uploadErr.message);
+      }
     }
 
     const channel = new Channel({
       ownerId: user._id,
       channelName,
       description,
-      logo: logoUrl || 'https://via.placeholder.com/100',
-      banner: bannerUrl || null,
+      logo:     logoUrl,
+      banner:   bannerUrl,
       language: language || 'en',
-      location: location || {},
+      location,
       category: category || 'news',
     });
 

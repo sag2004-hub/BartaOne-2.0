@@ -78,9 +78,8 @@ const ChannelSchema = new mongoose.Schema({
 });
 
 // Update timestamp on save
-ChannelSchema.pre('save', function(next) {
+ChannelSchema.pre('save', async function() {
   this.updatedAt = new Date();
-  next();
 });
 
 // Virtual for full location

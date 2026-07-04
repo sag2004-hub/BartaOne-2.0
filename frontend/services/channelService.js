@@ -85,6 +85,7 @@ export const channelService = {
 
   create: async (data) => {
     try {
+      // Always plain JSON — multipart corrupts JWT in Authorization header
       const response = await channelAPI.create(data);
       return response.data;
     } catch (error) {
@@ -95,7 +96,12 @@ export const channelService = {
 
   update: async (id, data) => {
     try {
-      const response = await channelAPI.update(id, data);
+      const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+      const response = await channelAPI.update(
+        id,
+        data,
+        isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}
+      );
       return response.data;
     } catch (error) {
       console.error('Error updating channel:', error);

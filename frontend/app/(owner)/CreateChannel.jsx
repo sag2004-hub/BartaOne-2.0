@@ -1,527 +1,938 @@
-import React, { useState } from 'react';
+/**
+ * BartaOne — Create Channel Screen
+ * - Matches Welcome.jsx design language exactly
+ * - Dark / light mode via useColorScheme
+ * - Fully responsive: all sizes derived from screen dimensions
+ * - All entry animations via native driver (60 fps)
+ * - Staggered section reveals, spring logo picker, pulse submit CTA
+ */
+
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  KeyboardAvoidingView,
+  Animated,
+  Easing,
+  Dimensions,
+  PixelRatio,
+  useColorScheme,
   Platform,
+  StatusBar,
   Alert,
   Image,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../hooks/useAuth';
-import { createChannel } from '../../services/channelService';
+import { channelService } from '../../services/channelService';
+import { auth } from '../../services/firebase';
 import Loader from '../../components/Loader';
 
+// ─── Responsive helpers (mirrors Welcome.jsx) ─────────────────────────────────
+const { width: SW, height: SH } = Dimensions.get('window');
+const BASE_W = 390;
+const scale = (n) => Math.round((SW / BASE_W) * n);
+const vs = (n) => Math.round((SH / 844) * n);
+const sp = (n) => n / PixelRatio.getFontScale();
+
+// ─── Theme (mirrors Welcome.jsx palette exactly) ──────────────────────────────
+const LIGHT = {
+  bg:                '#F2F0EB',
+  surface:           '#FFFFFF',
+  surfaceAlt:        '#FAFAF8',
+  border:            '#E4E0D8',
+  accent:            '#C8001A',
+  accentBg:          '#FFF0F2',
+  accentBorder:      'rgba(200,0,26,0.18)',
+  navy:              '#0F1923',
+  primary:           '#1A2733',
+  secondary:         '#4A5A6B',
+  muted:             '#8A97A5',
+  faint:             '#B8C0B8',
+  white:             '#FFFFFF',
+  statusBar:         'dark-content',
+  iconBlue:          '#1A6DC8',
+  iconBlueBg:        '#EFF5FF',
+  iconGreen:         '#0E8A5A',
+  iconGreenBg:       '#EDFAF3',
+  iconPurple:        '#7C3AED',
+  iconPurpleBg:      '#F5F0FF',
+  iconAmber:         '#B87500',
+  iconAmberBg:       '#FFF7E8',
+  cardShadowOpacity: 0.06,
+  chipBg:            '#FFFFFF',
+  inputBg:           '#FFFFFF',
+  errorBg:           '#FFF5F5',
+};
+
+const DARK = {
+  bg:                '#0D1117',
+  surface:           '#161B22',
+  surfaceAlt:        '#1C2330',
+  border:            '#2A3340',
+  accent:            '#E8192C',
+  accentBg:          'rgba(232,25,44,0.12)',
+  accentBorder:      'rgba(232,25,44,0.25)',
+  navy:              '#E8EDF2',
+  primary:           '#EDF2F7',
+  secondary:         '#8B9BAB',
+  muted:             '#5C6E80',
+  faint:             '#3A4A58',
+  white:             '#FFFFFF',
+  statusBar:         'light-content',
+  iconBlue:          '#60A5FA',
+  iconBlueBg:        'rgba(96,165,250,0.12)',
+  iconGreen:         '#34D399',
+  iconGreenBg:       'rgba(52,211,153,0.12)',
+  iconPurple:        '#A78BFA',
+  iconPurpleBg:      'rgba(167,139,250,0.12)',
+  iconAmber:         '#FBBF24',
+  iconAmberBg:       'rgba(251,191,36,0.12)',
+  cardShadowOpacity: 0.35,
+  chipBg:            '#1C2330',
+  inputBg:           '#161B22',
+  errorBg:           'rgba(232,25,44,0.08)',
+};
+
+// ─── Static data ──────────────────────────────────────────────────────────────
+const LANGUAGES = [
+  { label: 'English',    value: 'en' },
+  { label: 'हिन्दी',     value: 'hi' },
+  { label: 'বাংলা',      value: 'bn' },
+  { label: 'తెలుగు',    value: 'te' },
+  { label: 'मराठी',     value: 'mr' },
+  { label: 'தமிழ்',     value: 'ta' },
+  { label: 'ગુજરાતી',   value: 'gu' },
+  { label: 'ಕನ್ನಡ',     value: 'kn' },
+  { label: 'മലയാളം',    value: 'ml' },
+  { label: 'ଓଡ଼ିଆ',     value: 'or' },
+  { label: 'ਪੰਜਾਬੀ',    value: 'pa' },
+  { label: 'অসমীয়া',   value: 'as' },
+];
+
+const CATEGORIES = [
+  { label: 'News',          value: 'news',          icon: 'newspaper-outline' },
+  { label: 'Entertainment', value: 'entertainment',  icon: 'film-outline' },
+  { label: 'Sports',        value: 'sports',         icon: 'trophy-outline' },
+  { label: 'Business',      value: 'business',       icon: 'briefcase-outline' },
+  { label: 'Technology',    value: 'technology',     icon: 'hardware-chip-outline' },
+  { label: 'Lifestyle',     value: 'lifestyle',      icon: 'heart-outline' },
+  { label: 'Other',         value: 'other',          icon: 'ellipsis-horizontal-outline' },
+];
+
+// ─── Section header (matches featuresLabel from Welcome) ─────────────────────
+function SectionLabel({ label, C }) {
+  return (
+    <Text style={{
+      fontSize:      sp(10),
+      fontWeight:    '700',
+      color:         C.faint,
+      letterSpacing: 1.3,
+      textTransform: 'uppercase',
+      marginBottom:  vs(10),
+    }}>
+      {label}
+    </Text>
+  );
+}
+
+// ─── Animated card wrapper ────────────────────────────────────────────────────
+function AnimCard({ opacity, translateY, scale: scaleVal, children, style, C }) {
+  return (
+    <Animated.View style={[{
+      opacity,
+      transform: [
+        { translateY: translateY ?? 0 },
+        { scale: scaleVal ?? 1 },
+      ],
+      backgroundColor:  C.surface,
+      borderRadius:     scale(18),
+      borderWidth:      StyleSheet.hairlineWidth,
+      borderColor:      C.border,
+      shadowColor:      '#000',
+      shadowOffset:     { width: 0, height: scale(4) },
+      shadowOpacity:    C.cardShadowOpacity,
+      shadowRadius:     scale(16),
+      elevation:        4,
+      marginBottom:     vs(14),
+      overflow:         'hidden',
+    }, style]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function CreateChannel({ navigation }) {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const scheme = useColorScheme();
+  const C      = scheme === 'dark' ? DARK : LIGHT;
+  const { user, loading: authLoading } = useAuth();
+
+  const [isLoading, setIsLoading]       = useState(false);
+  const [loadingMsg, setLoadingMsg]     = useState('Creating your channel…');
+  const [formData, setFormData]   = useState({
     channelName: '',
     description: '',
-    language: 'en',
-    state: '',
-    district: '',
-    city: '',
-    area: '',
-    category: 'news',
+    language:    'en',
+    state:       '',
+    district:    '',
+    city:        '',
+    area:        '',
+    category:    'news',
   });
-  const [logo, setLogo] = useState(null);
+  const [logo,   setLogo]   = useState(null);
   const [banner, setBanner] = useState(null);
   const [errors, setErrors] = useState({});
 
-  const languages = [
-    { label: 'English', value: 'en' },
-    { label: 'Bengali', value: 'bn' },
-    { label: 'Hindi', value: 'hi' },
-    { label: 'Urdu', value: 'ur' },
-  ];
+  // ── Animated values ──
+  const headerAnim  = useRef(new Animated.Value(0)).current;
+  const mediaAnim   = useRef(new Animated.Value(0)).current;
+  const mediaY      = useRef(new Animated.Value(vs(24))).current;
+  const mediaScale  = useRef(new Animated.Value(0.96)).current;
+  const infoAnim    = useRef(new Animated.Value(0)).current;
+  const infoY       = useRef(new Animated.Value(vs(24))).current;
+  const langAnim    = useRef(new Animated.Value(0)).current;
+  const langY       = useRef(new Animated.Value(vs(24))).current;
+  const catAnim     = useRef(new Animated.Value(0)).current;
+  const catY        = useRef(new Animated.Value(vs(24))).current;
+  const locAnim     = useRef(new Animated.Value(0)).current;
+  const locY        = useRef(new Animated.Value(vs(24))).current;
+  const btnAnim     = useRef(new Animated.Value(0)).current;
+  const btnY        = useRef(new Animated.Value(vs(18))).current;
+  const btnPulse    = useRef(new Animated.Value(1)).current;
+  const logoPickerScale = useRef(new Animated.Value(1)).current;
 
-  const categories = [
-    { label: 'News', value: 'news' },
-    { label: 'Entertainment', value: 'entertainment' },
-    { label: 'Sports', value: 'sports' },
-    { label: 'Business', value: 'business' },
-    { label: 'Technology', value: 'technology' },
-    { label: 'Lifestyle', value: 'lifestyle' },
-    { label: 'Other', value: 'other' },
-  ];
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(headerAnim, {
+        toValue: 1, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+      }),
+      Animated.parallel([
+        Animated.timing(mediaAnim,  { toValue: 1, duration: 280, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(mediaY,     { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+        Animated.spring(mediaScale, { toValue: 1, friction: 8, tension: 55, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(infoAnim, { toValue: 1, duration: 260, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(infoY,    { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(langAnim, { toValue: 1, duration: 240, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(langY,    { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(catAnim, { toValue: 1, duration: 240, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(catY,    { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(locAnim, { toValue: 1, duration: 240, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(locY,    { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(btnAnim, { toValue: 1, duration: 300, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(btnY,    { toValue: 0, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]),
+    ]).start();
 
+    // Pulse the CTA (mirrors Welcome.jsx btnPulse)
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(btnPulse, { toValue: 1.022, duration: 850, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(btnPulse, { toValue: 1,     duration: 850, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  // ── Image picker ──
   const pickImage = async (type) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please grant permission to access your photos.');
+      Alert.alert('Permission needed', 'Please grant access to your photo library.');
       return;
+    }
+
+    // Spring pop on logo tap
+    if (type === 'logo') {
+      Animated.sequence([
+        Animated.spring(logoPickerScale, { toValue: 0.92, friction: 6, tension: 120, useNativeDriver: true }),
+        Animated.spring(logoPickerScale, { toValue: 1,    friction: 6, tension: 80,  useNativeDriver: true }),
+      ]).start();
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: type === 'logo' ? [1, 1] : [16, 9],
-      quality: 0.8,
+      quality: 0.85,
     });
 
     if (!result.canceled) {
       if (type === 'logo') {
         setLogo(result.assets[0]);
+        setErrors((e) => ({ ...e, logo: null }));
       } else {
         setBanner(result.assets[0]);
       }
     }
   };
 
+  // ── Validation ──
   const validateForm = () => {
-    const newErrors = {};
-    if (!formData.channelName.trim()) {
-      newErrors.channelName = 'Channel name is required';
-    }
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-    if (!formData.state.trim()) {
-      newErrors.state = 'State is required';
-    }
-    if (!formData.district.trim()) {
-      newErrors.district = 'District is required';
-    }
-    if (!formData.city.trim()) {
-      newErrors.city = 'City is required';
-    }
-    if (!logo) {
-      newErrors.logo = 'Channel logo is required';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const e = {};
+    if (!formData.channelName.trim()) e.channelName = 'Channel name is required';
+    if (!formData.description.trim()) e.description  = 'Description is required';
+    if (!formData.state.trim())       e.state        = 'State is required';
+    if (!formData.district.trim())    e.district     = 'District is required';
+    if (!formData.city.trim())        e.city         = 'City is required';
+    if (!logo)                        e.logo         = 'Channel logo is required';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-
     setIsLoading(true);
     try {
-      const channelData = {
-        ...formData,
-        ownerId: user.uid,
-        logo: logo,
-        banner: banner,
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        Alert.alert('Session expired', 'Please sign in again.');
+        return;
+      }
+
+      const resolvedOwnerId = currentUser.uid;
+      console.log('✅ ownerId resolved:', resolvedOwnerId);
+
+      // Step 1: Create channel with plain JSON (no files)
+      // Sending multipart corrupts the JWT in Authorization header
+      setLoadingMsg('Creating your channel…');
+      const jsonPayload = {
+        channelName: formData.channelName,
+        description: formData.description,
+        language:    formData.language,
+        category:    formData.category,
+        location: {
+          state:    formData.state,
+          district: formData.district,
+          city:     formData.city,
+          area:     formData.area,
+        },
       };
-      await createChannel(channelData);
-      Alert.alert(
-        'Success!',
-        'Your channel has been created successfully!',
-        [
-          {
-            text: 'Go to Dashboard',
-            onPress: () => navigation.replace('OwnerDashboard'),
-          },
-        ]
-      );
-    } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to create channel');
+
+      console.log('📤 Sending channel payload (JSON)...');
+      const created = await channelService.create(jsonPayload);
+      const channelId = created?.data?._id || created?._id || created?.data?.id;
+      console.log('✅ Channel created, id:', channelId);
+
+      // Step 2: Upload images separately if we have a channelId
+      if (channelId && (logo || banner)) {
+        setLoadingMsg('Uploading images…');
+        const imgPayload = new FormData();
+        if (logo) {
+          imgPayload.append('logo', {
+            uri:  logo.uri,
+            name: logo.fileName  || 'logo.jpg',
+            type: logo.mimeType  || 'image/jpeg',
+          });
+        }
+        if (banner) {
+          imgPayload.append('banner', {
+            uri:  banner.uri,
+            name: banner.fileName || 'banner.jpg',
+            type: banner.mimeType || 'image/jpeg',
+          });
+        }
+        try {
+          await channelService.update(channelId, imgPayload);
+          console.log('✅ Images uploaded');
+        } catch (imgErr) {
+          // Images failed but channel is created — non-fatal
+          console.warn('⚠️ Image upload failed (channel still created):', imgErr.message);
+        }
+      }
+
+      Alert.alert('Channel created!', 'Your channel is live and ready to publish.', [
+        { text: 'Open Dashboard', onPress: () => navigation.replace('OwnerDashboard') },
+      ]);
+    } catch (err) {
+      console.error('=== CreateChannel Error ===');
+      console.error('Message :', err.message);
+      console.error('Stack   :', err.stack);
+      console.error('Full err:', JSON.stringify(err, null, 2));
+      Alert.alert('Error', err.message || 'Failed to create channel. Please try again.');
     } finally {
       setIsLoading(false);
+      setLoadingMsg('Creating your channel…');
     }
   };
 
-  if (isLoading) {
-    return <Loader message="Creating channel..." />;
-  }
+  const update = (key, val) =>
+    setFormData((f) => ({ ...f, [key]: val }));
+  const clearErr = (key) =>
+    setErrors((e) => ({ ...e, [key]: null }));
+
+  if (authLoading) return <Loader message="Loading…" />;
+  if (isLoading) return <Loader message={loadingMsg} />;
+
+  // Safely get uid — by this point authLoading is false so user is resolved
+  const ownerId = user?.uid ?? null;
+
+  const s = makeStyles(C);
+
+  // ── Header slide-down ──
+  const headerTranslateY = headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-vs(60), 0] });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Channel</Text>
-          <View style={{ width: 24 }} />
-        </View>
+    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
+      <StatusBar barStyle={C.statusBar} backgroundColor={C.bg} />
 
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
-          <Text style={styles.subtitle}>
-            Set up your news channel to start publishing
+      {/* ── Header ── */}
+      <Animated.View style={[s.header, {
+        opacity:   headerAnim,
+        transform: [{ translateY: headerTranslateY }],
+      }]}>
+        <View style={s.headerCenter}>
+          <Text style={s.headerTitle}>Create Channel</Text>
+        </View>
+      </Animated.View>
+
+      <KeyboardAwareScrollView
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={Platform.OS === 'android' ? 120 : 40}
+        extraHeight={Platform.OS === 'android' ? 120 : 40}
+        bounces={true}
+      >
+          <Text style={s.pageSubtitle}>
+            Set up your news channel to start publishing to your community
           </Text>
 
-          {/* Logo Upload */}
-          <View style={styles.uploadSection}>
-            <Text style={styles.label}>Channel Logo *</Text>
-            <TouchableOpacity
-              style={styles.logoUpload}
-              onPress={() => pickImage('logo')}
-            >
-              {logo ? (
-                <Image source={{ uri: logo.uri }} style={styles.logoPreview} />
-              ) : (
-                <View style={styles.uploadPlaceholder}>
-                  <Ionicons name="camera-outline" size={40} color="#888" />
-                  <Text style={styles.uploadText}>Upload Logo</Text>
-                  <Text style={styles.uploadSubtext}>Square image recommended</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            {errors.logo && <Text style={styles.errorText}>{errors.logo}</Text>}
-          </View>
+          {/* ══ Media Card (Logo + Banner) ══════════════════════════════════ */}
+          <AnimCard opacity={mediaAnim} translateY={mediaY} scale={mediaScale} C={C}>
+            <View style={s.cardPad}>
+              <SectionLabel label="Channel Identity" C={C} />
 
-          {/* Banner Upload */}
-          <View style={styles.uploadSection}>
-            <Text style={styles.label}>Channel Banner</Text>
-            <TouchableOpacity
-              style={styles.bannerUpload}
-              onPress={() => pickImage('banner')}
-            >
-              {banner ? (
-                <Image source={{ uri: banner.uri }} style={styles.bannerPreview} />
-              ) : (
-                <View style={styles.uploadPlaceholder}>
-                  <Ionicons name="image-outline" size={32} color="#888" />
-                  <Text style={styles.uploadText}>Upload Banner</Text>
-                  <Text style={styles.uploadSubtext}>16:9 image recommended</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
+              {/* Logo picker */}
+              <View style={s.logoRow}>
+                <TouchableOpacity onPress={() => pickImage('logo')} activeOpacity={0.8}>
+                  <Animated.View style={[s.logoCircle, {
+                    borderColor: errors.logo ? C.accent : C.border,
+                    transform:   [{ scale: logoPickerScale }],
+                  }]}>
+                    {logo ? (
+                      <Image source={{ uri: logo.uri }} style={s.logoImg} />
+                    ) : (
+                      <View style={s.logoPlaceholder}>
+                        <View style={[s.logoIconBg, { backgroundColor: C.accentBg }]}>
+                          <Ionicons name="camera" size={scale(22)} color={C.accent} />
+                        </View>
+                      </View>
+                    )}
 
-          {/* Channel Name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Channel Name *</Text>
-            <TextInput
-              style={[styles.input, errors.channelName && styles.inputError]}
-              placeholder="Enter channel name"
-              value={formData.channelName}
-              onChangeText={(text) => {
-                setFormData({ ...formData, channelName: text });
-                setErrors({ ...errors, channelName: null });
-              }}
-              placeholderTextColor="#999"
-            />
-            {errors.channelName && (
-              <Text style={styles.errorText}>{errors.channelName}</Text>
-            )}
-          </View>
-
-          {/* Description */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Description *</Text>
-            <TextInput
-              style={[styles.input, styles.textArea, errors.description && styles.inputError]}
-              placeholder="Describe your channel"
-              value={formData.description}
-              onChangeText={(text) => {
-                setFormData({ ...formData, description: text });
-                setErrors({ ...errors, description: null });
-              }}
-              multiline
-              numberOfLines={4}
-              placeholderTextColor="#999"
-            />
-            {errors.description && (
-              <Text style={styles.errorText}>{errors.description}</Text>
-            )}
-          </View>
-
-          {/* Language */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Language</Text>
-            <View style={styles.pickerContainer}>
-              {languages.map((lang) => (
-                <TouchableOpacity
-                  key={lang.value}
-                  style={[
-                    styles.pickerOption,
-                    formData.language === lang.value && styles.pickerOptionSelected,
-                  ]}
-                  onPress={() => setFormData({ ...formData, language: lang.value })}
-                >
-                  <Text
-                    style={[
-                      styles.pickerText,
-                      formData.language === lang.value && styles.pickerTextSelected,
-                    ]}
-                  >
-                    {lang.label}
-                  </Text>
+                    {/* Edit badge */}
+                    <View style={[s.logoBadge, { backgroundColor: C.accent }]}>
+                      <Ionicons name="pencil" size={scale(9)} color="#FFF" />
+                    </View>
+                  </Animated.View>
                 </TouchableOpacity>
+
+                <View style={s.logoInfo}>
+                  <Text style={s.logoInfoTitle}>Channel Logo</Text>
+                  <Text style={s.logoInfoSub}>Square image · PNG or JPG{'\n'}Shown beside every story you publish</Text>
+                  {errors.logo && (
+                    <View style={[s.inlineError, { backgroundColor: C.errorBg }]}>
+                      <Ionicons name="alert-circle" size={scale(12)} color={C.accent} />
+                      <Text style={[s.inlineErrorText, { color: C.accent }]}>{errors.logo}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              <View style={[s.divider, { backgroundColor: C.border }]} />
+
+              {/* Banner picker */}
+              <View style={s.bannerLabel}>
+                <Text style={s.fieldLabel}>Channel Banner <Text style={s.optionalTag}>(optional)</Text></Text>
+              </View>
+              <TouchableOpacity
+                style={[s.bannerArea, { borderColor: C.border, backgroundColor: C.surfaceAlt }]}
+                onPress={() => pickImage('banner')}
+                activeOpacity={0.8}
+              >
+                {banner ? (
+                  <Image source={{ uri: banner.uri }} style={s.bannerImg} />
+                ) : (
+                  <View style={s.bannerPlaceholder}>
+                    <View style={[s.bannerIconBg, { backgroundColor: C.iconBlueBg }]}>
+                      <Ionicons name="image" size={scale(24)} color={C.iconBlue} />
+                    </View>
+                    <Text style={[s.bannerHint, { color: C.muted }]}>Tap to upload · 16 : 9 recommended</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </AnimCard>
+
+          {/* ══ Channel Info Card ════════════════════════════════════════════ */}
+          <AnimCard opacity={infoAnim} translateY={infoY} C={C}>
+            <View style={s.cardPad}>
+              <SectionLabel label="Channel Info" C={C} />
+
+              {/* Channel Name */}
+              <View style={s.fieldGroup}>
+                <Text style={s.fieldLabel}>Channel Name <Text style={s.required}>*</Text></Text>
+                <View style={[s.inputWrap, {
+                  borderColor: errors.channelName ? C.accent : C.border,
+                  backgroundColor: C.inputBg,
+                }]}>
+                  <Ionicons name="tv-outline" size={scale(16)} color={errors.channelName ? C.accent : C.muted} style={s.inputIcon} />
+                  <TextInput
+                    style={[s.input, { color: C.primary }]}
+                    placeholder="e.g. Kolkata Evening Post"
+                    placeholderTextColor={C.muted}
+                    value={formData.channelName}
+                    onChangeText={(t) => { update('channelName', t); clearErr('channelName'); }}
+                    returnKeyType="next"
+                  />
+                </View>
+                {errors.channelName && <FieldError msg={errors.channelName} C={C} />}
+              </View>
+
+              {/* Description */}
+              <View style={s.fieldGroup}>
+                <Text style={s.fieldLabel}>Description <Text style={s.required}>*</Text></Text>
+                <View style={[s.inputWrap, s.textAreaWrap, {
+                  borderColor: errors.description ? C.accent : C.border,
+                  backgroundColor: C.inputBg,
+                }]}>
+                  <TextInput
+                    style={[s.input, s.textArea, { color: C.primary }]}
+                    placeholder="Tell viewers what your channel covers and why it matters…"
+                    placeholderTextColor={C.muted}
+                    value={formData.description}
+                    onChangeText={(t) => { update('description', t); clearErr('description'); }}
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
+                {errors.description && <FieldError msg={errors.description} C={C} />}
+              </View>
+            </View>
+          </AnimCard>
+
+          {/* ══ Language Card ════════════════════════════════════════════════ */}
+          <AnimCard opacity={langAnim} translateY={langY} C={C}>
+            <View style={s.cardPad}>
+              <SectionLabel label="Language" C={C} />
+              <View style={s.chipRow}>
+                {LANGUAGES.map((lang) => {
+                  const active = formData.language === lang.value;
+                  return (
+                    <TouchableOpacity
+                      key={lang.value}
+                      style={[s.chip, {
+                        backgroundColor: active ? C.accent : C.chipBg,
+                        borderColor:     active ? C.accent : C.border,
+                      }]}
+                      onPress={() => update('language', lang.value)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[s.chipText, { color: active ? '#FFF' : C.primary }]}>
+                        {lang.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </AnimCard>
+
+          {/* ══ Category Card ════════════════════════════════════════════════ */}
+          <AnimCard opacity={catAnim} translateY={catY} C={C}>
+            <View style={s.cardPad}>
+              <SectionLabel label="Category" C={C} />
+              <View style={s.catGrid}>
+                {CATEGORIES.map((cat) => {
+                  const active = formData.category === cat.value;
+                  return (
+                    <TouchableOpacity
+                      key={cat.value}
+                      style={[s.catCard, {
+                        backgroundColor: active ? C.accentBg : C.surfaceAlt,
+                        borderColor:     active ? C.accent   : C.border,
+                      }]}
+                      onPress={() => update('category', cat.value)}
+                      activeOpacity={0.75}
+                    >
+                      <Ionicons
+                        name={cat.icon}
+                        size={scale(18)}
+                        color={active ? C.accent : C.muted}
+                      />
+                      <Text style={[s.catLabel, { color: active ? C.accent : C.secondary, fontWeight: active ? '700' : '400' }]}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </AnimCard>
+
+          {/* ══ Location Card ════════════════════════════════════════════════ */}
+          <AnimCard opacity={locAnim} translateY={locY} C={C}>
+            <View style={s.cardPad}>
+              <SectionLabel label="Location" C={C} />
+              <Text style={[s.locationHint, { color: C.muted }]}>
+                Helps viewers discover hyper-local stories from your area
+              </Text>
+
+              {[
+                { key: 'state',    label: 'State',    icon: 'map-outline',         placeholder: 'e.g. West Bengal', required: true },
+                { key: 'district', label: 'District', icon: 'location-outline',    placeholder: 'e.g. Kolkata',     required: true },
+                { key: 'city',     label: 'City',     icon: 'business-outline',    placeholder: 'e.g. Kolkata',     required: true },
+                { key: 'area',     label: 'Area',     icon: 'navigate-circle-outline', placeholder: 'e.g. Park Street (optional)', required: false },
+              ].map(({ key, label, icon, placeholder, required }) => (
+                <View key={key} style={s.fieldGroup}>
+                  <Text style={s.fieldLabel}>
+                    {label}{required && <Text style={s.required}> *</Text>}
+                  </Text>
+                  <View style={[s.inputWrap, {
+                    borderColor:     errors[key] ? C.accent : C.border,
+                    backgroundColor: C.inputBg,
+                  }]}>
+                    <Ionicons name={icon} size={scale(16)} color={errors[key] ? C.accent : C.muted} style={s.inputIcon} />
+                    <TextInput
+                      style={[s.input, { color: C.primary }]}
+                      placeholder={placeholder}
+                      placeholderTextColor={C.muted}
+                      value={formData[key]}
+                      onChangeText={(t) => { update(key, t); clearErr(key); }}
+                      returnKeyType="next"
+                    />
+                  </View>
+                  {errors[key] && <FieldError msg={errors[key]} C={C} />}
+                </View>
               ))}
             </View>
-          </View>
+          </AnimCard>
 
-          {/* Category */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Category</Text>
-            <View style={styles.pickerContainer}>
-              {categories.map((cat) => (
-                <TouchableOpacity
-                  key={cat.value}
-                  style={[
-                    styles.pickerOption,
-                    formData.category === cat.value && styles.pickerOptionSelected,
-                  ]}
-                  onPress={() => setFormData({ ...formData, category: cat.value })}
-                >
-                  <Text
-                    style={[
-                      styles.pickerText,
-                      formData.category === cat.value && styles.pickerTextSelected,
-                    ]}
-                  >
-                    {cat.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          {/* ══ Submit CTA ══════════════════════════════════════════════════ */}
+          <Animated.View style={{
+            opacity:   btnAnim,
+            transform: [{ translateY: btnY }, { scale: btnPulse }],
+            marginBottom: vs(10),
+          }}>
+            <TouchableOpacity
+              style={[s.submitBtn, { backgroundColor: C.accent, shadowColor: C.accent }]}
+              onPress={handleSubmit}
+              activeOpacity={0.88}
+            >
+              <Ionicons name="add-circle-outline" size={scale(20)} color="#FFF" />
+              <Text style={s.submitBtnText}>Create Channel</Text>
+              <Ionicons name="arrow-forward" size={scale(17)} color="rgba(255,255,255,0.7)" />
+            </TouchableOpacity>
+          </Animated.View>
 
-          {/* Location */}
-          <View style={styles.locationSection}>
-            <Text style={styles.sectionLabel}>Location Information</Text>
-            <Text style={styles.sectionSubtext}>
-              This helps viewers find local news from your area
-            </Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>State *</Text>
-              <TextInput
-                style={[styles.input, errors.state && styles.inputError]}
-                placeholder="Enter state"
-                value={formData.state}
-                onChangeText={(text) => {
-                  setFormData({ ...formData, state: text });
-                  setErrors({ ...errors, state: null });
-                }}
-                placeholderTextColor="#999"
-              />
-              {errors.state && <Text style={styles.errorText}>{errors.state}</Text>}
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>District *</Text>
-              <TextInput
-                style={[styles.input, errors.district && styles.inputError]}
-                placeholder="Enter district"
-                value={formData.district}
-                onChangeText={(text) => {
-                  setFormData({ ...formData, district: text });
-                  setErrors({ ...errors, district: null });
-                }}
-                placeholderTextColor="#999"
-              />
-              {errors.district && <Text style={styles.errorText}>{errors.district}</Text>}
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>City *</Text>
-              <TextInput
-                style={[styles.input, errors.city && styles.inputError]}
-                placeholder="Enter city"
-                value={formData.city}
-                onChangeText={(text) => {
-                  setFormData({ ...formData, city: text });
-                  setErrors({ ...errors, city: null });
-                }}
-                placeholderTextColor="#999"
-              />
-              {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Area</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter area (optional)"
-                value={formData.area}
-                onChangeText={(text) => setFormData({ ...formData, area: text })}
-                placeholderTextColor="#999"
-              />
-            </View>
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Create Channel</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <Animated.Text style={[s.footerNote, { opacity: btnAnim, color: C.faint }]}>
+            Your channel will be reviewed before going live · BartaOne Publisher Agreement applies
+          </Animated.Text>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#888',
-    marginBottom: 20,
-  },
-  uploadSection: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 6,
-  },
-  logoUpload: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#FFF',
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-    borderStyle: 'dashed',
-    overflow: 'hidden',
-    alignSelf: 'center',
-  },
-  logoPreview: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  bannerUpload: {
-    width: '100%',
-    height: 150,
-    backgroundColor: '#FFF',
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  bannerPreview: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  uploadPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  uploadText: {
-    fontSize: 14,
-    color: '#888',
-    marginTop: 8,
-  },
-  uploadSubtext: {
-    fontSize: 12,
-    color: '#CCC',
-    marginTop: 4,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  input: {
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: '#333',
-  },
-  inputError: {
-    borderColor: '#FF6B6B',
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  errorText: {
-    color: '#FF6B6B',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  pickerContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  pickerOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F0F0F0',
-  },
-  pickerOptionSelected: {
-    backgroundColor: '#FF6B6B',
-  },
-  pickerText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  pickerTextSelected: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  locationSection: {
-    marginTop: 8,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  sectionLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  sectionSubtext: {
-    fontSize: 14,
-    color: '#888',
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  submitButton: {
-    backgroundColor: '#FF6B6B',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 30,
-    shadowColor: '#FF6B6B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  submitButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});
+// ─── Inline field error ───────────────────────────────────────────────────────
+function FieldError({ msg, C }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: vs(5), gap: scale(4) }}>
+      <Ionicons name="alert-circle" size={scale(12)} color={C.accent} />
+      <Text style={{ fontSize: sp(11.5), color: C.accent, fontWeight: '500' }}>{msg}</Text>
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+function makeStyles(C) {
+  return StyleSheet.create({
+    root: {
+      flex:            1,
+      backgroundColor: C.bg,
+    },
+
+    // Header
+    header: {
+      alignItems:        'center',
+      justifyContent:    'center',
+      paddingHorizontal: scale(20),
+      paddingTop:        vs(18),
+      paddingBottom:     vs(16),
+      backgroundColor:   C.surface,
+      borderBottomWidth: scale(3),
+      borderBottomColor: C.accent,
+    },
+    headerCenter: {
+      alignItems: 'center',
+    },
+    headerTitle: {
+      fontSize:      sp(26),
+      fontWeight:    '800',
+      color:         C.primary,
+      letterSpacing: -0.8,
+      fontStyle:     'italic',
+    },
+    headerUnderline: {},
+
+    // Scroll
+    scroll: { flex: 1, backgroundColor: "transparent" },
+    scrollContent: {
+      flexGrow:          1,
+      paddingHorizontal: scale(16),
+      paddingTop:        vs(6),
+      paddingBottom:     vs(40),
+    },
+
+    pageSubtitle: {
+      fontSize:     sp(13),
+      color:        C.muted,
+      lineHeight:   sp(19),
+      marginBottom: vs(8),
+    },
+
+    // Card internals
+    cardPad: {
+      paddingHorizontal: scale(18),
+      paddingTop:        vs(14),
+      paddingBottom:     vs(12),
+    },
+    divider: {
+      height:       StyleSheet.hairlineWidth,
+      marginVertical: vs(14),
+    },
+
+    // Logo row
+    logoRow: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      gap:           scale(16),
+      marginBottom:  vs(4),
+    },
+    logoCircle: {
+      width:        scale(78),
+      height:       scale(78),
+      borderRadius: scale(39),
+      borderWidth:  2,
+      borderStyle:  'dashed',
+      overflow:     'visible',
+    },
+    logoImg: {
+      width:        scale(78),
+      height:       scale(78),
+      borderRadius: scale(39),
+      resizeMode:   'cover',
+    },
+    logoPlaceholder: {
+      width:          scale(78),
+      height:         scale(78),
+      borderRadius:   scale(39),
+      justifyContent: 'center',
+      alignItems:     'center',
+      backgroundColor: C.surfaceAlt,
+    },
+    logoIconBg: {
+      width:          scale(44),
+      height:         scale(44),
+      borderRadius:   scale(22),
+      justifyContent: 'center',
+      alignItems:     'center',
+    },
+    logoBadge: {
+      position:       'absolute',
+      bottom:         0,
+      right:          0,
+      width:          scale(22),
+      height:         scale(22),
+      borderRadius:   scale(11),
+      justifyContent: 'center',
+      alignItems:     'center',
+      borderWidth:    2,
+      borderColor:    C.surface,
+    },
+    logoInfo: { flex: 1 },
+    logoInfoTitle: {
+      fontSize:   sp(14),
+      fontWeight: '600',
+      color:      C.primary,
+    },
+    logoInfoSub: {
+      fontSize:   sp(11.5),
+      color:      C.muted,
+      marginTop:  vs(4),
+      lineHeight: sp(17),
+    },
+    inlineError: {
+      flexDirection:  'row',
+      alignItems:     'center',
+      gap:            scale(4),
+      marginTop:      vs(6),
+      paddingHorizontal: scale(8),
+      paddingVertical:   vs(4),
+      borderRadius:   scale(6),
+    },
+    inlineErrorText: {
+      fontSize:   sp(11),
+      fontWeight: '600',
+    },
+
+    // Banner
+    bannerLabel: { marginBottom: vs(8) },
+    bannerArea: {
+      width:         '100%',
+      height:        vs(120),
+      borderRadius:  scale(12),
+      borderWidth:   1.5,
+      borderStyle:   'dashed',
+      overflow:      'hidden',
+    },
+    bannerImg: {
+      width:      '100%',
+      height:     '100%',
+      resizeMode: 'cover',
+    },
+    bannerPlaceholder: {
+      flex:           1,
+      justifyContent: 'center',
+      alignItems:     'center',
+      gap:            vs(8),
+    },
+    bannerIconBg: {
+      width:          scale(48),
+      height:         scale(48),
+      borderRadius:   scale(14),
+      justifyContent: 'center',
+      alignItems:     'center',
+    },
+    bannerHint: {
+      fontSize:  sp(12),
+      textAlign: 'center',
+    },
+
+    // Fields
+    fieldGroup: { marginBottom: vs(14) },
+    fieldLabel: {
+      fontSize:     sp(13),
+      fontWeight:   '600',
+      color:        C.secondary,
+      marginBottom: vs(7),
+      letterSpacing: 0.1,
+    },
+    required: { color: C.accent },
+    optionalTag: {
+      fontSize:   sp(11),
+      fontWeight: '400',
+      color:      C.muted,
+    },
+    inputWrap: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      borderWidth:   1,
+      borderRadius:  scale(10),
+      paddingHorizontal: scale(12),
+    },
+    inputIcon: { marginRight: scale(8) },
+    input: {
+      flex:        1,
+      fontSize:    sp(15),
+      paddingVertical: vs(13),
+      fontWeight:  '400',
+    },
+    textAreaWrap: { alignItems: 'flex-start', paddingTop: vs(4) },
+    textArea: {
+      height:    vs(96),
+      paddingTop: vs(9),
+    },
+
+    // Chips (language)
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap:      'wrap',
+      gap:           scale(8),
+    },
+    chip: {
+      paddingHorizontal: scale(16),
+      paddingVertical:   vs(9),
+      borderRadius:      scale(20),
+      borderWidth:       1,
+    },
+    chipText: {
+      fontSize:   sp(13.5),
+      fontWeight: '600',
+    },
+
+    // Category grid
+    catGrid: {
+      flexDirection: 'row',
+      flexWrap:      'wrap',
+      gap:           scale(8),
+    },
+    catCard: {
+      flexDirection:  'row',
+      alignItems:     'center',
+      gap:            scale(6),
+      paddingHorizontal: scale(12),
+      paddingVertical:   vs(9),
+      borderRadius:   scale(10),
+      borderWidth:    1,
+      minWidth:       '30%',
+    },
+    catLabel: {
+      fontSize:   sp(12.5),
+    },
+
+    // Location
+    locationHint: {
+      fontSize:     sp(12),
+      lineHeight:   sp(17),
+      marginBottom: vs(14),
+    },
+
+    // Submit
+    submitBtn: {
+      flexDirection:  'row',
+      alignItems:     'center',
+      justifyContent: 'center',
+      gap:            scale(9),
+      paddingVertical: vs(16),
+      borderRadius:   scale(14),
+      shadowOffset:   { width: 0, height: scale(6) },
+      shadowOpacity:  0.3,
+      shadowRadius:   scale(14),
+      elevation:      6,
+    },
+    submitBtnText: {
+      fontSize:      sp(17),
+      fontWeight:    '700',
+      color:         '#FFFFFF',
+      letterSpacing: 0.2,
+    },
+
+    // Footer note
+    footerNote: {
+      fontSize:   sp(11),
+      textAlign:  'center',
+      lineHeight: sp(16),
+      marginTop:  vs(12),
+    },
+  });
+}

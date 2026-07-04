@@ -31,8 +31,8 @@ router.get('/subscribers/list', asyncHandler(getSubscribers));
 router.get('/:id', asyncHandler(getChannelById));
 router.get('/:id/stats', asyncHandler(getChannelStats));
 
-router.post('/', uploadChannelMedia, asyncHandler(createChannel));
-router.put('/:id', uploadChannelMedia, asyncHandler(updateChannel));
+router.post('/', ...uploadChannelMedia(), asyncHandler(createChannel));
+router.put('/:id', ...uploadChannelMedia(), asyncHandler(updateChannel));
 router.delete('/:id', asyncHandler(deleteChannel));
 
 // Subscription routes

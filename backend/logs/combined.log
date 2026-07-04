@@ -168,3 +168,92 @@
 2026-07-03 20:06:24 [INFO]: ❌ GET /api/channels/owner - 404 (338ms) {"status":404,"duration":338,"ip":"::ffff:192.168.29.245"}
 2026-07-03 20:08:50 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.245","userAgent":"okhttp/4.12.0"}
 2026-07-03 20:08:50 [INFO]: ❌ GET /api/channels/owner - 404 (48ms) {"status":404,"duration":48,"ip":"::ffff:192.168.29.245"}
+2026-07-04 12:26:40 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"Belda Barta","email":"beldabarta@gmail.com","phone":"8420046508","role":"owner"}}
+2026-07-04 12:26:41 [INFO]: ✅ POST /api/auth/register - 201 (631ms) {"status":201,"duration":631,"ip":"::ffff:192.168.29.173"}
+2026-07-04 12:44:41 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"Belda Barta ","email":"beldabarta@gmail.com","phone":"8420046508","role":"owner"}}
+2026-07-04 12:44:41 [INFO]: ✅ POST /api/auth/register - 201 (146ms) {"status":201,"duration":146,"ip":"::ffff:192.168.29.173"}
+2026-07-04 18:06:25 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"Belda Barta","email":"beldabarta@gmail.com","phone":"8420046508","role":"owner"}}
+2026-07-04 18:06:25 [INFO]: ✅ POST /api/auth/register - 201 (445ms) {"status":201,"duration":445,"ip":"::ffff:192.168.29.173"}
+2026-07-04 18:21:11 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"Belda Barta","description":"News channel ","language":"en","state":"West Bengal ","district":"Kolkata ","city":"Kolkata ","area":"Park street ","category":"news","ownerId":null,"logo":{"assetId":null,"base64":null,"type":"image","fileName":"5e4d962f-9f1b-4bef-926d-9715c79fa3aa.jpeg","duration":null,"exif":null,"height":1079,"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/5e4d962f-9f1b-4bef-926d-9715c79fa3aa.jpeg","fileSize":87381,"rotation":null,"mimeType":"image/jpeg","width":1079},"banner":{"assetId":null,"base64":null,"type":"image","fileName":"caa1d160-12d7-4f30-968f-8f5504440766.jpeg","duration":null,"exif":null,"height":608,"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/caa1d160-12d7-4f30-968f-8f5504440766.jpeg","fileSize":94754,"rotation":null,"mimeType":"image/jpeg","width":1080}}}
+2026-07-04 18:21:11 [INFO]: ❌ POST /api/channels - 401 (11ms) {"status":401,"duration":11,"ip":"::ffff:192.168.29.173"}
+2026-07-04 18:25:29 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"Belda Barta","description":"News channel ","language":"en","state":"West Bengal ","district":"Kolkata ","city":"Kolkata ","area":"Park street ","category":"news","ownerId":null,"logo":{"assetId":null,"base64":null,"type":"image","fileName":"5e4d962f-9f1b-4bef-926d-9715c79fa3aa.jpeg","duration":null,"exif":null,"height":1079,"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/5e4d962f-9f1b-4bef-926d-9715c79fa3aa.jpeg","fileSize":87381,"rotation":null,"mimeType":"image/jpeg","width":1079},"banner":{"assetId":null,"base64":null,"type":"image","fileName":"caa1d160-12d7-4f30-968f-8f5504440766.jpeg","duration":null,"exif":null,"height":608,"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/caa1d160-12d7-4f30-968f-8f5504440766.jpeg","fileSize":94754,"rotation":null,"mimeType":"image/jpeg","width":1080}}}
+2026-07-04 18:25:29 [INFO]: ❌ POST /api/channels - 401 (12ms) {"status":401,"duration":12,"ip":"::ffff:192.168.29.173"}
+2026-07-04 18:34:18 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 18:34:18 [INFO]: ❌ GET /api/users/profile - 404 (178ms) {"status":404,"duration":178,"ip":"::ffff:192.168.29.173"}
+2026-07-04 18:44:41 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"Belda Barta","email":"beldabarta@gmail.com","phone":"8420046508","role":"owner"}}
+2026-07-04 18:44:41 [INFO]: ✅ POST /api/auth/register - 201 (157ms) {"status":201,"duration":157,"ip":"::ffff:192.168.29.173"}
+2026-07-04 18:46:09 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"Gk","description":"Gyi","language":"en","state":"West Bengal ","district":"Kolkata ","city":"Kolkata","area":"Nimtala Ghat","category":"news","ownerId":null,"logo":{"assetId":null,"base64":null,"type":"image","fileName":"4d91906c-8c68-41ae-a15b-788966d0b5c3.jpeg","duration":null,"exif":null,"height":1079,"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/4d91906c-8c68-41ae-a15b-788966d0b5c3.jpeg","fileSize":87381,"rotation":null,"mimeType":"image/jpeg","width":1079},"banner":{"assetId":null,"base64":null,"type":"image","fileName":"6609fb25-a1de-402c-b116-efd3d0a268f1.jpeg","duration":null,"exif":null,"height":608,"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/6609fb25-a1de-402c-b116-efd3d0a268f1.jpeg","fileSize":94754,"rotation":null,"mimeType":"image/jpeg","width":1080}}}
+2026-07-04 18:52:01 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"belda Barta","email":"beldabarta@gmail.com","phone":"8420046508","role":"owner"}}
+2026-07-04 18:52:01 [INFO]: ✅ POST /api/auth/register - 201 (151ms) {"status":201,"duration":151,"ip":"::ffff:192.168.29.173"}
+2026-07-04 18:53:43 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 18:59:43 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"belda Barta ","email":"beldabarta@gmail.com","phone":"8420046508","role":"owner"}}
+2026-07-04 18:59:43 [INFO]: ✅ POST /api/auth/register - 201 (156ms) {"status":201,"duration":156,"ip":"::ffff:192.168.29.173"}
+2026-07-04 19:00:24 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 19:11:40 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 19:17:06 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.16","userAgent":"curl/8.14.1","body":{"channelName":"test"}}
+2026-07-04 19:17:06 [INFO]: ❌ POST /api/channels - 401 (10ms) {"status":401,"duration":10,"ip":"::ffff:192.168.29.16"}
+2026-07-04 19:27:50 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"Bel ","email":"beldabarta@gmail.com","phone":"8420046508","role":"owner"}}
+2026-07-04 19:27:51 [INFO]: ✅ POST /api/auth/register - 201 (220ms) {"status":201,"duration":220,"ip":"::ffff:192.168.29.173"}
+2026-07-04 19:28:28 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"To","description":"To","language":"en","category":"news","location":{"state":"West Bengal ","district":"Kolkata ","city":"Kolkata ","area":"Park street "}}}
+2026-07-04 19:32:38 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"To","description":"To","language":"en","category":"news","location":{"state":"West Bengal ","district":"Kolkata ","city":"Kolkata ","area":"Park street "}}}
+2026-07-04 19:32:38 [INFO]: ❌ POST /api/channels - 500 (264ms) {"status":500,"duration":264,"ip":"::ffff:192.168.29.173"}
+2026-07-04 19:38:48 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"To","description":"To","language":"en","category":"news","location":{"state":"West Bengal ","district":"Kolkata ","city":"Kolkata ","area":"Park street "}}}
+2026-07-04 19:38:48 [INFO]: ✅ POST /api/channels - 201 (328ms) {"status":201,"duration":328,"ip":"::ffff:192.168.29.173"}
+2026-07-04 19:38:48 [INFO]: 📥 PUT /api/channels/6a4913f01f091fca86eec720 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 19:38:50 [INFO]: ❌ PUT /api/channels/6a4913f01f091fca86eec720 - 500 (1710ms) {"status":500,"duration":1710,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:08:27 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"belda Barta ","email":"beldabarta@gmail.com","phone":"8420046508","role":"owner"}}
+2026-07-04 20:08:28 [INFO]: ✅ POST /api/auth/register - 201 (371ms) {"status":201,"duration":371,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:12:05 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"To","description":"Church","language":"en","category":"news","location":{"state":"West Bengal","district":"Kolkata","city":"Kolkata","area":"Park street "}}}
+2026-07-04 20:12:05 [INFO]: ✅ POST /api/channels - 201 (223ms) {"status":201,"duration":223,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:12:05 [INFO]: 📥 PUT /api/channels/6a491bbd85c6de34fd9cf81e {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:12:07 [INFO]: ❌ PUT /api/channels/6a491bbd85c6de34fd9cf81e - 500 (1800ms) {"status":500,"duration":1800,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:13:41 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:13:41 [INFO]: ✅ GET /api/channels/owner - 200 (279ms) {"status":200,"duration":279,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:13:41 [INFO]: 📥 GET /api/channels/6a491bbd85c6de34fd9cf81e/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:13:41 [INFO]: ✅ GET /api/channels/6a491bbd85c6de34fd9cf81e/stats - 200 (232ms) {"status":200,"duration":232,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:14:47 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"belda Barta ","email":"beldabarta@gmail.com","phone":"84200456508","role":"owner"}}
+2026-07-04 20:14:47 [INFO]: ✅ POST /api/auth/register - 201 (172ms) {"status":201,"duration":172,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:16:22 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"Belda Barta","description":"Right","language":"en","category":"news","location":{"state":"West Bengal","district":"Kolkata","city":"Kolkata","area":"Park Street"}}}
+2026-07-04 20:16:22 [INFO]: ✅ POST /api/channels - 201 (206ms) {"status":201,"duration":206,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:16:22 [INFO]: 📥 PUT /api/channels/6a491cbe5c0686290d40c79a {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:16:26 [INFO]: ✅ PUT /api/channels/6a491cbe5c0686290d40c79a - 200 (3351ms) {"status":200,"duration":3351,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:16:28 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:16:28 [INFO]: ✅ GET /api/channels/owner - 200 (92ms) {"status":200,"duration":92,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:16:28 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:16:28 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (220ms) {"status":200,"duration":220,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:20:54 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:20:54 [INFO]: ✅ GET /api/channels/owner - 200 (92ms) {"status":200,"duration":92,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:20:54 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:20:55 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (229ms) {"status":200,"duration":229,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:22:51 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:22:51 [INFO]: ✅ GET /api/channels/owner - 200 (105ms) {"status":200,"duration":105,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:22:51 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:22:51 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (211ms) {"status":200,"duration":211,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:26:54 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:26:54 [INFO]: ✅ GET /api/channels/owner - 200 (84ms) {"status":200,"duration":84,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:35:22 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:35:22 [INFO]: ✅ GET /api/channels/owner - 200 (97ms) {"status":200,"duration":97,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:37:26 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:37:26 [INFO]: ✅ GET /api/channels/owner - 200 (84ms) {"status":200,"duration":84,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:38:34 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:38:34 [INFO]: ✅ GET /api/users/profile - 200 (48ms) {"status":200,"duration":48,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:38:52 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:38:52 [INFO]: ✅ GET /api/channels/owner - 200 (86ms) {"status":200,"duration":86,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:38:52 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:38:52 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (264ms) {"status":200,"duration":264,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:38:54 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:38:54 [INFO]: ✅ GET /api/channels/owner - 200 (87ms) {"status":200,"duration":87,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:39:02 [INFO]: 📥 PUT /api/channels/6a491cbe5c0686290d40c79a {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"Belda News","description":"Right","language":"en","location":{"city":"Kolkata","district":"Kolkata","state":"West Bengal","area":"Park Street"},"category":"news"}}
+2026-07-04 20:39:02 [INFO]: ✅ PUT /api/channels/6a491cbe5c0686290d40c79a - 200 (154ms) {"status":200,"duration":154,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:44:59 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:44:59 [INFO]: ✅ GET /api/channels/owner - 200 (87ms) {"status":200,"duration":87,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:49:03 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:49:03 [INFO]: ✅ GET /api/channels/owner - 200 (88ms) {"status":200,"duration":88,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:50:32 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:50:32 [INFO]: ✅ GET /api/channels/owner - 200 (93ms) {"status":200,"duration":93,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:50:32 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:50:32 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (231ms) {"status":200,"duration":231,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:50:36 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:50:36 [INFO]: ✅ GET /api/channels/owner - 200 (84ms) {"status":200,"duration":84,"ip":"::ffff:192.168.29.173"}
+2026-07-04 20:50:36 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-04 20:50:37 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (211ms) {"status":200,"duration":211,"ip":"::ffff:192.168.29.173"}

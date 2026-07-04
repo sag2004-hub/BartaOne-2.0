@@ -1,6 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
+import { auth } from './firebase';
 
 // Create axios instance with base URL
 const api = axios.create({
@@ -8,16 +9,31 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,
+  timeout: 120000,
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      console.log('🔑 [api.js] interceptor token:', token ? 'EXISTS ✅' : 'NULL ❌');
+      let token = null;
+
+      // Priority 1: get a fresh token directly from Firebase currentUser.
+      // This works even when isSigningUp blocks onAuthStateChanged and the
+      // token hasn't been written to AsyncStorage yet.
+      if (auth.currentUser) {
+        token = await auth.currentUser.getIdToken();
+        // Keep AsyncStorage in sync so other parts of the app have it too
+        await AsyncStorage.setItem('authToken', token);
+        console.log('🔑 [api.js] token from Firebase currentUser ✅');
+      } else {
+        // Fallback: try AsyncStorage (covers already-logged-in sessions)
+        token = await AsyncStorage.getItem('authToken');
+        console.log('🔑 [api.js] token from AsyncStorage:', token ? 'EXISTS ✅' : 'NULL ❌');
+      }
+
       console.log('🌐 [api.js] request URL:', config.baseURL + config.url);
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -86,7 +102,7 @@ export const channelAPI = {
   getById: (id) => api.get(`/channels/${id}`),
   getByOwner: () => api.get('/channels/owner'),
   create: (data) => api.post('/channels', data),
-  update: (id, data) => api.put(`/channels/${id}`, data),
+  update: (id, data, config = {}) => api.put(`/channels/${id}`, data, config),
   delete: (id) => api.delete(`/channels/${id}`),
   subscribe: (id) => api.post(`/channels/${id}/subscribe`),
   unsubscribe: (id) => api.delete(`/channels/${id}/subscribe`),
