@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { authAPI } from '../../services/api';
@@ -310,7 +311,7 @@ const ViewerLogin = ({ navigation }) => {
         { email: email.trim() },
         { headers: { Authorization: `Bearer ${idToken}` } }
       );
-      navigation.replace('ViewerHome');
+      router.replace('/(viewer)/Home');
     } catch (error) {
       Alert.alert('Login Failed', error.message);
     } finally {
@@ -441,7 +442,7 @@ const ViewerLogin = ({ navigation }) => {
                 >
                   <TouchableOpacity
                     style={styles.forgotPassword}
-                    onPress={() => navigation.navigate('ForgotPassword')}
+                    onPress={() => router.push('/(auth)/ForgotPassword')}
                   >
                     <Text style={[styles.forgotPasswordText, { color: colors.accent }]}>
                       Forgot Password?
@@ -499,7 +500,7 @@ const ViewerLogin = ({ navigation }) => {
                   <Text style={[styles.footerText, { color: colors.muted }]}>
                     Don't have an account?{' '}
                   </Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('ViewerSignup')}>
+                  <TouchableOpacity onPress={() => router.push('/(auth)/ViewerSignup')}>
                     <Text style={[styles.signupText, { color: colors.accent }]}>
                       Sign Up
                     </Text>

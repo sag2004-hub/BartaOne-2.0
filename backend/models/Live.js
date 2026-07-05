@@ -1,24 +1,22 @@
+// backend/models/Live.js
 const mongoose = require('mongoose');
 
 const LiveSchema = new mongoose.Schema({
-  channelId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Channel',
-    required: true,
-    index: true,
-  },
   title: {
     type: String,
-    required: true,
+    required: [true, 'Stream title is required'],
     trim: true,
+    maxlength: [100, 'Title cannot exceed 100 characters'],
   },
   description: {
     type: String,
     trim: true,
+    maxlength: [500, 'Description cannot exceed 500 characters'],
   },
-  streamUrl: {
-    type: String,
-    required: true,
+  channelId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Channel',
+    required: [true, 'Channel ID is required'],
   },
   thumbnail: {
     type: String,
@@ -28,72 +26,157 @@ const LiveSchema = new mongoose.Schema({
     type: String,
     default: 'en',
   },
+  status: {
+    type: String,
+    enum: ['scheduled', 'live', 'ended', 'cancelled'],
+    default: 'scheduled',
+  },
+  scheduledFor: {
+    type: Date,
+    default: null,
+  },
+  startedAt: {
+    type: Date,
+    default: null,
+  },
+  endedAt: {
+    type: Date,
+    default: null,
+  },
   viewers: {
     type: Number,
     default: 0,
   },
-  isLive: {
+  maxViewers: {
+    type: Number,
+    default: 0,
+  },
+  reactions: {
+    type: Number,
+    default: 0,
+  },
+  isActive: {
     type: Boolean,
     default: true,
-    index: true,
   },
-  startedAt: {
-    type: Date,
-    default: Date.now,
+  streamKey: {
+    type: String,
+    unique: true, // ✅ This creates the index
+    default: () => require('crypto').randomBytes(16).toString('hex'),
   },
-  endedAt: {
-    type: Date,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  timestamps: true,
 });
 
-// Update timestamp on save
-LiveSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
+// ─── Pre-save Middleware ──────────────────────────────────────────────────
+LiveSchema.pre('save', function() {
+  // If stream is going live and no startedAt, set it
+  if (this.status === 'live' && !this.startedAt) {
+    this.startedAt = new Date();
+  }
+  
+  // If stream is ending and no endedAt, set it
+  if (this.status === 'ended' && !this.endedAt) {
+    this.endedAt = new Date();
+  }
 });
 
-// Method to start stream
-LiveSchema.methods.startStream = function() {
-  this.isLive = true;
+// ─── Indexes ──────────────────────────────────────────────────────────────
+// ❌ REMOVED duplicate index - streamKey already has unique: true in schema
+// ✅ Keep only these indexes
+LiveSchema.index({ channelId: 1, status: 1 });
+LiveSchema.index({ scheduledFor: 1 });
+LiveSchema.index({ startedAt: -1 });
+// ✅ REMOVED: LiveSchema.index({ streamKey: 1 }, { unique: true }); // DUPLICATE!
+
+// ─── Static Methods ──────────────────────────────────────────────────────
+LiveSchema.statics.findActiveByChannel = function(channelId) {
+  return this.find({
+    channelId,
+    status: { $in: ['live', 'scheduled'] },
+    isActive: true,
+  }).sort({ startedAt: -1 });
+};
+
+LiveSchema.statics.findLiveStreams = function() {
+  return this.find({
+    status: 'live',
+    isActive: true,
+  }).sort({ startedAt: -1 });
+};
+
+LiveSchema.statics.findScheduledStreams = function() {
+  return this.find({
+    status: 'scheduled',
+    isActive: true,
+    scheduledFor: { $gte: new Date() },
+  }).sort({ scheduledFor: 1 });
+};
+
+// ─── Instance Methods ────────────────────────────────────────────────────
+LiveSchema.methods.start = function() {
+  this.status = 'live';
   this.startedAt = new Date();
+  this.isActive = true;
   return this.save();
 };
 
-// Method to end stream
-LiveSchema.methods.endStream = function() {
-  this.isLive = false;
+LiveSchema.methods.end = function() {
+  this.status = 'ended';
   this.endedAt = new Date();
+  this.isActive = false;
   return this.save();
 };
 
-// Method to increment viewers
-LiveSchema.methods.incrementViewers = function() {
+LiveSchema.methods.addViewer = function() {
   this.viewers += 1;
+  if (this.viewers > this.maxViewers) {
+    this.maxViewers = this.viewers;
+  }
   return this.save();
 };
 
-// Method to decrement viewers
-LiveSchema.methods.decrementViewers = function() {
-  this.viewers = Math.max(this.viewers - 1, 0);
+LiveSchema.methods.removeViewer = function() {
+  if (this.viewers > 0) {
+    this.viewers -= 1;
+  }
   return this.save();
 };
 
-// Method to get stream duration
-LiveSchema.methods.getDuration = function() {
-  if (!this.startedAt) return '0:00';
-  const end = this.endedAt || new Date();
-  const duration = Math.floor((end - this.startedAt) / 1000);
-  const minutes = Math.floor(duration / 60);
-  const seconds = duration % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+LiveSchema.methods.addReaction = function() {
+  this.reactions += 1;
+  return this.save();
 };
 
-module.exports = mongoose.model('Live', LiveSchema);
+LiveSchema.methods.cancel = function() {
+  this.status = 'cancelled';
+  this.isActive = false;
+  return this.save();
+};
+
+// ─── Virtual Fields ──────────────────────────────────────────────────────
+LiveSchema.virtual('duration').get(function() {
+  if (this.startedAt && this.endedAt) {
+    const diff = this.endedAt - this.startedAt;
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    return `${minutes}m ${seconds}s`;
+  }
+  return '0m 0s';
+});
+
+LiveSchema.virtual('isLive').get(function() {
+  return this.status === 'live' && this.isActive;
+});
+
+LiveSchema.virtual('isScheduled').get(function() {
+  return this.status === 'scheduled' && this.isActive;
+});
+
+// ─── Ensure virtuals are included in JSON output ────────────────────────
+LiveSchema.set('toJSON', { virtuals: true });
+LiveSchema.set('toObject', { virtuals: true });
+
+const Live = mongoose.model('Live', LiveSchema);
+
+module.exports = Live;

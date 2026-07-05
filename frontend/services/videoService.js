@@ -1,3 +1,4 @@
+// services/videoService.js
 import api from './api';
 
 // Video Service
@@ -43,6 +44,18 @@ export const videoService = {
     } catch (error) {
       console.error('Error fetching videos by category:', error);
       throw error;
+    }
+  },
+
+  // Get videos by owner (channel) - ADD THIS FUNCTION
+  getOwnerVideos: async (channelId) => {
+    try {
+      // Use getByChannel which fetches videos by channel ID
+      const response = await api.video.getByChannel(channelId);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching owner videos:', error);
+      return [];
     }
   },
 
@@ -197,6 +210,7 @@ export const {
   getById: getVideoById,
   getByChannel: getChannelVideos,
   getByCategory: getVideosByCategory,
+  getOwnerVideos, // ADD THIS EXPORT
   upload: uploadVideo,
   update: updateVideo,
   delete: deleteVideo,

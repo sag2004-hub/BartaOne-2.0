@@ -5,10 +5,10 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { signOut } from 'firebase/auth';

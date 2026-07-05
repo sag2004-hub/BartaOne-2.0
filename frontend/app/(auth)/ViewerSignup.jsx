@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../../services/firebase';
@@ -277,7 +278,8 @@ const TermsContent = ({ colors }) => {
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────
-export default function ViewerSignup({ navigation }) {
+export default function ViewerSignup() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const theme = isDarkMode ? THEMES.dark : THEMES.light;
@@ -493,7 +495,7 @@ export default function ViewerSignup({ navigation }) {
         [
           {
             text: 'Continue',
-            onPress: () => navigation.replace('ViewerHome'),
+            onPress: () => router.replace('/(viewer)/Home'),
           },
         ]
       );
@@ -742,7 +744,7 @@ export default function ViewerSignup({ navigation }) {
                   <Text style={[styles.footerText, { color: colors.muted }]}>
                     Already have an account?{' '}
                   </Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('ViewerLogin')}>
+                  <TouchableOpacity onPress={() => router.push('/(auth)/ViewerLogin')}>
                     <Text style={[styles.loginText, { color: colors.accent }]}>Log In</Text>
                   </TouchableOpacity>
                 </Animated.View>

@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -176,7 +177,8 @@ const AnimatedInput = ({
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────
-export default function OwnerLogin({ navigation }) {
+export default function OwnerLogin() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const theme = isDarkMode ? THEMES.dark : THEMES.light;
@@ -344,7 +346,7 @@ export default function OwnerLogin({ navigation }) {
         await AsyncStorage.setItem('channelName', channelName.trim());
       }
 
-      navigation.replace('OwnerDashboard');
+      router.replace('/(owner)/Dashboard');
     } catch (error) {
       console.error('❌ OwnerLogin error:', error.message);
 
@@ -503,7 +505,7 @@ export default function OwnerLogin({ navigation }) {
                 >
                   <TouchableOpacity
                     style={styles.forgotPassword}
-                    onPress={() => navigation.navigate('ForgotPassword')}
+                    onPress={() => router.push('/(auth)/ForgotPassword')}
                   >
                     <Text style={[styles.forgotPasswordText, { color: colors.accent }]}>
                       Forgot Password?
@@ -545,7 +547,7 @@ export default function OwnerLogin({ navigation }) {
                   <Text style={[styles.footerText, { color: colors.muted }]}>
                     Don't have a channel?{' '}
                   </Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('OwnerSignup')}>
+                  <TouchableOpacity onPress={() => router.push('/(auth)/OwnerSignup')}>
                     <Text style={[styles.signupText, { color: colors.accent }]}>
                       Create Channel
                     </Text>

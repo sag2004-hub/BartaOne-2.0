@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { authAPI } from '../../services/api';
@@ -266,7 +267,8 @@ const TermsContent = ({ colors }) => {
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────
-export default function OwnerSignup({ navigation }) {
+export default function OwnerSignup() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const theme = isDarkMode ? THEMES.dark : THEMES.light;
@@ -456,7 +458,7 @@ export default function OwnerSignup({ navigation }) {
       Alert.alert(
         'Success',
         'Channel owner account created! Now create your channel.',
-        [{ text: 'Create Channel', onPress: () => navigation.replace('CreateChannel') }]
+        [{ text: 'Create Channel', onPress: () => router.replace('/(owner)/CreateChannel') }]
       );
 
     } catch (error) {
@@ -752,7 +754,7 @@ export default function OwnerSignup({ navigation }) {
                   <Text style={[styles.footerText, { color: colors.muted }]}>
                     Already have an account?{' '}
                   </Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('OwnerLogin')}>
+                  <TouchableOpacity onPress={() => router.push('/(auth)/OwnerLogin')}>
                     <Text style={[styles.loginText, { color: colors.accent }]}>
                       Log In
                     </Text>

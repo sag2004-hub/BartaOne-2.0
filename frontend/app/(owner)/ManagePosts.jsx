@@ -5,19 +5,87 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   RefreshControl,
   Alert,
   Modal,
+  useColorScheme,
+  Dimensions,
+  PixelRatio,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
+import { getChannelByOwner } from '../../services/channelService';
 import { getOwnerArticles, deleteArticle } from '../../services/articleService';
 import { getOwnerVideos, deleteVideo } from '../../services/videoService';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
 
-export default function ManagePosts({ navigation }) {
+const { width: SW, height: SH } = Dimensions.get('window');
+const BASE_W = 390;
+const scale = (n) => Math.round((SW / BASE_W) * n);
+const vs = (n) => Math.round((SH / 844) * n);
+const sp = (n) => n / PixelRatio.getFontScale();
+
+// ─── Theme ───────────────────────────────────────────────────────────────────
+const LIGHT = {
+  bg: '#F2F0EB',
+  surface: '#FFFFFF',
+  surfaceAlt: '#FAFAF8',
+  border: '#E4E0D8',
+  accent: '#C8001A',
+  accentBg: '#FFF0F2',
+  accentBorder: 'rgba(200,0,26,0.18)',
+  navy: '#0F1923',
+  primary: '#1A2733',
+  secondary: '#4A5A6B',
+  muted: '#8A97A5',
+  faint: '#B8C0B8',
+  white: '#FFFFFF',
+  statusBar: 'dark-content',
+  cardShadowOpacity: 0.06,
+  iconBlue: '#1A6DC8',
+  iconBlueBg: '#EFF5FF',
+  iconGreen: '#0E8A5A',
+  iconGreenBg: '#EDFAF3',
+  iconPurple: '#7C3AED',
+  iconPurpleBg: '#F5F0FF',
+  iconAmber: '#B87500',
+  iconAmberBg: '#FFF7E8',
+};
+
+const DARK = {
+  bg: '#0D1117',
+  surface: '#161B22',
+  surfaceAlt: '#1C2330',
+  border: '#2A3340',
+  accent: '#E8192C',
+  accentBg: 'rgba(232,25,44,0.12)',
+  accentBorder: 'rgba(232,25,44,0.25)',
+  navy: '#E8EDF2',
+  primary: '#EDF2F7',
+  secondary: '#8B9BAB',
+  muted: '#5C6E80',
+  faint: '#3A4A58',
+  white: '#FFFFFF',
+  statusBar: 'light-content',
+  cardShadowOpacity: 0.35,
+  iconBlue: '#60A5FA',
+  iconBlueBg: 'rgba(96,165,250,0.12)',
+  iconGreen: '#34D399',
+  iconGreenBg: 'rgba(52,211,153,0.12)',
+  iconPurple: '#A78BFA',
+  iconPurpleBg: 'rgba(167,139,250,0.12)',
+  iconAmber: '#FBBF24',
+  iconAmberBg: 'rgba(251,191,36,0.12)',
+};
+
+export default function ManagePosts() {
+  const router = useRouter();
+  const scheme = useColorScheme();
+  const C = scheme === 'dark' ? DARK : LIGHT;
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('articles');
   const [articles, setArticles] = useState([]);
@@ -26,6 +94,7 @@ export default function ManagePosts({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [channelId, setChannelId] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -34,14 +103,30 @@ export default function ManagePosts({ navigation }) {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [articlesData, videosData] = await Promise.all([
-        getOwnerArticles(user.uid),
-        getOwnerVideos(user.uid),
-      ]);
-      setArticles(articlesData);
-      setVideos(videosData);
+      // First get the channel data to get the MongoDB _id
+      const channelData = await getChannelByOwner();
+      console.log('📊 Channel data:', channelData);
+      
+      if (channelData && channelData._id) {
+        // Use the MongoDB _id from the channel
+        const channelMongoId = channelData._id;
+        setChannelId(channelMongoId);
+        
+        const [articlesData, videosData] = await Promise.all([
+          getOwnerArticles(channelMongoId),
+          getOwnerVideos(channelMongoId),
+        ]);
+        
+        setArticles(articlesData || []);
+        setVideos(videosData || []);
+      } else {
+        console.warn('No channel found for this user');
+        setArticles([]);
+        setVideos([]);
+      }
     } catch (error) {
       console.error('Error loading posts:', error);
+      Alert.alert('Error', 'Failed to load posts');
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +158,7 @@ export default function ManagePosts({ navigation }) {
               }
               Alert.alert('Success', 'Post deleted successfully');
             } catch (error) {
+              console.error('Delete error:', error);
               Alert.alert('Error', 'Failed to delete post');
             }
           },
@@ -84,40 +170,59 @@ export default function ManagePosts({ navigation }) {
   const renderArticleItem = (article) => (
     <TouchableOpacity
       key={article._id}
-      style={styles.postCard}
-      onPress={() => navigation.navigate('ArticleDetails', { articleId: article._id })}
+      style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}
+      activeOpacity={0.7}
+      onPress={() => router.push(`/shared/ArticleDetails/${article._id}`)}
     >
       <View style={styles.postHeader}>
-        <Text style={styles.postTitle} numberOfLines={1}>
-          {article.title}
-        </Text>
+        <View style={styles.postIconWrap}>
+          <View style={[styles.postIconBg, { backgroundColor: C.accentBg }]}>
+            <Ionicons name="newspaper-outline" size={scale(18)} color={C.accent} />
+          </View>
+          <View style={styles.postTitleWrap}>
+            <Text style={[styles.postTitle, { color: C.primary }]} numberOfLines={1}>
+              {article.title}
+            </Text>
+            <View style={styles.postMeta}>
+              <View style={[styles.statusBadge, { backgroundColor: C.iconGreenBg }]}>
+                <Text style={[styles.statusText, { color: C.iconGreen }]}>
+                  {article.status || 'Published'}
+                </Text>
+              </View>
+              <Text style={[styles.postDate, { color: C.muted }]}>
+                {new Date(article.createdAt).toLocaleDateString()}
+              </Text>
+            </View>
+          </View>
+        </View>
         <TouchableOpacity
+          style={[styles.moreBtn, { backgroundColor: C.bg }]}
           onPress={() => {
             setSelectedItem(article);
             setModalVisible(true);
           }}
         >
-          <Ionicons name="more-vertical" size={20} color="#888" />
+          <Ionicons name="ellipsis-vertical" size={scale(18)} color={C.muted} />
         </TouchableOpacity>
       </View>
-      <View style={styles.postMeta}>
-        <Text style={styles.postCategory}>{article.category}</Text>
-        <Text style={styles.postDate}>
-          {new Date(article.createdAt).toLocaleDateString()}
-        </Text>
-      </View>
+      <View style={[styles.divider, { backgroundColor: C.border }]} />
       <View style={styles.postStats}>
         <View style={styles.stat}>
-          <Ionicons name="eye-outline" size={16} color="#888" />
-          <Text style={styles.statText}>{article.views || 0}</Text>
+          <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
+          <Text style={[styles.statText, { color: C.muted }]}>{article.views || 0}</Text>
         </View>
         <View style={styles.stat}>
-          <Ionicons name="heart-outline" size={16} color="#888" />
-          <Text style={styles.statText}>{article.likes || 0}</Text>
+          <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
+          <Text style={[styles.statText, { color: C.muted }]}>{article.likes || 0}</Text>
         </View>
         <View style={styles.stat}>
-          <Ionicons name="chatbubble-outline" size={16} color="#888" />
-          <Text style={styles.statText}>{article.comments || 0}</Text>
+          <Ionicons name="chatbubble-outline" size={scale(14)} color={C.muted} />
+          <Text style={[styles.statText, { color: C.muted }]}>{article.comments || 0}</Text>
+        </View>
+        <View style={[styles.stat, styles.statCategory]}>
+          <Text style={[styles.categoryText, { color: C.accent, backgroundColor: C.accentBg }]}>
+            {article.category || 'News'}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -126,90 +231,140 @@ export default function ManagePosts({ navigation }) {
   const renderVideoItem = (video) => (
     <TouchableOpacity
       key={video._id}
-      style={styles.postCard}
-      onPress={() => navigation.navigate('VideoPlayer', { videoId: video._id })}
+      style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}
+      activeOpacity={0.7}
+      onPress={() => router.push(`/shared/VideoPlayer/${video._id}`)}
     >
       <View style={styles.postHeader}>
-        <Text style={styles.postTitle} numberOfLines={1}>
-          {video.title}
-        </Text>
+        <View style={styles.postIconWrap}>
+          <View style={[styles.postIconBg, { backgroundColor: C.iconBlueBg }]}>
+            <Ionicons name="videocam-outline" size={scale(18)} color={C.iconBlue} />
+          </View>
+          <View style={styles.postTitleWrap}>
+            <Text style={[styles.postTitle, { color: C.primary }]} numberOfLines={1}>
+              {video.title}
+            </Text>
+            <View style={styles.postMeta}>
+              <View style={[styles.statusBadge, { backgroundColor: C.iconGreenBg }]}>
+                <Text style={[styles.statusText, { color: C.iconGreen }]}>
+                  {video.status || 'Published'}
+                </Text>
+              </View>
+              <Text style={[styles.postDate, { color: C.muted }]}>
+                {new Date(video.createdAt).toLocaleDateString()}
+              </Text>
+            </View>
+          </View>
+        </View>
         <TouchableOpacity
+          style={[styles.moreBtn, { backgroundColor: C.bg }]}
           onPress={() => {
             setSelectedItem(video);
             setModalVisible(true);
           }}
         >
-          <Ionicons name="more-vertical" size={20} color="#888" />
+          <Ionicons name="ellipsis-vertical" size={scale(18)} color={C.muted} />
         </TouchableOpacity>
       </View>
-      <View style={styles.postMeta}>
-        <Text style={styles.postCategory}>{video.category}</Text>
-        <Text style={styles.postDate}>
-          {new Date(video.createdAt).toLocaleDateString()}
-        </Text>
-      </View>
+      <View style={[styles.divider, { backgroundColor: C.border }]} />
       <View style={styles.postStats}>
         <View style={styles.stat}>
-          <Ionicons name="eye-outline" size={16} color="#888" />
-          <Text style={styles.statText}>{video.views || 0}</Text>
+          <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
+          <Text style={[styles.statText, { color: C.muted }]}>{video.views || 0}</Text>
         </View>
         <View style={styles.stat}>
-          <Ionicons name="heart-outline" size={16} color="#888" />
-          <Text style={styles.statText}>{video.likes || 0}</Text>
+          <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
+          <Text style={[styles.statText, { color: C.muted }]}>{video.likes || 0}</Text>
+        </View>
+        <View style={[styles.stat, styles.statCategory]}>
+          <Text style={[styles.categoryText, { color: C.accent, backgroundColor: C.accentBg }]}>
+            {video.category || 'News'}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 
+  const styles = makeStyles(C);
+
   if (isLoading) {
-    return <Loader message="Loading posts..." />;
+    return (
+      <SafeAreaView style={styles.root}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={C.accent} />
+          <Text style={[styles.loadingText, { color: C.secondary }]}>Loading posts...</Text>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   const currentData = activeTab === 'articles' ? articles : videos;
   const hasData = currentData.length > 0;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+    <SafeAreaView style={styles.root} edges={['top']}>
+      <View style={styles.topStripe} />
+
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+        <TouchableOpacity 
+          style={[styles.backBtn, { backgroundColor: C.bg }]} 
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={scale(20)} color={C.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Manage Posts</Text>
-        <View style={{ width: 24 }} />
+        <Text style={[styles.headerTitle, { color: C.primary }]}>Manage Posts</Text>
+        <View style={styles.headerRight} />
       </View>
 
-      <View style={styles.tabContainer}>
+      {/* Tabs */}
+      <View style={[styles.tabContainer, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'articles' && styles.tabActive]}
           onPress={() => setActiveTab('articles')}
         >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'articles' && styles.tabTextActive,
-            ]}
-          >
-            Articles ({articles.length})
-          </Text>
+          <View style={styles.tabContent}>
+            <Ionicons name="newspaper-outline" size={scale(16)} color={activeTab === 'articles' ? C.accent : C.muted} />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'articles' && styles.tabTextActive,
+                { color: activeTab === 'articles' ? C.accent : C.muted }
+              ]}
+            >
+              Articles ({articles.length})
+            </Text>
+          </View>
+          {activeTab === 'articles' && <View style={[styles.tabIndicator, { backgroundColor: C.accent }]} />}
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'videos' && styles.tabActive]}
           onPress={() => setActiveTab('videos')}
         >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'videos' && styles.tabTextActive,
-            ]}
-          >
-            Videos ({videos.length})
-          </Text>
+          <View style={styles.tabContent}>
+            <Ionicons name="videocam-outline" size={scale(16)} color={activeTab === 'videos' ? C.accent : C.muted} />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'videos' && styles.tabTextActive,
+                { color: activeTab === 'videos' ? C.accent : C.muted }
+              ]}
+            >
+              Videos ({videos.length})
+            </Text>
+          </View>
+          {activeTab === 'videos' && <View style={[styles.tabIndicator, { backgroundColor: C.accent }]} />}
         </TouchableOpacity>
       </View>
 
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor={C.accent}
+            colors={[C.accent]}
+          />
         }
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -219,15 +374,15 @@ export default function ManagePosts({ navigation }) {
             ? articles.map(renderArticleItem)
             : videos.map(renderVideoItem)
         ) : (
-          <EmptyState
-            icon={activeTab === 'articles' ? 'newspaper-outline' : 'videocam-outline'}
-            title={`No ${activeTab} yet`}
-            message={`Start publishing ${activeTab} to see them here`}
-            buttonText={`Create ${activeTab === 'articles' ? 'Article' : 'Video'}`}
-            onPress={() =>
-              navigation.navigate(activeTab === 'articles' ? 'UploadArticle' : 'UploadVideo')
-            }
-          />
+          <View style={styles.emptyContainer}>
+            <EmptyState
+              icon={activeTab === 'articles' ? 'newspaper-outline' : 'videocam-outline'}
+              title={`No ${activeTab} yet`}
+              message={`Start publishing ${activeTab} to see them here`}
+              buttonText={`Create ${activeTab === 'articles' ? 'Article' : 'Video'}`}
+              onPress={() => router.push(activeTab === 'articles' ? 'UploadArticle' : 'UploadVideo')}
+            />
+          </View>
         )}
       </ScrollView>
 
@@ -243,31 +398,47 @@ export default function ManagePosts({ navigation }) {
           activeOpacity={1}
           onPress={() => setModalVisible(false)}
         >
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: C.surface }]}>
+            <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
+            <Text style={[styles.modalTitle, { color: C.primary }]}>Post Options</Text>
+            
+            <TouchableOpacity
+              style={[styles.modalOption, { borderBottomColor: C.border }]}
+              onPress={() => {
+                setModalVisible(false);
+                router.push(
+                  activeTab === 'articles' 
+                    ? `UploadArticle?edit=${selectedItem?._id}` 
+                    : `UploadVideo?edit=${selectedItem?._id}`
+                );
+              }}
+            >
+              <View style={[styles.modalOptionIconWrap, { backgroundColor: C.accentBg }]}>
+                <Ionicons name="create-outline" size={scale(20)} color={C.accent} />
+              </View>
+              <Text style={[styles.modalOptionText, { color: C.primary }]}>Edit</Text>
+              <Ionicons name="chevron-forward" size={scale(18)} color={C.muted} style={styles.modalOptionArrow} />
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.modalOption}
               onPress={() => {
                 setModalVisible(false);
-                navigation.navigate(
-                  activeTab === 'articles' ? 'UploadArticle' : 'UploadVideo',
-                  { edit: selectedItem }
-                );
+                handleDelete(selectedItem, activeTab === 'articles' ? 'article' : 'video');
               }}
             >
-              <Ionicons name="create-outline" size={22} color="#4ECDC4" />
-              <Text style={styles.modalOptionText}>Edit</Text>
+              <View style={[styles.modalOptionIconWrap, { backgroundColor: C.accentBg }]}>
+                <Ionicons name="trash-outline" size={scale(20)} color={C.accent} />
+              </View>
+              <Text style={[styles.modalOptionText, { color: C.accent }]}>Delete</Text>
+              <Ionicons name="chevron-forward" size={scale(18)} color={C.muted} style={styles.modalOptionArrow} />
             </TouchableOpacity>
+
             <TouchableOpacity
-              style={[styles.modalOption, styles.modalOptionDelete]}
-              onPress={() => {
-                setModalVisible(false);
-                handleDelete(selectedItem, activeTab.slice(0, -1));
-              }}
+              style={[styles.modalCancelBtn, { borderColor: C.border }]}
+              onPress={() => setModalVisible(false)}
             >
-              <Ionicons name="trash-outline" size={22} color="#FF6B6B" />
-              <Text style={[styles.modalOptionText, styles.modalOptionDeleteText]}>
-                Delete
-              </Text>
+              <Text style={[styles.modalCancelText, { color: C.secondary }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -276,135 +447,246 @@ export default function ManagePosts({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFF',
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  tabActive: {
-    borderBottomWidth: 3,
-    borderBottomColor: '#FF6B6B',
-  },
-  tabText: {
-    fontSize: 16,
-    color: '#888',
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: '#FF6B6B',
-  },
-  content: {
-    padding: 16,
-  },
-  postCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  postHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  postTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginRight: 8,
-  },
-  postMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  postCategory: {
-    fontSize: 12,
-    color: '#FF6B6B',
-    backgroundColor: '#FFF0F0',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  postDate: {
-    fontSize: 12,
-    color: '#888',
-  },
-  postStats: {
-    flexDirection: 'row',
-    marginTop: 10,
-    gap: 16,
-  },
-  stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statText: {
-    fontSize: 12,
-    color: '#888',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 30,
-  },
-  modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    gap: 12,
-  },
-  modalOptionDelete: {
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  modalOptionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  modalOptionDeleteText: {
-    color: '#FF6B6B',
-  },
-});
+function makeStyles(C) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: C.bg,
+    },
+    topStripe: {
+      height: 3,
+      backgroundColor: C.accent,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: vs(12),
+    },
+    loadingText: {
+      fontSize: sp(14),
+      fontWeight: '500',
+    },
+
+    // Header
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: scale(16),
+      paddingVertical: vs(12),
+      borderBottomWidth: 1,
+    },
+    backBtn: {
+      width: scale(38),
+      height: scale(38),
+      borderRadius: scale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    headerTitle: {
+      fontSize: sp(18),
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    headerRight: {
+      width: scale(38),
+    },
+
+    // Tabs
+    tabContainer: {
+      flexDirection: 'row',
+      borderBottomWidth: 1,
+      paddingHorizontal: scale(16),
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: vs(12),
+      alignItems: 'center',
+      position: 'relative',
+    },
+    tabContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(6),
+    },
+    tabText: {
+      fontSize: sp(13),
+      fontWeight: '600',
+    },
+    tabTextActive: {
+      fontWeight: '700',
+    },
+    tabIndicator: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 2.5,
+      borderRadius: scale(2),
+    },
+
+    // Content
+    content: {
+      padding: scale(14),
+      flexGrow: 1,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingTop: vs(40),
+    },
+
+    // Post Card
+    postCard: {
+      borderRadius: scale(14),
+      padding: scale(16),
+      marginBottom: vs(12),
+      borderWidth: StyleSheet.hairlineWidth,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: scale(2) },
+      shadowOpacity: C.cardShadowOpacity,
+      shadowRadius: scale(8),
+      elevation: 2,
+    },
+    postHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+    },
+    postIconWrap: {
+      flexDirection: 'row',
+      flex: 1,
+      gap: scale(10),
+    },
+    postIconBg: {
+      width: scale(38),
+      height: scale(38),
+      borderRadius: scale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexShrink: 0,
+    },
+    postTitleWrap: {
+      flex: 1,
+    },
+    postTitle: {
+      fontSize: sp(15),
+      fontWeight: '600',
+      marginBottom: vs(4),
+    },
+    postMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(8),
+    },
+    statusBadge: {
+      paddingHorizontal: scale(8),
+      paddingVertical: vs(2),
+      borderRadius: scale(6),
+    },
+    statusText: {
+      fontSize: sp(10),
+      fontWeight: '600',
+    },
+    postDate: {
+      fontSize: sp(11),
+    },
+    moreBtn: {
+      width: scale(30),
+      height: scale(30),
+      borderRadius: scale(8),
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexShrink: 0,
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      marginVertical: vs(10),
+    },
+    postStats: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(14),
+    },
+    stat: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(4),
+    },
+    statCategory: {
+      marginLeft: 'auto',
+    },
+    statText: {
+      fontSize: sp(11),
+      fontWeight: '500',
+    },
+    categoryText: {
+      fontSize: sp(10),
+      fontWeight: '600',
+      paddingHorizontal: scale(8),
+      paddingVertical: vs(2),
+      borderRadius: scale(6),
+      overflow: 'hidden',
+    },
+
+    // Modal
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      borderTopLeftRadius: scale(24),
+      borderTopRightRadius: scale(24),
+      padding: scale(20),
+      paddingBottom: vs(30),
+    },
+    modalHandle: {
+      width: scale(40),
+      height: scale(4),
+      borderRadius: scale(2),
+      alignSelf: 'center',
+      marginBottom: vs(14),
+    },
+    modalTitle: {
+      fontSize: sp(17),
+      fontWeight: '700',
+      marginBottom: vs(12),
+      letterSpacing: -0.2,
+    },
+    modalOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: vs(12),
+      gap: scale(12),
+      borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    modalOptionIconWrap: {
+      width: scale(38),
+      height: scale(38),
+      borderRadius: scale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalOptionText: {
+      fontSize: sp(15),
+      fontWeight: '600',
+      flex: 1,
+    },
+    modalOptionArrow: {
+      opacity: 0.5,
+    },
+    modalCancelBtn: {
+      paddingVertical: vs(14),
+      borderRadius: scale(12),
+      alignItems: 'center',
+      borderWidth: 1,
+      marginTop: vs(8),
+    },
+    modalCancelText: {
+      fontSize: sp(15),
+      fontWeight: '600',
+    },
+  });
+}

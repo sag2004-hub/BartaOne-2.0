@@ -1,11 +1,12 @@
-import api from './api';
+// frontend/services/liveService.js
+import { api } from './api';
 
 // Live Service
 export const liveService = {
   // Get all live streams
   getAll: async (params = {}) => {
     try {
-      const response = await api.live.getAll(params);
+      const response = await api.get('/live', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching live streams:', error);
@@ -16,7 +17,7 @@ export const liveService = {
   // Get live stream by ID
   getById: async (id) => {
     try {
-      const response = await api.live.getById(id);
+      const response = await api.get(`/live/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching live stream:', error);
@@ -27,7 +28,7 @@ export const liveService = {
   // Get live streams by channel
   getByChannel: async (channelId) => {
     try {
-      const response = await api.live.getByChannel(channelId);
+      const response = await api.get(`/live/channel/${channelId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching channel live streams:', error);
@@ -38,30 +39,7 @@ export const liveService = {
   // Start live stream
   start: async (liveData) => {
     try {
-      const formData = new FormData();
-      
-      // Add text fields
-      Object.keys(liveData).forEach(key => {
-        if (key !== 'thumbnail') {
-          formData.append(key, liveData[key]);
-        }
-      });
-
-      // Add thumbnail if exists
-      if (liveData.thumbnail) {
-        const thumbnailData = {
-          uri: liveData.thumbnail.uri,
-          type: liveData.thumbnail.type || 'image/jpeg',
-          name: liveData.thumbnail.fileName || 'thumbnail.jpg',
-        };
-        formData.append('thumbnail', thumbnailData);
-      }
-
-      const response = await api.live.start(formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post('/live/start', liveData);
       return response.data;
     } catch (error) {
       console.error('Error starting live stream:', error);
@@ -69,10 +47,21 @@ export const liveService = {
     }
   },
 
+  // Schedule live stream
+  schedule: async (liveData) => {
+    try {
+      const response = await api.post('/live/schedule', liveData);
+      return response.data;
+    } catch (error) {
+      console.error('Error scheduling live stream:', error);
+      throw error;
+    }
+  },
+
   // End live stream
   end: async (id) => {
     try {
-      const response = await api.live.end(id);
+      const response = await api.post(`/live/${id}/end`);
       return response.data;
     } catch (error) {
       console.error('Error ending live stream:', error);
@@ -83,30 +72,7 @@ export const liveService = {
   // Update live stream
   update: async (id, liveData) => {
     try {
-      const formData = new FormData();
-      
-      // Add text fields
-      Object.keys(liveData).forEach(key => {
-        if (key !== 'thumbnail') {
-          formData.append(key, liveData[key]);
-        }
-      });
-
-      // Add thumbnail if exists
-      if (liveData.thumbnail) {
-        const thumbnailData = {
-          uri: liveData.thumbnail.uri,
-          type: liveData.thumbnail.type || 'image/jpeg',
-          name: liveData.thumbnail.fileName || 'thumbnail.jpg',
-        };
-        formData.append('thumbnail', thumbnailData);
-      }
-
-      const response = await api.live.update(id, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.put(`/live/${id}`, liveData);
       return response.data;
     } catch (error) {
       console.error('Error updating live stream:', error);
@@ -117,7 +83,7 @@ export const liveService = {
   // Get viewer count
   getViewers: async (id) => {
     try {
-      const response = await api.live.getViewers(id);
+      const response = await api.get(`/live/${id}/viewers`);
       return response.data;
     } catch (error) {
       console.error('Error fetching viewers:', error);
@@ -128,10 +94,25 @@ export const liveService = {
   // Get active live streams
   getActive: async () => {
     try {
-      const response = await api.live.getAll({ isLive: true });
+      const response = await api.get('/live', { params: { status: 'live' } });
       return response.data;
     } catch (error) {
       console.error('Error fetching active live streams:', error);
+      throw error;
+    }
+  },
+
+  // Upload thumbnail
+  uploadThumbnail: async (data) => {
+    try {
+      const response = await api.post('/live/upload/thumbnail', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error uploading thumbnail:', error);
       throw error;
     }
   },
@@ -143,10 +124,12 @@ export const {
   getById: getLiveStreamById,
   getByChannel: getChannelLiveStreams,
   start: startLiveStream,
+  schedule: scheduleLiveStream,
   end: endLiveStream,
   update: updateLiveStream,
   getViewers: getLiveViewers,
   getActive: getActiveLiveStreams,
+  uploadThumbnail,
 } = liveService;
 
 export default liveService;

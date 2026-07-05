@@ -51,33 +51,56 @@ api.interceptors.request.use(
 // Response interceptor to handle errors
 api.interceptors.response.use(
   (response) => {
+    // Return the response directly - this is the success case
     return response;
   },
   async (error) => {
+    // This is the error case - handle errors here
+    console.error('❌ [api.js] response error:', error.response?.status, error.response?.data);
+
+    // Check if error has a response (server responded with error)
     if (error.response) {
       const { status, data } = error.response;
-      console.error('❌ [api.js] response error:', status, data);
 
+      // Handle specific status codes
       if (status === 401) {
+        // Unauthorized - clear token
         await AsyncStorage.removeItem('authToken');
+        console.log('🔑 [api.js] Token removed due to 401');
       }
 
-      throw new Error(data?.message || 'An error occurred');
-    } else if (error.request) {
+      // Create a structured error object
+      const apiError = new Error(data?.message || 'An error occurred');
+      apiError.status = status;
+      apiError.data = data;
+      return Promise.reject(apiError);
+    } 
+    // Network error - no response received
+    else if (error.request) {
       console.error('❌ [api.js] no response received. Is the server reachable?');
-      throw new Error('Network error. Please check your connection.');
-    } else {
-      throw new Error(error.message || 'An unexpected error occurred');
+      const networkError = new Error('Network error. Please check your connection.');
+      networkError.status = 0;
+      return Promise.reject(networkError);
+    } 
+    // Something else went wrong
+    else {
+      console.error('❌ [api.js] unexpected error:', error.message);
+      return Promise.reject(error);
     }
   }
 );
 
+// Export the raw axios instance for modules that call api.get/api.post directly
+export { api };
+
+// ─── API Methods ──────────────────────────────────────────────────────────────
+
 // Auth APIs
 export const authAPI = {
   login: (userData, config = {}) =>
-  api.post('/auth/login', userData, config),
+    api.post('/auth/login', userData, config),
   register: (userData, config = {}) =>
-  api.post('/auth/register', userData, config),
+    api.post('/auth/register', userData, config),
   logout: () => api.post('/auth/logout'),
   verifyEmail: (token) => api.post('/auth/verify-email', { token }),
   resetPassword: (email) => api.post('/auth/reset-password', { email }),
@@ -221,6 +244,48 @@ export const uploadAPI = {
   },
 };
 
+// ─── Live Service Functions ──────────────────────────────────────────────────
+// These are the functions used by the GoLive component
+
+export const startLiveStream = async (data) => {
+  try {
+    console.log('📡 Starting live stream...', data);
+    const response = await liveAPI.start(data);
+    console.log('✅ Live stream started:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error starting live stream:', error);
+    throw error;
+  }
+};
+
+export const scheduleLiveStream = async (data) => {
+  try {
+    console.log('📡 Scheduling live stream...', data);
+    // If your backend has a schedule endpoint, use it
+    // Otherwise, you might need to create a new API method
+    const response = await api.post('/live/schedule', data);
+    console.log('✅ Live stream scheduled:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error scheduling live stream:', error);
+    throw error;
+  }
+};
+
+export const endLiveStream = async (streamId) => {
+  try {
+    console.log('📡 Ending live stream...', streamId);
+    const response = await liveAPI.end(streamId);
+    console.log('✅ Live stream ended:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error ending live stream:', error);
+    throw error;
+  }
+};
+
+// ─── Default Export ──────────────────────────────────────────────────────────
 export default {
   auth: authAPI,
   user: userAPI,

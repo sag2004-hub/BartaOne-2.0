@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 // ─── Responsive helpers ─────────────────────────────────────────────────────
 const { width: SW, height: SH } = Dimensions.get('window');
@@ -161,7 +162,8 @@ function RoleCard({ role, isSelected, onSelect, C }) {
 }
 
 // ─── Main Screen ──────────────────────────────────────────────────────────
-export default function SelectRole({ navigation }) {
+export default function SelectRole() {
+  const router = useRouter();
   const scheme = useColorScheme();
   const C = scheme === 'dark' ? DARK : LIGHT;
   const ROLES = getRoles(C);
@@ -191,9 +193,9 @@ export default function SelectRole({ navigation }) {
 
   const handleContinue = () => {
     if (selectedRole === 'viewer') {
-      navigation.navigate('ViewerLogin');
+      router.push('/(auth)/ViewerLogin');
     } else if (selectedRole === 'owner') {
-      navigation.navigate('OwnerLogin');
+      router.push('/(auth)/OwnerLogin');
     }
   };
 

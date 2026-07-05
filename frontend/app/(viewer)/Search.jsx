@@ -6,10 +6,10 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  SafeAreaView,
   Keyboard,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import NewsCard from '../../components/NewsCard';
 import ChannelCard from '../../components/ChannelCard';

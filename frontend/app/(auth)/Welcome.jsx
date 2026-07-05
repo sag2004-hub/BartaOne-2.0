@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SW, height: SH } = Dimensions.get('window');
@@ -146,9 +147,10 @@ const LANGUAGES = [
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function Welcome({ navigation }) {
-  const scheme   = useColorScheme();
-  const C        = scheme === 'dark' ? DARK : LIGHT;
+export default function Welcome() {
+  const router = useRouter();
+  const scheme = useColorScheme();
+  const C = scheme === 'dark' ? DARK : LIGHT;
   const FEATURES = getFeatures(C);
   const [termsModalVisible, setTermsModalVisible] = useState(false);
 
@@ -387,7 +389,7 @@ export default function Welcome({ navigation }) {
             <TouchableOpacity
               style={styles.btnPrimary}
               activeOpacity={0.86}
-              onPress={() => navigation.navigate('SelectRole')}
+              onPress={() => router.push('/(auth)/SelectRole')}
             >
               <Text style={styles.btnPrimaryText}>Get started</Text>
               <Ionicons name="arrow-forward" size={scale(18)} color="#FFFFFF" />

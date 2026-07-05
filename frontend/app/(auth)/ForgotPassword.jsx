@@ -5,16 +5,18 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../services/firebase';
+import { useRouter } from 'expo-router';
 
-export default function ForgotPassword({ navigation }) {
+export default function ForgotPassword() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
@@ -35,7 +37,7 @@ export default function ForgotPassword({ navigation }) {
         [
           {
             text: 'OK',
-            onPress: () => navigation.goBack(),
+            onPress: () => router.back(),
           },
         ]
       );
@@ -53,7 +55,7 @@ export default function ForgotPassword({ navigation }) {
         style={styles.keyboardView}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Reset Password</Text>
@@ -99,7 +101,7 @@ export default function ForgotPassword({ navigation }) {
 
           <TouchableOpacity
             style={styles.backToLogin}
-            onPress={() => navigation.goBack()}
+            onPress={() => router.back()}
           >
             <Ionicons name="arrow-back" size={20} color="#FF6B6B" />
             <Text style={styles.backToLoginText}>Back to Login</Text>

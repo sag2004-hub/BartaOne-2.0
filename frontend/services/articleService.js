@@ -1,3 +1,4 @@
+// services/articleService.js
 import api from './api';
 
 // Article Service
@@ -68,19 +69,28 @@ export const articleService = {
     }
   },
 
+  // Get articles by owner (channel) - ADD THIS FUNCTION
+  getOwnerArticles: async (channelId) => {
+    try {
+      const response = await api.article.getByChannel(channelId);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching owner articles:', error);
+      return [];
+    }
+  },
+
   // Create article
   create: async (articleData) => {
     try {
       const formData = new FormData();
       
-      // Add text fields
       Object.keys(articleData).forEach(key => {
         if (key !== 'image') {
           formData.append(key, articleData[key]);
         }
       });
 
-      // Add image if exists
       if (articleData.image) {
         const imageData = {
           uri: articleData.image.uri,
@@ -107,14 +117,12 @@ export const articleService = {
     try {
       const formData = new FormData();
       
-      // Add text fields
       Object.keys(articleData).forEach(key => {
         if (key !== 'image') {
           formData.append(key, articleData[key]);
         }
       });
 
-      // Add image if exists
       if (articleData.image) {
         const imageData = {
           uri: articleData.image.uri,
@@ -211,6 +219,7 @@ export const {
   getByCategory: getArticlesByCategory,
   getTrending: getTrendingArticles,
   getLatest: getLatestArticles,
+  getOwnerArticles, // ADD THIS EXPORT
   create: createArticle,
   update: updateArticle,
   delete: deleteArticle,

@@ -4,14 +4,17 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { sendEmailVerification } from 'firebase/auth';
 import { auth } from '../../services/firebase';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
-export default function VerifyEmail({ navigation, route }) {
+export default function VerifyEmail() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const user = auth.currentUser;
@@ -30,10 +33,10 @@ export default function VerifyEmail({ navigation, route }) {
               {
                 text: 'Continue',
                 onPress: () => {
-                  if (route.params?.role === 'owner') {
-                    navigation.replace('OwnerDashboard');
+                  if (params.role === 'owner') {
+                    router.replace('/(owner)/Dashboard');
                   } else {
-                    navigation.replace('ViewerHome');
+                    router.replace('/(viewer)/Home');
                   }
                 },
               },
@@ -75,7 +78,7 @@ export default function VerifyEmail({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Verify Email</Text>
@@ -124,10 +127,10 @@ export default function VerifyEmail({ navigation, route }) {
                 user.reload();
                 if (user.emailVerified) {
                   Alert.alert('Verified!', 'Your email is verified.');
-                  if (route.params?.role === 'owner') {
-                    navigation.replace('OwnerDashboard');
+                  if (params.role === 'owner') {
+                    router.replace('/(owner)/Dashboard');
                   } else {
-                    navigation.replace('ViewerHome');
+                    router.replace('/(viewer)/Home');
                   }
                 } else {
                   Alert.alert('Not Verified', 'Please verify your email first.');
@@ -142,7 +145,7 @@ export default function VerifyEmail({ navigation, route }) {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Wrong email? </Text>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.changeEmailText}>Change Email</Text>
           </TouchableOpacity>
         </View>

@@ -11,9 +11,12 @@ import {
   Alert,
   useColorScheme,
   PixelRatio,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router'; // Import useRouter
 import { useAuth } from '../../hooks/useAuth';
 import { auth } from '../../services/firebase';
 import { getChannelByOwner, getChannelStats } from '../../services/channelService';
@@ -80,6 +83,7 @@ const DARK = {
 };
 
 export default function Dashboard({ navigation }) {
+  const router = useRouter(); // Add this line
   const scheme = useColorScheme();
   const C = scheme === 'dark' ? DARK : LIGHT;
   const { isLoading: authLoading } = useAuth();
@@ -87,6 +91,9 @@ export default function Dashboard({ navigation }) {
   const [stats, setStats] = useState({ articles: 0, videos: 0, live: 0, followers: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [uploadModalVisible, setUploadModalVisible] = useState(false);
+  const [goLiveModalVisible, setGoLiveModalVisible] = useState(false);
+  const [subscribersModalVisible, setSubscribersModalVisible] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -130,11 +137,70 @@ export default function Dashboard({ navigation }) {
     loadDashboardData();
   };
 
+  // ─── Upload Modal Handlers ──────────────────────────────────────────────
+  const handleUploadPress = () => {
+    if (!channel) {
+      Alert.alert('No Channel', 'Create a channel first');
+      return;
+    }
+    setUploadModalVisible(true);
+  };
+
+  const handleUploadOption = (route) => {
+    setUploadModalVisible(false);
+    router.push(route); // Use router.push instead of navigation.navigate
+  };
+
+  // ─── Go Live Modal Handlers ─────────────────────────────────────────────
+  const handleGoLivePress = () => {
+    if (!channel) {
+      Alert.alert('No Channel', 'Create a channel first');
+      return;
+    }
+    setGoLiveModalVisible(true);
+  };
+
+  const handleGoLiveOption = (route) => {
+    setGoLiveModalVisible(false);
+    router.push(route); // Use router.push instead of navigation.navigate
+  };
+
+  // ─── Subscribers Modal Handlers ─────────────────────────────────────────
+  const handleSubscribersPress = () => {
+    if (!channel) {
+      Alert.alert('No Channel', 'Create a channel first');
+      return;
+    }
+    setSubscribersModalVisible(true);
+  };
+
+  const handleSubscribersOption = (route) => {
+    setSubscribersModalVisible(false);
+    router.push(route); // Use router.push instead of navigation.navigate
+  };
+
   const quickActions = [
-    { id: '1', icon: 'create-outline', title: 'Write Article', color: C.accent, route: 'UploadArticle' },
-    { id: '2', icon: 'videocam-outline', title: 'Upload Video', color: C.iconBlue, route: 'UploadVideo' },
-    { id: '3', icon: 'radio-outline', title: 'Go Live', color: C.iconGreen, route: 'GoLive' },
-    { id: '4', icon: 'people-outline', title: 'Subscribers', color: C.iconPurple, route: 'Subscribers' },
+    { 
+      id: '1', 
+      icon: 'cloud-upload-outline', 
+      title: 'Upload', 
+      color: C.accent, 
+      onPress: handleUploadPress 
+    },
+    { 
+      id: '2', 
+      icon: 'radio-outline', 
+      title: 'Go Live', 
+      color: C.iconGreen, 
+      onPress: handleGoLivePress 
+    },
+    { 
+      id: '3', 
+      icon: 'people-outline', 
+      title: 'Subscribers', 
+      color: C.iconPurple, 
+      onPress: handleSubscribersPress 
+    },
   ];
 
   const statCards = [
@@ -167,7 +233,7 @@ export default function Dashboard({ navigation }) {
           title="No Channel Found"
           message="You haven't created a channel yet. Create your news channel to start publishing!"
           buttonText="Create Channel"
-          onPress={() => navigation.navigate('CreateChannel')}
+          onPress={() => router.push('CreateChannel')}
         />
       </SafeAreaView>
     );
@@ -205,7 +271,7 @@ export default function Dashboard({ navigation }) {
           </View>
           <TouchableOpacity 
             style={[styles.profileBtn, { backgroundColor: C.bg }]} 
-            onPress={() => navigation.navigate('OwnerProfile')}
+            onPress={() => router.push('Profile')}
           >
             <Ionicons name="person-outline" size={scale(22)} color={C.primary} />
           </TouchableOpacity>
@@ -234,10 +300,7 @@ export default function Dashboard({ navigation }) {
               key={a.id}
               style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}
               activeOpacity={0.8}
-              onPress={() => {
-                if (!channel) { Alert.alert('No Channel', 'Create a channel first'); return; }
-                navigation.navigate(a.route);
-              }}
+              onPress={a.onPress}
             >
               <View style={[styles.actionIconBg, { backgroundColor: a.color + '18' }]}>
                 <Ionicons name={a.icon} size={scale(26)} color={a.color} />
@@ -250,7 +313,7 @@ export default function Dashboard({ navigation }) {
         {/* Recent Activity */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: C.primary }]}>Recent Activity</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('ManagePosts')}>
+          <TouchableOpacity onPress={() => router.push('ManagePosts')}>
             <Text style={[styles.seeAll, { color: C.accent }]}>See All</Text>
           </TouchableOpacity>
         </View>
@@ -280,6 +343,216 @@ export default function Dashboard({ navigation }) {
         {/* Bottom padding */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* ─── Upload Selection Modal ─────────────────────────────────────── */}
+      <Modal
+        visible={uploadModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setUploadModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setUploadModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.modalContainer, { backgroundColor: C.surface }]}>
+                <View style={styles.modalHandle} />
+                <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
+                  <Text style={[styles.modalTitle, { color: C.primary }]}>Choose Upload Type</Text>
+                  <TouchableOpacity
+                    style={[styles.modalCloseBtn, { backgroundColor: C.accentBg }]}
+                    onPress={() => setUploadModalVisible(false)}
+                  >
+                    <Ionicons name="close" size={scale(22)} color={C.accent} />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalContent}>
+                  <TouchableOpacity
+                    style={[styles.uploadOption, { backgroundColor: C.surfaceAlt, borderColor: C.border }]}
+                    onPress={() => handleUploadOption('UploadArticle')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.optionIconWrap, { backgroundColor: C.accentBg }]}>
+                      <Ionicons name="create-outline" size={scale(32)} color={C.accent} />
+                    </View>
+                    <View style={styles.optionTextWrap}>
+                      <Text style={[styles.optionTitle, { color: C.primary }]}>Upload Article</Text>
+                      <Text style={[styles.optionSubtext, { color: C.muted }]}>
+                        Write and publish a news article
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.uploadOption, { backgroundColor: C.surfaceAlt, borderColor: C.border }]}
+                    onPress={() => handleUploadOption('UploadVideo')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.optionIconWrap, { backgroundColor: C.iconBlueBg }]}>
+                      <Ionicons name="videocam-outline" size={scale(32)} color={C.iconBlue} />
+                    </View>
+                    <View style={styles.optionTextWrap}>
+                      <Text style={[styles.optionTitle, { color: C.primary }]}>Upload Video</Text>
+                      <Text style={[styles.optionSubtext, { color: C.muted }]}>
+                        Upload and share video content
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.cancelBtn, { borderColor: C.border }]}
+                    onPress={() => setUploadModalVisible(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.cancelBtnText, { color: C.secondary }]}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* ─── Go Live Selection Modal ────────────────────────────────────── */}
+      <Modal
+        visible={goLiveModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setGoLiveModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setGoLiveModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.modalContainer, { backgroundColor: C.surface }]}>
+                <View style={styles.modalHandle} />
+                <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
+                  <Text style={[styles.modalTitle, { color: C.primary }]}>Go Live</Text>
+                  <TouchableOpacity
+                    style={[styles.modalCloseBtn, { backgroundColor: C.iconGreenBg }]}
+                    onPress={() => setGoLiveModalVisible(false)}
+                  >
+                    <Ionicons name="close" size={scale(22)} color={C.iconGreen} />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalContent}>
+                  <TouchableOpacity
+                    style={[styles.uploadOption, { backgroundColor: C.surfaceAlt, borderColor: C.border }]}
+                    onPress={() => handleGoLiveOption('GoLive')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.optionIconWrap, { backgroundColor: C.iconGreenBg }]}>
+                      <Ionicons name="radio-outline" size={scale(32)} color={C.iconGreen} />
+                    </View>
+                    <View style={styles.optionTextWrap}>
+                      <Text style={[styles.optionTitle, { color: C.primary }]}>Start Live Stream</Text>
+                      <Text style={[styles.optionSubtext, { color: C.muted }]}>
+                        Go live and broadcast to your audience
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.uploadOption, { backgroundColor: C.surfaceAlt, borderColor: C.border }]}
+                    onPress={() => handleGoLiveOption('GoLive')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.optionIconWrap, { backgroundColor: C.iconAmberBg }]}>
+                      <Ionicons name="calendar-outline" size={scale(32)} color={C.iconAmber} />
+                    </View>
+                    <View style={styles.optionTextWrap}>
+                      <Text style={[styles.optionTitle, { color: C.primary }]}>Schedule Live</Text>
+                      <Text style={[styles.optionSubtext, { color: C.muted }]}>
+                        Schedule a live stream for later
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.cancelBtn, { borderColor: C.border }]}
+                    onPress={() => setGoLiveModalVisible(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.cancelBtnText, { color: C.secondary }]}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* ─── Subscribers Selection Modal ────────────────────────────────── */}
+      <Modal
+        visible={subscribersModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setSubscribersModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setSubscribersModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.modalContainer, { backgroundColor: C.surface }]}>
+                <View style={styles.modalHandle} />
+                <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
+                  <Text style={[styles.modalTitle, { color: C.primary }]}>Subscribers</Text>
+                  <TouchableOpacity
+                    style={[styles.modalCloseBtn, { backgroundColor: C.iconPurpleBg }]}
+                    onPress={() => setSubscribersModalVisible(false)}
+                  >
+                    <Ionicons name="close" size={scale(22)} color={C.iconPurple} />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalContent}>
+                  <TouchableOpacity
+                    style={[styles.uploadOption, { backgroundColor: C.surfaceAlt, borderColor: C.border }]}
+                    onPress={() => handleSubscribersOption('Subscribers')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.optionIconWrap, { backgroundColor: C.iconPurpleBg }]}>
+                      <Ionicons name="people-outline" size={scale(32)} color={C.iconPurple} />
+                    </View>
+                    <View style={styles.optionTextWrap}>
+                      <Text style={[styles.optionTitle, { color: C.primary }]}>View Subscribers</Text>
+                      <Text style={[styles.optionSubtext, { color: C.muted }]}>
+                        See all your channel subscribers
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.uploadOption, { backgroundColor: C.surfaceAlt, borderColor: C.border }]}
+                    onPress={() => handleSubscribersOption('Subscribers')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.optionIconWrap, { backgroundColor: C.iconAmberBg }]}>
+                      <Ionicons name="analytics-outline" size={scale(32)} color={C.iconAmber} />
+                    </View>
+                    <View style={styles.optionTextWrap}>
+                      <Text style={[styles.optionTitle, { color: C.primary }]}>Analytics</Text>
+                      <Text style={[styles.optionSubtext, { color: C.muted }]}>
+                        View subscriber growth and engagement
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.cancelBtn, { borderColor: C.border }]}
+                    onPress={() => setSubscribersModalVisible(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.cancelBtnText, { color: C.secondary }]}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -512,6 +785,89 @@ function makeStyles(C) {
 
     bottomSpacer: {
       height: vs(20),
+    },
+
+    // ─── Modal Styles ──────────────────────────────────────────────────────
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContainer: {
+      borderTopLeftRadius: scale(24),
+      borderTopRightRadius: scale(24),
+      paddingBottom: vs(20),
+      maxHeight: SH * 0.6,
+    },
+    modalHandle: {
+      width: scale(40),
+      height: scale(4),
+      borderRadius: scale(2),
+      backgroundColor: C.border,
+      alignSelf: 'center',
+      marginTop: vs(10),
+      marginBottom: vs(6),
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: scale(20),
+      paddingVertical: vs(12),
+      borderBottomWidth: 1,
+    },
+    modalTitle: {
+      fontSize: sp(18),
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    modalCloseBtn: {
+      width: scale(36),
+      height: scale(36),
+      borderRadius: scale(18),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      padding: scale(20),
+      gap: vs(12),
+    },
+    uploadOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: scale(16),
+      borderRadius: scale(14),
+      borderWidth: 1,
+      gap: scale(14),
+    },
+    optionIconWrap: {
+      width: scale(56),
+      height: scale(56),
+      borderRadius: scale(14),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    optionTextWrap: {
+      flex: 1,
+    },
+    optionTitle: {
+      fontSize: sp(16),
+      fontWeight: '600',
+    },
+    optionSubtext: {
+      fontSize: sp(13),
+      marginTop: vs(2),
+    },
+    cancelBtn: {
+      paddingVertical: vs(14),
+      borderRadius: scale(12),
+      alignItems: 'center',
+      borderWidth: 1,
+      marginTop: vs(4),
+    },
+    cancelBtnText: {
+      fontSize: sp(15),
+      fontWeight: '600',
     },
   });
 }

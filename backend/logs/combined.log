@@ -257,3 +257,153 @@
 2026-07-04 20:50:36 [INFO]: ✅ GET /api/channels/owner - 200 (84ms) {"status":200,"duration":84,"ip":"::ffff:192.168.29.173"}
 2026-07-04 20:50:36 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
 2026-07-04 20:50:37 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (211ms) {"status":200,"duration":211,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:04:11 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:04:11 [INFO]: ✅ GET /api/users/profile - 200 (239ms) {"status":200,"duration":239,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:04:12 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:04:12 [INFO]: ✅ GET /api/channels/owner - 200 (91ms) {"status":200,"duration":91,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:04:12 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:04:12 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (245ms) {"status":200,"duration":245,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:20:19 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:20:19 [INFO]: ✅ GET /api/channels/owner - 200 (98ms) {"status":200,"duration":98,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:25:26 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:25:26 [INFO]: ✅ GET /api/channels/owner - 200 (90ms) {"status":200,"duration":90,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:25:26 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:25:26 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (224ms) {"status":200,"duration":224,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:25:35 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:25:35 [INFO]: ✅ GET /api/channels/owner - 200 (98ms) {"status":200,"duration":98,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:25:35 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:25:35 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (212ms) {"status":200,"duration":212,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:25:41 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:25:41 [INFO]: ✅ GET /api/channels/owner - 200 (96ms) {"status":200,"duration":96,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:25:41 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:25:42 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (215ms) {"status":200,"duration":215,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:28:23 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:28:23 [INFO]: ✅ GET /api/channels/owner - 200 (108ms) {"status":200,"duration":108,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:28:23 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:28:24 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (220ms) {"status":200,"duration":220,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:37:07 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:37:07 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:37:07 [INFO]: ✅ GET /api/channels/owner - 200 (96ms) {"status":200,"duration":96,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:37:07 [INFO]: ✅ GET /api/channels/owner - 200 (83ms) {"status":200,"duration":83,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:37:07 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:37:07 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 11:37:07 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (187ms) {"status":200,"duration":187,"ip":"::ffff:192.168.29.173"}
+2026-07-05 11:37:07 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (228ms) {"status":200,"duration":228,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:17:05 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:17:05 [INFO]: ✅ GET /api/channels/owner - 200 (112ms) {"status":200,"duration":112,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:17:05 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:17:06 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (248ms) {"status":200,"duration":248,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:31:14 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:31:14 [INFO]: ✅ GET /api/channels/owner - 200 (107ms) {"status":200,"duration":107,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:31:14 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:31:14 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (238ms) {"status":200,"duration":238,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:31:20 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:31:20 [INFO]: ✅ GET /api/channels/owner - 200 (92ms) {"status":200,"duration":92,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:33:18 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:33:18 [INFO]: ✅ GET /api/channels/owner - 200 (91ms) {"status":200,"duration":91,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:33:18 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:33:18 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (229ms) {"status":200,"duration":229,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:34:35 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:34:35 [INFO]: ✅ GET /api/channels/owner - 200 (93ms) {"status":200,"duration":93,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:34:35 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:34:35 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (220ms) {"status":200,"duration":220,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:35:01 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:35:01 [INFO]: ✅ GET /api/channels/owner - 200 (89ms) {"status":200,"duration":89,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:35:01 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:35:01 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (232ms) {"status":200,"duration":232,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:35:09 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:35:09 [INFO]: ✅ GET /api/channels/owner - 200 (94ms) {"status":200,"duration":94,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:35:10 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:35:10 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (227ms) {"status":200,"duration":227,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:35:36 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:35:36 [INFO]: ✅ GET /api/channels/owner - 200 (92ms) {"status":200,"duration":92,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:35:36 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:35:36 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (227ms) {"status":200,"duration":227,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:40:59 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:40:59 [INFO]: ✅ GET /api/channels/owner - 200 (96ms) {"status":200,"duration":96,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:40:59 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:40:59 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (218ms) {"status":200,"duration":218,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:48:42 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:48:42 [INFO]: ✅ GET /api/channels/owner - 200 (89ms) {"status":200,"duration":89,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:48:42 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:48:42 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (229ms) {"status":200,"duration":229,"ip":"::ffff:192.168.29.173"}
+2026-07-05 12:48:44 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 12:48:44 [INFO]: ✅ GET /api/channels/owner - 200 (89ms) {"status":200,"duration":89,"ip":"::ffff:192.168.29.173"}
+2026-07-05 13:17:30 [INFO]: 📥 POST /api/live/start {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"title":"Food stream","description":"Food stream of belda","language":"en","channelId":"R312H8354uVdIru0I0c1nuYvFFI3","thumbnail":{"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/828e1aeb-eaaf-41f8-9438-964174ac1d64.jpeg","type":"image","name":"828e1aeb-eaaf-41f8-9438-964174ac1d64.jpeg"}}}
+2026-07-05 13:17:30 [INFO]: ❌ POST /api/live/start - 500 (216ms) {"status":500,"duration":216,"ip":"::ffff:192.168.29.173"}
+2026-07-05 17:42:42 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 17:42:43 [INFO]: ✅ GET /api/channels/owner - 200 (281ms) {"status":200,"duration":281,"ip":"::ffff:192.168.29.173"}
+2026-07-05 17:42:43 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 17:42:43 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (222ms) {"status":200,"duration":222,"ip":"::ffff:192.168.29.173"}
+2026-07-05 17:42:48 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 17:42:48 [INFO]: ✅ GET /api/channels/owner - 200 (97ms) {"status":200,"duration":97,"ip":"::ffff:192.168.29.173"}
+2026-07-05 17:46:12 [INFO]: 📥 POST /api/live/start {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"title":"Jurgen Kloop breaking news","description":"Kloop has a comeback.. in a coaching career. ","language":"en","channelId":"R312H8354uVdIru0I0c1nuYvFFI3","thumbnail":{"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/3c47167f-b0e3-4273-bea5-f860756e2b48.jpeg","type":"image","name":"3c47167f-b0e3-4273-bea5-f860756e2b48.jpeg"}}}
+2026-07-05 17:46:12 [INFO]: ❌ POST /api/live/start - 500 (133ms) {"status":500,"duration":133,"ip":"::ffff:192.168.29.173"}
+2026-07-05 17:57:00 [INFO]: 📥 POST /api/live/start {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"title":"Jurgen Kloop breaking news","description":"Kloop has a comeback.. in a coaching career. ","language":"en","channelId":"R312H8354uVdIru0I0c1nuYvFFI3","thumbnail":{"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/3c47167f-b0e3-4273-bea5-f860756e2b48.jpeg","type":"image","name":"3c47167f-b0e3-4273-bea5-f860756e2b48.jpeg"}}}
+2026-07-05 17:57:00 [INFO]: ❌ POST /api/live/start - 500 (335ms) {"status":500,"duration":335,"ip":"::ffff:192.168.29.173"}
+2026-07-05 18:01:32 [INFO]: 📥 POST /api/live/start {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"title":"Jurgen Kloop breaking news","description":"Kloop has a comeback.. in a coaching career. ","language":"en","channelId":"R312H8354uVdIru0I0c1nuYvFFI3","thumbnail":{"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/3c47167f-b0e3-4273-bea5-f860756e2b48.jpeg","type":"image","name":"3c47167f-b0e3-4273-bea5-f860756e2b48.jpeg"}}}
+2026-07-05 18:01:33 [INFO]: ❌ POST /api/live/start - 500 (320ms) {"status":500,"duration":320,"ip":"::ffff:192.168.29.173"}
+2026-07-05 18:03:28 [INFO]: 📥 POST /api/live/start {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"title":"Jurgen Kloop breaking news","description":"Kloop has a comeback.. in a coaching career. ","language":"en","channelId":"R312H8354uVdIru0I0c1nuYvFFI3","thumbnail":{"uri":"file:///data/user/0/host.exp.exponent/cache/ImagePicker/3c47167f-b0e3-4273-bea5-f860756e2b48.jpeg","type":"image","name":"3c47167f-b0e3-4273-bea5-f860756e2b48.jpeg"}}}
+2026-07-05 18:03:28 [INFO]: ✅ POST /api/live/start - 201 (356ms) {"status":201,"duration":356,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:15:03 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:15:04 [INFO]: ✅ GET /api/channels/owner - 200 (557ms) {"status":200,"duration":557,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:15:04 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:15:04 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (213ms) {"status":200,"duration":213,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:15:26 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:15:26 [INFO]: ✅ GET /api/channels/owner - 200 (94ms) {"status":200,"duration":94,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:15:26 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:15:26 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (199ms) {"status":200,"duration":199,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:16:26 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:16:26 [INFO]: ✅ GET /api/channels/owner - 200 (79ms) {"status":200,"duration":79,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:16:26 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:16:27 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (201ms) {"status":200,"duration":201,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:17:20 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:17:20 [INFO]: ✅ GET /api/channels/owner - 200 (75ms) {"status":200,"duration":75,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:17:20 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:17:21 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (193ms) {"status":200,"duration":193,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:19:03 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:19:03 [INFO]: ✅ GET /api/channels/owner - 200 (81ms) {"status":200,"duration":81,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:19:03 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:19:03 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (189ms) {"status":200,"duration":189,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:19:05 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:19:05 [INFO]: ✅ GET /api/channels/owner - 200 (79ms) {"status":200,"duration":79,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:30:02 [INFO]: 📥 GET /api/articles/channel/R312H8354uVdIru0I0c1nuYvFFI3 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:30:02 [INFO]: ❌ GET /api/articles/channel/R312H8354uVdIru0I0c1nuYvFFI3 - 500 (11ms) {"status":500,"duration":11,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:30:32 [INFO]: 📥 GET /api/videos/channel/R312H8354uVdIru0I0c1nuYvFFI3 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:30:32 [INFO]: ❌ GET /api/videos/channel/R312H8354uVdIru0I0c1nuYvFFI3 - 500 (11ms) {"status":500,"duration":11,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:30:32 [INFO]: 📥 GET /api/articles/channel/R312H8354uVdIru0I0c1nuYvFFI3 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:30:32 [INFO]: ❌ GET /api/articles/channel/R312H8354uVdIru0I0c1nuYvFFI3 - 500 (7ms) {"status":500,"duration":7,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:31:11 [INFO]: 📥 GET /api/videos/channel/R312H8354uVdIru0I0c1nuYvFFI3 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:31:11 [INFO]: ❌ GET /api/videos/channel/R312H8354uVdIru0I0c1nuYvFFI3 - 500 (7ms) {"status":500,"duration":7,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:31:11 [INFO]: 📥 GET /api/articles/channel/R312H8354uVdIru0I0c1nuYvFFI3 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:31:11 [INFO]: ❌ GET /api/articles/channel/R312H8354uVdIru0I0c1nuYvFFI3 - 500 (5ms) {"status":500,"duration":5,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:32:47 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:32:47 [INFO]: ✅ GET /api/channels/owner - 200 (84ms) {"status":200,"duration":84,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:32:47 [INFO]: 📥 GET /api/articles/channel/6a491cbe5c0686290d40c79a {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:32:47 [INFO]: 📥 GET /api/videos/channel/6a491cbe5c0686290d40c79a {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:32:47 [INFO]: ✅ GET /api/articles/channel/6a491cbe5c0686290d40c79a - 200 (78ms) {"status":200,"duration":78,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:32:48 [INFO]: ✅ GET /api/videos/channel/6a491cbe5c0686290d40c79a - 200 (319ms) {"status":200,"duration":319,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:40:26 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:40:26 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:40:26 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:40:26 [INFO]: ✅ GET /api/channels/owner - 200 (78ms) {"status":200,"duration":78,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:40:26 [INFO]: ✅ GET /api/channels/owner - 200 (76ms) {"status":200,"duration":76,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:40:26 [INFO]: 📥 GET /api/videos/channel/6a491cbe5c0686290d40c79a {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:40:26 [INFO]: 📥 GET /api/articles/channel/6a491cbe5c0686290d40c79a {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:40:26 [INFO]: ✅ GET /api/videos/channel/6a491cbe5c0686290d40c79a - 200 (84ms) {"status":200,"duration":84,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:40:26 [INFO]: ✅ GET /api/articles/channel/6a491cbe5c0686290d40c79a - 200 (83ms) {"status":200,"duration":83,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:40:26 [INFO]: ✅ GET /api/channels/owner - 200 (328ms) {"status":200,"duration":328,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:40:27 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:40:27 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (206ms) {"status":200,"duration":206,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:40:53 [INFO]: 📥 POST /api/live/upload/thumbnail {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:40:56 [INFO]: ✅ POST /api/live/upload/thumbnail - 200 (3401ms) {"status":200,"duration":3401,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:40:56 [INFO]: 📥 POST /api/live/start {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"title":"Political satire ","description":"West Bengal e firbe na ar bam","language":"en","thumbnail":"https://res.cloudinary.com/drwwsycll/image/upload/v1783264255/live/thumbnails/puuze7zx4wzd7caahlsm.jpg"}}
+2026-07-05 20:40:57 [INFO]: ✅ POST /api/live/start - 201 (208ms) {"status":201,"duration":208,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:43:43 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:43:43 [INFO]: ✅ GET /api/channels/owner - 200 (76ms) {"status":200,"duration":76,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:43:43 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:43:43 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (199ms) {"status":200,"duration":199,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:43:46 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:43:46 [INFO]: ✅ GET /api/channels/owner - 200 (74ms) {"status":200,"duration":74,"ip":"::ffff:192.168.29.173"}
+2026-07-05 20:43:47 [INFO]: 📥 GET /api/channels/6a491cbe5c0686290d40c79a/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-05 20:43:47 [INFO]: ✅ GET /api/channels/6a491cbe5c0686290d40c79a/stats - 200 (204ms) {"status":200,"duration":204,"ip":"::ffff:192.168.29.173"}

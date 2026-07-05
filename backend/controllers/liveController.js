@@ -1,16 +1,18 @@
+// backend/controllers/liveController.js
 const Live = require('../models/Live');
 const Channel = require('../models/Channel');
 const User = require('../models/User');
 const { sendResponse, sendError } = require('../utils/response');
-const { uploadToCloudinary } = require('../services/cloudinaryService');
 
 // Get all live streams
 exports.getAllLiveStreams = async (req, res) => {
   try {
-    const { page = 1, limit = 10, isLive = true } = req.query;
+    const { page = 1, limit = 10, status } = req.query;
 
-    const query = { isLive: isLive === 'true' };
-    
+    const query = {};
+    if (status) query.status = status;
+    else query.status = { $in: ['live', 'scheduled'] };
+
     const streams = await Live.find(query)
       .populate('channelId', 'channelName logo')
       .limit(limit * 1)
@@ -85,6 +87,65 @@ exports.startLiveStream = async (req, res) => {
       return sendError(res, 401, 'Unauthorized');
     }
 
+    // Find user by firebaseUid
+    const user = await User.findOne({ firebaseUid });
+    if (!user) {
+      return sendError(res, 404, 'User not found');
+    }
+
+    // Find channel by ownerId (which is the user's _id)
+    const channel = await Channel.findOne({ ownerId: user._id });
+    if (!channel) {
+      return sendError(res, 404, 'Channel not found. Please create a channel first.');
+    }
+
+    const { title, description, language, thumbnail } = req.body;
+
+    // Check if already live
+    const existingLive = await Live.findOne({
+      channelId: channel._id,
+      status: 'live',
+    });
+
+    if (existingLive) {
+      return sendError(res, 400, 'Channel is already live');
+    }
+
+    // Generate stream key
+    const streamKey = require('crypto').randomBytes(16).toString('hex');
+
+    const live = new Live({
+      channelId: channel._id,
+      title,
+      description,
+      thumbnail: thumbnail || null,
+      language: language || 'en',
+      status: 'live',
+      startedAt: new Date(),
+      streamKey,
+    });
+
+    await live.save();
+
+    return sendResponse(res, 201, true, 'Live stream started successfully', {
+      ...live.toJSON(),
+      rtmpUrl: 'rtmp://your-streaming-server/live',
+    });
+  } catch (error) {
+    console.error('Start live stream error:', error);
+    return sendError(res, 500, error.message);
+  }
+};
+
+// Schedule live stream
+exports.scheduleLiveStream = async (req, res) => {
+  try {
+    const firebaseUid = req.user?.uid;
+
+    if (!firebaseUid) {
+      return sendError(res, 401, 'Unauthorized');
+    }
+
     const user = await User.findOne({ firebaseUid });
     if (!user) {
       return sendError(res, 404, 'User not found');
@@ -92,46 +153,30 @@ exports.startLiveStream = async (req, res) => {
 
     const channel = await Channel.findOne({ ownerId: user._id });
     if (!channel) {
-      return sendError(res, 404, 'Channel not found');
+      return sendError(res, 404, 'Channel not found. Please create a channel first.');
     }
 
-    const { title, description, language } = req.body;
+    const { title, description, language, thumbnail, scheduledFor } = req.body;
 
-    // Check if already live
-    const existingLive = await Live.findOne({
-      channelId: channel._id,
-      isLive: true,
-    });
-
-    if (existingLive) {
-      return sendError(res, 400, 'Channel is already live');
+    if (!scheduledFor) {
+      return sendError(res, 400, 'Scheduled date and time is required');
     }
-
-    // Upload thumbnail if provided
-    let thumbnailUrl = null;
-    if (req.file) {
-      const result = await uploadToCloudinary(req.file.buffer, 'live/thumbnails');
-      thumbnailUrl = result.secure_url;
-    }
-
-    // Generate stream URL (in production, use actual streaming service)
-    const streamUrl = `rtmp://stream.bartaone.com/live/${channel._id}`;
 
     const live = new Live({
       channelId: channel._id,
       title,
       description,
-      streamUrl,
-      thumbnail: thumbnailUrl,
+      thumbnail: thumbnail || null,
       language: language || 'en',
-      isLive: true,
+      status: 'scheduled',
+      scheduledFor: new Date(scheduledFor),
     });
 
     await live.save();
 
-    return sendResponse(res, 201, true, 'Live stream started successfully', live);
+    return sendResponse(res, 201, true, 'Live stream scheduled successfully', live);
   } catch (error) {
-    console.error('Start live stream error:', error);
+    console.error('Schedule live stream error:', error);
     return sendError(res, 500, error.message);
   }
 };
@@ -151,17 +196,17 @@ exports.endLiveStream = async (req, res) => {
       return sendError(res, 404, 'User not found');
     }
 
-    const live = await Live.findById(id).populate('channelId');
+    const channel = await Channel.findOne({ ownerId: user._id });
+    if (!channel) {
+      return sendError(res, 404, 'Channel not found');
+    }
+
+    const live = await Live.findOne({ _id: id, channelId: channel._id });
     if (!live) {
       return sendError(res, 404, 'Live stream not found');
     }
 
-    // Check if user owns the channel
-    if (live.channelId.ownerId.toString() !== user._id.toString()) {
-      return sendError(res, 403, 'Unauthorized to end this stream');
-    }
-
-    live.isLive = false;
+    live.status = 'ended';
     live.endedAt = new Date();
     await live.save();
 
@@ -187,29 +232,23 @@ exports.updateLiveStream = async (req, res) => {
       return sendError(res, 404, 'User not found');
     }
 
-    const live = await Live.findById(id).populate('channelId');
+    const channel = await Channel.findOne({ ownerId: user._id });
+    if (!channel) {
+      return sendError(res, 404, 'Channel not found');
+    }
+
+    const live = await Live.findOne({ _id: id, channelId: channel._id });
     if (!live) {
       return sendError(res, 404, 'Live stream not found');
     }
 
-    // Check if user owns the channel
-    if (live.channelId.ownerId.toString() !== user._id.toString()) {
-      return sendError(res, 403, 'Unauthorized to update this stream');
-    }
-
-    const { title, description, language } = req.body;
+    const { title, description, language, thumbnail } = req.body;
 
     if (title) live.title = title;
     if (description) live.description = description;
     if (language) live.language = language;
+    if (thumbnail) live.thumbnail = thumbnail;
 
-    // Upload thumbnail if provided
-    if (req.file) {
-      const result = await uploadToCloudinary(req.file.buffer, 'live/thumbnails');
-      live.thumbnail = result.secure_url;
-    }
-
-    live.updatedAt = new Date();
     await live.save();
 
     return sendResponse(res, 200, true, 'Live stream updated successfully', live);
@@ -229,10 +268,9 @@ exports.getViewers = async (req, res) => {
       return sendError(res, 404, 'Live stream not found');
     }
 
-    // In production, this would be from a real-time service
-    // For now, we'll return the stored viewer count
     return sendResponse(res, 200, true, 'Viewer count fetched successfully', {
       viewers: live.viewers || 0,
+      maxViewers: live.maxViewers || 0,
     });
   } catch (error) {
     console.error('Get viewers error:', error);
