@@ -1,10 +1,10 @@
+// backend/controllers/articleController.js
 const Article = require('../models/Article');
 const Channel = require('../models/Channel');
-const User = require('../models/User');
+const User = require('../models/User'); // ← ADD THIS - WAS MISSING
 const Like = require('../models/Like');
 const Comment = require('../models/Comment');
-const { sendResponse, sendError } = require('../utils/response');
-const { uploadToCloudinary } = require('../services/cloudinaryService');
+const { sendResponse, sendError } = require('../utils/response'); // ← ADD THIS - WAS MISSING
 
 // Get all articles
 exports.getAllArticles = async (req, res) => {
@@ -87,13 +87,13 @@ exports.getArticlesByChannel = async (req, res) => {
     const { channelId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    const articles = await Article.find({ channelId })
+    const articles = await Article.find({ channelId, isPublished: true })
       .populate('channelId', 'channelName logo')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
 
-    const total = await Article.countDocuments({ channelId });
+    const total = await Article.countDocuments({ channelId, isPublished: true });
 
     return sendResponse(res, 200, true, 'Channel articles fetched successfully', {
       articles,
@@ -113,13 +113,13 @@ exports.getArticlesByCategory = async (req, res) => {
     const { category } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    const articles = await Article.find({ category })
+    const articles = await Article.find({ category, isPublished: true })
       .populate('channelId', 'channelName logo')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
 
-    const total = await Article.countDocuments({ category });
+    const total = await Article.countDocuments({ category, isPublished: true });
 
     return sendResponse(res, 200, true, 'Category articles fetched successfully', {
       articles,
@@ -138,7 +138,7 @@ exports.getTrendingArticles = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
 
-    const articles = await Article.find()
+    const articles = await Article.find({ isPublished: true })
       .populate('channelId', 'channelName logo')
       .sort({ views: -1, likes: -1 })
       .limit(parseInt(limit));
@@ -155,7 +155,7 @@ exports.getLatestArticles = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
 
-    const articles = await Article.find()
+    const articles = await Article.find({ isPublished: true })
       .populate('channelId', 'channelName logo')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit));
@@ -167,56 +167,95 @@ exports.getLatestArticles = async (req, res) => {
   }
 };
 
-// Create article
+// ─── CREATE ARTICLE ──────────────────────────────────────────────────────────
 exports.createArticle = async (req, res) => {
   try {
+    console.log('📥 Create article request received');
+    console.log('📥 Request body:', req.body);
+    
     const firebaseUid = req.user?.uid;
 
     if (!firebaseUid) {
+      console.error('❌ No Firebase UID found');
       return sendError(res, 401, 'Unauthorized');
     }
 
+    console.log('👤 Firebase UID:', firebaseUid);
+
+    // Find user
     const user = await User.findOne({ firebaseUid });
     if (!user) {
+      console.error('❌ User not found for UID:', firebaseUid);
       return sendError(res, 404, 'User not found');
     }
 
+    console.log('👤 User found:', user._id);
+
+    // Find channel
     const channel = await Channel.findOne({ ownerId: user._id });
     if (!channel) {
-      return sendError(res, 404, 'Channel not found');
+      console.error('❌ Channel not found for user:', user._id);
+      return sendError(res, 404, 'Channel not found. Please create a channel first.');
     }
 
-    const { title, body, summary, category, language } = req.body;
+    console.log('✅ Channel found:', channel.channelName, 'ID:', channel._id);
 
-    // Upload image if provided
-    let imageUrl = null;
-    if (req.file) {
-      const result = await uploadToCloudinary(req.file.buffer, 'articles/images');
-      imageUrl = result.secure_url;
+    // Extract data from request body
+    const { title, body, summary, category, language, image, channelId } = req.body;
+
+    // Validate required fields
+    if (!title || !body || !summary) {
+      console.error('❌ Missing required fields');
+      return sendError(res, 400, 'Title, body, and summary are required');
     }
 
-    const article = new Article({
-      channelId: channel._id,
-      title,
-      body,
-      summary,
-      image: imageUrl,
+    // Use channelId from request or from channel object
+    // CRITICAL FIX: Use channel._id (MongoDB ID) instead of the Firebase UID
+    const finalChannelId = channel._id; // ← USE THIS, NOT channelId from request
+
+    console.log('✅ Using channel ID:', finalChannelId);
+
+    // Create article data
+    const articleData = {
+      channelId: finalChannelId, // ← Use MongoDB channel ID
+      title: title.trim(),
+      body: body.trim(),
+      summary: summary.trim(),
       category: category || 'news',
       language: language || 'en',
-    });
+      isPublished: true,
+      publishedAt: new Date(),
+    };
 
+    // Handle image if provided as base64
+    if (image && image.base64) {
+      try {
+        // In production, you should upload to Cloudinary or other storage
+        // For now, we'll save the base64 string
+        articleData.image = `data:${image.type || 'image/jpeg'};base64,${image.base64}`;
+        console.log('✅ Image added to article (base64 length:', image.base64.length, ')');
+      } catch (imgError) {
+        console.error('❌ Error processing image:', imgError);
+        // Continue without image
+      }
+    }
+
+    const article = new Article(articleData);
     await article.save();
+
+    console.log('✅ Article created successfully:', article._id);
 
     return sendResponse(res, 201, true, 'Article created successfully', article);
   } catch (error) {
-    console.error('Create article error:', error);
-    return sendError(res, 500, error.message);
+    console.error('❌ Create article error:', error);
+    return sendError(res, 500, error.message || 'Error creating article');
   }
 };
 
-// Update article
+// ─── UPDATE ARTICLE ──────────────────────────────────────────────────────────
 exports.updateArticle = async (req, res) => {
   try {
+    console.log('📥 Update article request received');
     const { id } = req.params;
     const firebaseUid = req.user?.uid;
 
@@ -239,19 +278,18 @@ exports.updateArticle = async (req, res) => {
       return sendError(res, 403, 'Unauthorized to update this article');
     }
 
-    const { title, body, summary, category, language, isPublished } = req.body;
+    const { title, body, summary, category, language, isPublished, image } = req.body;
 
-    if (title) article.title = title;
-    if (body) article.body = body;
-    if (summary) article.summary = summary;
+    if (title) article.title = title.trim();
+    if (body) article.body = body.trim();
+    if (summary) article.summary = summary.trim();
     if (category) article.category = category;
     if (language) article.language = language;
     if (isPublished !== undefined) article.isPublished = isPublished;
 
-    // Upload image if provided
-    if (req.file) {
-      const result = await uploadToCloudinary(req.file.buffer, 'articles/images');
-      article.image = result.secure_url;
+    // Handle image if provided
+    if (image && image.base64) {
+      article.image = `data:${image.type || 'image/jpeg'};base64,${image.base64}`;
     }
 
     article.updatedAt = new Date();
@@ -485,6 +523,7 @@ exports.searchArticles = async (req, res) => {
         { summary: { $regex: q, $options: 'i' } },
         { body: { $regex: q, $options: 'i' } },
       ],
+      isPublished: true,
     })
       .populate('channelId', 'channelName logo')
       .limit(limit * 1)
@@ -497,6 +536,7 @@ exports.searchArticles = async (req, res) => {
         { summary: { $regex: q, $options: 'i' } },
         { body: { $regex: q, $options: 'i' } },
       ],
+      isPublished: true,
     });
 
     return sendResponse(res, 200, true, 'Search results fetched successfully', {

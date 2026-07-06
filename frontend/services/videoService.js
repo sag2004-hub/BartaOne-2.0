@@ -1,12 +1,12 @@
 // services/videoService.js
-import api from './api';
+import { api } from './api'; // ← Using named import
 
 // Video Service
 export const videoService = {
-  // Get all videos with filters
+  // Get all videos
   getAll: async (params = {}) => {
     try {
-      const response = await api.video.getAll(params);
+      const response = await api.get('/videos', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching videos:', error);
@@ -17,7 +17,7 @@ export const videoService = {
   // Get video by ID
   getById: async (id) => {
     try {
-      const response = await api.video.getById(id);
+      const response = await api.get(`/videos/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching video:', error);
@@ -28,7 +28,9 @@ export const videoService = {
   // Get videos by channel
   getByChannel: async (channelId) => {
     try {
-      const response = await api.video.getByChannel(channelId);
+      console.log('📡 Fetching videos for channel:', channelId);
+      const response = await api.get(`/videos/channel/${channelId}`);
+      console.log('📡 Full response:', JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error) {
       console.error('Error fetching channel videos:', error);
@@ -39,7 +41,7 @@ export const videoService = {
   // Get videos by category
   getByCategory: async (category) => {
     try {
-      const response = await api.video.getByCategory(category);
+      const response = await api.get(`/videos/category/${category}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching videos by category:', error);
@@ -47,58 +49,61 @@ export const videoService = {
     }
   },
 
-  // Get videos by owner (channel) - ADD THIS FUNCTION
+  // ─── FIXED: Get owner videos ──────────────────────────────────────────────
   getOwnerVideos: async (channelId) => {
     try {
-      // Use getByChannel which fetches videos by channel ID
-      const response = await api.video.getByChannel(channelId);
-      return response.data || [];
+      console.log('📡 [getOwnerVideos] Fetching videos for channel:', channelId);
+      
+      if (!channelId) {
+        console.warn('⚠️ [getOwnerVideos] No channelId provided');
+        return [];
+      }
+
+      const response = await api.get(`/videos/channel/${channelId}`);
+      console.log('📡 [getOwnerVideos] Response status:', response.status);
+      console.log('📡 [getOwnerVideos] Response data:', JSON.stringify(response.data, null, 2));
+
+      // The API returns { success, message, data: { videos: [...], total, page, pages } }
+      if (response.data && response.data.data) {
+        if (response.data.data.videos) {
+          const videos = response.data.data.videos;
+          console.log(`✅ [getOwnerVideos] Found ${videos.length} videos`);
+          return videos;
+        }
+        if (Array.isArray(response.data.data)) {
+          console.log(`✅ [getOwnerVideos] Found ${response.data.data.length} videos (data is array)`);
+          return response.data.data;
+        }
+      }
+      
+      if (response.data && response.data.videos) {
+        const videos = response.data.videos;
+        console.log(`✅ [getOwnerVideos] Found ${videos.length} videos in data.videos`);
+        return videos;
+      }
+      
+      if (Array.isArray(response.data)) {
+        console.log(`✅ [getOwnerVideos] Found ${response.data.length} videos (response is array)`);
+        return response.data;
+      }
+
+      console.warn('⚠️ [getOwnerVideos] No videos found in response');
+      return [];
     } catch (error) {
-      console.error('Error fetching owner videos:', error);
+      console.error('❌ [getOwnerVideos] Error fetching owner videos:', error);
       return [];
     }
   },
 
-  // Upload video
-  upload: async (videoData) => {
+  // Create video
+  create: async (videoData) => {
     try {
-      const formData = new FormData();
-      
-      // Add text fields
-      Object.keys(videoData).forEach(key => {
-        if (key !== 'video' && key !== 'thumbnail') {
-          formData.append(key, videoData[key]);
-        }
-      });
-
-      // Add video file
-      if (videoData.video) {
-        const videoFile = {
-          uri: videoData.video.uri,
-          type: videoData.video.type || 'video/mp4',
-          name: videoData.video.fileName || 'video.mp4',
-        };
-        formData.append('video', videoFile);
-      }
-
-      // Add thumbnail if exists
-      if (videoData.thumbnail) {
-        const thumbnailData = {
-          uri: videoData.thumbnail.uri,
-          type: videoData.thumbnail.type || 'image/jpeg',
-          name: videoData.thumbnail.fileName || 'thumbnail.jpg',
-        };
-        formData.append('thumbnail', thumbnailData);
-      }
-
-      const response = await api.video.create(formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      console.log('📤 Creating video with data:', videoData);
+      const response = await api.post('/videos', videoData);
+      console.log('✅ Video created:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error uploading video:', error);
+      console.error('❌ Error creating video:', error);
       throw error;
     }
   },
@@ -106,33 +111,12 @@ export const videoService = {
   // Update video
   update: async (id, videoData) => {
     try {
-      const formData = new FormData();
-      
-      // Add text fields
-      Object.keys(videoData).forEach(key => {
-        if (key !== 'video' && key !== 'thumbnail') {
-          formData.append(key, videoData[key]);
-        }
-      });
-
-      // Add thumbnail if exists
-      if (videoData.thumbnail) {
-        const thumbnailData = {
-          uri: videoData.thumbnail.uri,
-          type: videoData.thumbnail.type || 'image/jpeg',
-          name: videoData.thumbnail.fileName || 'thumbnail.jpg',
-        };
-        formData.append('thumbnail', thumbnailData);
-      }
-
-      const response = await api.video.update(id, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      console.log('📤 Updating video:', id);
+      const response = await api.put(`/videos/${id}`, videoData);
+      console.log('✅ Video updated:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error updating video:', error);
+      console.error('❌ Error updating video:', error);
       throw error;
     }
   },
@@ -140,10 +124,12 @@ export const videoService = {
   // Delete video
   delete: async (id) => {
     try {
-      const response = await api.video.delete(id);
+      console.log('📤 Deleting video:', id);
+      const response = await api.delete(`/videos/${id}`);
+      console.log('✅ Video deleted:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error deleting video:', error);
+      console.error('❌ Error deleting video:', error);
       throw error;
     }
   },
@@ -151,7 +137,7 @@ export const videoService = {
   // Like video
   like: async (id) => {
     try {
-      const response = await api.video.like(id);
+      const response = await api.post(`/videos/${id}/like`);
       return response.data;
     } catch (error) {
       console.error('Error liking video:', error);
@@ -162,7 +148,7 @@ export const videoService = {
   // Unlike video
   unlike: async (id) => {
     try {
-      const response = await api.video.unlike(id);
+      const response = await api.delete(`/videos/${id}/like`);
       return response.data;
     } catch (error) {
       console.error('Error unliking video:', error);
@@ -173,7 +159,7 @@ export const videoService = {
   // Add comment
   comment: async (id, commentData) => {
     try {
-      const response = await api.video.comment(id, commentData);
+      const response = await api.post(`/videos/${id}/comments`, commentData);
       return response.data;
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -184,41 +170,29 @@ export const videoService = {
   // Get comments
   getComments: async (id) => {
     try {
-      const response = await api.video.getComments(id);
+      const response = await api.get(`/videos/${id}/comments`);
       return response.data;
     } catch (error) {
       console.error('Error fetching comments:', error);
       throw error;
     }
   },
-
-  // Get trending videos
-  getTrending: async () => {
-    try {
-      const response = await api.video.getAll({ sort: 'views', limit: 10 });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching trending videos:', error);
-      throw error;
-    }
-  },
 };
 
-// Export individual functions for convenience
+// ─── Export individual functions ────────────────────────────────────────────
 export const {
   getAll: getVideos,
   getById: getVideoById,
   getByChannel: getChannelVideos,
   getByCategory: getVideosByCategory,
-  getOwnerVideos, // ADD THIS EXPORT
-  upload: uploadVideo,
+  getOwnerVideos,
+  create: createVideo,
   update: updateVideo,
   delete: deleteVideo,
   like: likeVideo,
   unlike: unlikeVideo,
   comment: commentOnVideo,
   getComments: getVideoComments,
-  getTrending: getTrendingVideos,
 } = videoService;
 
 export default videoService;

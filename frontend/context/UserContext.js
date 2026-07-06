@@ -1,14 +1,65 @@
+// context/UserContext.js
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { userAPI } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, ActivityIndicator } from 'react-native';
 
-// Create User Context
 const UserContext = createContext();
 
-// User Provider Component
 export function UserProvider({ children }) {
-  const { user, setSigningUp } = useAuth();
+  const [authError, setAuthError] = useState(null);
+  let auth;
+  
+  try {
+    auth = useAuth();
+  } catch (error) {
+    console.error('UserProvider: Failed to useAuth:', error);
+    setAuthError(error);
+  }
+
+  // If auth failed, show error but still render children
+  if (authError) {
+    console.warn('⚠️ AuthProvider not available, UserProvider will work in limited mode');
+    // Return children without user context functionality
+    return (
+      <UserContext.Provider value={{
+        userProfile: null,
+        preferences: {
+          language: 'en',
+          theme: 'light',
+          location: { state: '', district: '', city: '', area: '' },
+          notifications: true,
+        },
+        isLoading: false,
+        error: authError.message,
+        loadUserProfile: async () => {},
+        updateProfile: async () => {},
+        updatePreferences: async () => {},
+        updateLocation: async () => {},
+        updateLanguage: async () => {},
+        toggleNotifications: async () => {},
+        clearUserData: async () => {},
+        suppressNextProfileLoad: () => {},
+        resumeProfileLoad: () => {},
+      }}>
+        {children}
+      </UserContext.Provider>
+    );
+  }
+
+  // If auth is available, proceed normally
+  if (!auth) {
+    // Auth is still loading - this is properly wrapped
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#C8001A" />
+        <Text style={{ marginTop: 10, color: '#8A97A5' }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  const { user, setSigningUp } = auth;
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,16 +75,8 @@ export function UserProvider({ children }) {
     notifications: true,
   });
 
-  // When this is true, the next user change (from signup) will be ignored.
-  // ViewerSignup calls setSigningUp(true) before createUserWithEmailAndPassword
-  // and setSigningUp(false) after /register succeeds, but UserContext needs its
-  // own guard because it reacts to `user` independently of AuthContext's listener.
   const skipProfileLoad = useRef(false);
 
-  // Expose a way for signup screens to suppress the profile load.
-  // Usage in ViewerSignup:
-  //   const { suppressNextProfileLoad } = useUser();  ← optional helper
-  // OR simply rely on setSigningUp from AuthContext (see below).
   const suppressNextProfileLoad = () => {
     skipProfileLoad.current = true;
   };
@@ -42,13 +85,9 @@ export function UserProvider({ children }) {
     skipProfileLoad.current = false;
   };
 
-  // Load user profile when auth user changes
   useEffect(() => {
     if (user) {
       if (skipProfileLoad.current) {
-        // Signup is in progress — user exists in Firebase but not yet in MongoDB.
-        // Do nothing; ViewerSignup will call loadUserProfile() manually after
-        // /register succeeds, or navigation to ViewerHome will trigger a fresh load.
         console.log('⏭️ [UserContext] Skipping profile load — signup in progress');
         return;
       }
@@ -59,7 +98,6 @@ export function UserProvider({ children }) {
     }
   }, [user]);
 
-  // Load user profile from API
   const loadUserProfile = async () => {
     setIsLoading(true);
     setError(null);
@@ -67,7 +105,6 @@ export function UserProvider({ children }) {
       const response = await userAPI.getProfile();
       const profile = response.data;
       setUserProfile(profile);
-      // Update preferences with user's location and language
       if (profile) {
         setPreferences(prev => ({
           ...prev,
@@ -88,7 +125,6 @@ export function UserProvider({ children }) {
     }
   };
 
-  // Load user preferences from storage
   const loadPreferences = async () => {
     try {
       const prefs = await AsyncStorage.getItem('userPreferences');
@@ -104,7 +140,6 @@ export function UserProvider({ children }) {
     }
   };
 
-  // Update user profile
   const updateProfile = async (updates) => {
     setIsLoading(true);
     setError(null);
@@ -122,19 +157,16 @@ export function UserProvider({ children }) {
     }
   };
 
-  // Update user preferences
   const updatePreferences = async (newPrefs) => {
     try {
       const updatedPrefs = { ...preferences, ...newPrefs };
       setPreferences(updatedPrefs);
       await AsyncStorage.setItem('userPreferences', JSON.stringify(updatedPrefs));
 
-      // If language changed, update user profile
       if (newPrefs.language && newPrefs.language !== preferences.language) {
         await updateProfile({ preferredLanguage: newPrefs.language });
       }
 
-      // If location changed, update user profile
       if (newPrefs.location) {
         await updateProfile({ location: newPrefs.location });
       }
@@ -146,22 +178,18 @@ export function UserProvider({ children }) {
     }
   };
 
-  // Update user location
   const updateLocation = async (location) => {
     return updatePreferences({ location });
   };
 
-  // Update user language
   const updateLanguage = async (language) => {
     return updatePreferences({ language });
   };
 
-  // Toggle notifications
   const toggleNotifications = async () => {
     return updatePreferences({ notifications: !preferences.notifications });
   };
 
-  // Clear user data (logout)
   const clearUserData = async () => {
     setUserProfile(null);
     setPreferences({
@@ -178,7 +206,6 @@ export function UserProvider({ children }) {
     await AsyncStorage.removeItem('userPreferences');
   };
 
-  // Context value
   const value = {
     userProfile,
     preferences,
@@ -191,8 +218,8 @@ export function UserProvider({ children }) {
     updateLanguage,
     toggleNotifications,
     clearUserData,
-    suppressNextProfileLoad, // ← call this before signup starts
-    resumeProfileLoad,       // ← call this after /register succeeds
+    suppressNextProfileLoad,
+    resumeProfileLoad,
   };
 
   return (
@@ -202,7 +229,6 @@ export function UserProvider({ children }) {
   );
 }
 
-// Custom hook to use user context
 export function useUser() {
   const context = useContext(UserContext);
   if (!context) {

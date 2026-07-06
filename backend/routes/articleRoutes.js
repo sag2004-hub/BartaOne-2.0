@@ -1,7 +1,7 @@
+// backend/routes/articleRoutes.js
 const express = require('express');
 const router = express.Router();
 const { verifyFirebaseToken } = require('../middleware/verifyFirebaseToken');
-const { uploadArticleMedia } = require('../middleware/uploadMiddleware');
 const { asyncHandler } = require('../middleware/errorHandler');
 const {
   getAllArticles,
@@ -35,9 +35,9 @@ router.get('/:id/comments', asyncHandler(getComments));
 // Protected routes - require authentication
 router.use(verifyFirebaseToken);
 
-// Article CRUD
-router.post('/', uploadArticleMedia, asyncHandler(createArticle));
-router.put('/:id', uploadArticleMedia, asyncHandler(updateArticle));
+// Article CRUD - REMOVED uploadArticleMedia middleware
+router.post('/', asyncHandler(createArticle));  // ← Changed this line
+router.put('/:id', asyncHandler(updateArticle)); // ← Changed this line
 router.delete('/:id', asyncHandler(deleteArticle));
 
 // Like routes

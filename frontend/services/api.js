@@ -1,26 +1,59 @@
+// services/api.js
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 import { auth } from './firebase';
+import { Platform } from 'react-native';
 
-// Create axios instance with base URL
+// ─── Determine Base URL ──────────────────────────────────────────────────────
+const getBaseURL = () => {
+  // If API_URL is set in .env, use it
+  if (API_URL) {
+    console.log('🔗 Using API_URL from env:', API_URL);
+    return API_URL;
+  }
+
+  // Fallback for development
+  if (__DEV__) {
+    // Your computer's IP address - replace with your actual IP
+    const DEV_IP = '192.168.29.16'; // ← CHANGE THIS TO YOUR IP
+    const PORT = '5000';
+    
+    if (Platform.OS === 'android') {
+      // Android emulator can use localhost
+      return `http://10.0.2.2:${PORT}/api`;
+    }
+    // Physical device or iOS simulator
+    return `http://${DEV_IP}:${PORT}/api`;
+  }
+
+  // Production URL
+  return 'https://your-production-url.com/api';
+};
+
+const BASE_URL = getBaseURL();
+console.log('🌐 [api.js] Base URL:', BASE_URL);
+
+// ─── Create axios instance ──────────────────────────────────────────────────
 const api = axios.create({
-  baseURL: API_URL || 'http://localhost:5000/api',
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
   timeout: 120000,
 });
 
-// Request interceptor to add auth token
+// ─── Request Interceptor ────────────────────────────────────────────────────
 api.interceptors.request.use(
   async (config) => {
     try {
+      // Log the request
+      console.log(`📤 ${config.method?.toUpperCase() || 'GET'} ${config.url}`);
+      
       let token = null;
 
-      // Priority 1: get a fresh token directly from Firebase currentUser.
-      // This works even when isSigningUp blocks onAuthStateChanged and the
-      // token hasn't been written to AsyncStorage yet.
+      // Priority 1: get a fresh token directly from Firebase currentUser
       if (auth.currentUser) {
         token = await auth.currentUser.getIdToken();
         // Keep AsyncStorage in sync so other parts of the app have it too
@@ -32,65 +65,90 @@ api.interceptors.request.use(
         console.log('🔑 [api.js] token from AsyncStorage:', token ? 'EXISTS ✅' : 'NULL ❌');
       }
 
-      console.log('🌐 [api.js] request URL:', config.baseURL + config.url);
+      console.log('🌐 [api.js] Full URL:', config.baseURL + config.url);
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        console.warn('⚠️ [api.js] No token available for request');
       }
+      
       return config;
     } catch (error) {
-      console.error('Error adding auth token:', error);
+      console.error('❌ Error adding auth token:', error);
       return config;
     }
   },
   (error) => {
+    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor to handle errors
+// ─── Response Interceptor ───────────────────────────────────────────────────
 api.interceptors.response.use(
   (response) => {
-    // Return the response directly - this is the success case
+    console.log(`✅ ${response.status} ${response.config.url}`);
     return response;
   },
   async (error) => {
-    // This is the error case - handle errors here
-    console.error('❌ [api.js] response error:', error.response?.status, error.response?.data);
-
-    // Check if error has a response (server responded with error)
+    // Log the error details
     if (error.response) {
+      // Server responded with error
+      console.error(`❌ [api.js] API Error ${error.response.status}:`, {
+        url: error.config?.url,
+        data: error.response.data,
+        headers: error.response.headers,
+      });
+
       const { status, data } = error.response;
 
-      // Handle specific status codes
       if (status === 401) {
-        // Unauthorized - clear token
         await AsyncStorage.removeItem('authToken');
         console.log('🔑 [api.js] Token removed due to 401');
       }
 
-      // Create a structured error object
       const apiError = new Error(data?.message || 'An error occurred');
       apiError.status = status;
       apiError.data = data;
       return Promise.reject(apiError);
     } 
-    // Network error - no response received
     else if (error.request) {
-      console.error('❌ [api.js] no response received. Is the server reachable?');
+      // No response received
+      console.error('❌ [api.js] No response received. Server may be unreachable.');
+      console.error('   URL:', error.config?.baseURL + error.config?.url);
+      console.error('   Method:', error.config?.method);
+      console.error('   Timeout:', error.config?.timeout);
+      
       const networkError = new Error('Network error. Please check your connection.');
       networkError.status = 0;
+      networkError.details = {
+        url: error.config?.baseURL + error.config?.url,
+        method: error.config?.method,
+      };
       return Promise.reject(networkError);
     } 
-    // Something else went wrong
     else {
-      console.error('❌ [api.js] unexpected error:', error.message);
+      console.error('❌ [api.js] Unexpected error:', error.message);
       return Promise.reject(error);
     }
   }
 );
 
-// Export the raw axios instance for modules that call api.get/api.post directly
+// ─── Test Connection Function ───────────────────────────────────────────────
+export const testConnection = async () => {
+  try {
+    console.log('🔍 Testing API connection...');
+    const response = await api.get('/health');
+    console.log('✅ API connection successful:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ API connection failed:', error.message);
+    throw error;
+  }
+};
+
+// ─── Export the raw axios instance for modules that call api.get/api.post directly
 export { api };
 
 // ─── API Methods ──────────────────────────────────────────────────────────────

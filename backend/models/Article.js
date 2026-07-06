@@ -1,3 +1,4 @@
+// backend/models/Article.js - SIMPLIFIED VERSION
 const mongoose = require('mongoose');
 
 const ArticleSchema = new mongoose.Schema({
@@ -68,46 +69,49 @@ const ArticleSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  // Enable timestamps with custom names
+  timestamps: {
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  },
+  // Ensure virtuals are included
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
 });
 
-// Update timestamp on save
-ArticleSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
+// ─── REMOVED the problematic pre('save') hook ─────────────────────────────
+// The timestamps option will handle updatedAt automatically
 
-// Virtual for reading time (approx 200 words per minute)
+// ─── Virtual for reading time ─────────────────────────────────────────────
 ArticleSchema.virtual('readingTime').get(function() {
+  if (!this.body) return 0;
   const wordCount = this.body.split(/\s+/).length;
   const minutes = Math.ceil(wordCount / 200);
-  return minutes;
+  return minutes || 1;
 });
 
-// Method to increment views
+// ─── Methods ──────────────────────────────────────────────────────────────
 ArticleSchema.methods.incrementViews = function() {
   this.views += 1;
   return this.save();
 };
 
-// Method to increment likes
 ArticleSchema.methods.incrementLikes = function() {
   this.likes += 1;
   return this.save();
 };
 
-// Method to decrement likes
 ArticleSchema.methods.decrementLikes = function() {
   this.likes = Math.max(this.likes - 1, 0);
   return this.save();
 };
 
-// Method to increment comments
 ArticleSchema.methods.incrementComments = function() {
   this.comments += 1;
   return this.save();
 };
 
-// Method to decrement comments
 ArticleSchema.methods.decrementComments = function() {
   this.comments = Math.max(this.comments - 1, 0);
   return this.save();

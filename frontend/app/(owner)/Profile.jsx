@@ -27,6 +27,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { getChannelByOwner, channelService } from '../../services/channelService';
 import Loader from '../../components/Loader';
+import { useRouter } from 'expo-router'; // Import useRouter
 
 const { width: SW, height: SH } = Dimensions.get('window');
 const BASE_W = 390;
@@ -81,7 +82,8 @@ const DARK = {
   chipBg:           '#1C2330',
 };
 
-export default function OwnerProfile({ navigation }) {
+export default function OwnerProfile() {
+  const router = useRouter(); // Use router instead of navigation
   const scheme = useColorScheme();
   const C = scheme === 'dark' ? DARK : LIGHT;
   const { isLoading: authLoading } = useAuth();
@@ -155,6 +157,40 @@ export default function OwnerProfile({ navigation }) {
       console.error('Error loading channel:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // ─── Navigation Functions ─────────────────────────────────────────────
+
+  const goToDashboard = () => {
+    try {
+      // Try multiple navigation methods
+      router.replace('/(owner)/Dashboard');
+    } catch (error) {
+      console.error('Navigation to dashboard failed:', error);
+      try {
+        // Fallback to owner index
+        router.replace('/(owner)');
+      } catch (e) {
+        console.error('Fallback navigation failed:', e);
+        Alert.alert('Navigation Error', 'Could not navigate to dashboard. Please restart the app.');
+      }
+    }
+  };
+
+  const goToWelcome = () => {
+    try {
+      // Navigate to welcome screen after logout
+      router.replace('/(auth)/Welcome');
+    } catch (error) {
+      console.error('Navigation to welcome failed:', error);
+      try {
+        // Fallback to auth index
+        router.replace('/(auth)');
+      } catch (e) {
+        console.error('Fallback navigation failed:', e);
+        Alert.alert('Navigation Error', 'Could not navigate to welcome screen. Please restart the app.');
+      }
     }
   };
 
@@ -281,9 +317,11 @@ export default function OwnerProfile({ navigation }) {
         onPress: async () => {
           try {
             await signOut(auth);
-            navigation.replace('Welcome');
-          } catch {
-            Alert.alert('Error', 'Failed to logout');
+            // Navigate to welcome screen after successful logout
+            goToWelcome();
+          } catch (error) {
+            console.error('Logout error:', error);
+            Alert.alert('Error', 'Failed to logout. Please try again.');
           }
         },
       },
@@ -422,7 +460,7 @@ export default function OwnerProfile({ navigation }) {
           <Text style={[s.errorSub, { color: C.muted }]}>Create a channel to get started</Text>
           <TouchableOpacity
             style={[s.createBtn, { backgroundColor: C.accent }]}
-            onPress={() => navigation.navigate('CreateChannel')}
+            onPress={() => router.push('/(owner)/CreateChannel')}
           >
             <Text style={s.createBtnText}>Create Channel</Text>
             <Ionicons name="arrow-forward" size={scale(18)} color="#FFFFFF" />
@@ -440,7 +478,7 @@ export default function OwnerProfile({ navigation }) {
 
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={s.backBtn} onPress={goToDashboard}>
           <Ionicons name="arrow-back" size={scale(20)} color={C.primary} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Channel Profile</Text>

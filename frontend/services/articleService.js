@@ -1,12 +1,12 @@
 // services/articleService.js
-import api from './api';
+import { api } from './api';
 
 // Article Service
 export const articleService = {
   // Get all articles with filters
   getAll: async (params = {}) => {
     try {
-      const response = await api.article.getAll(params);
+      const response = await api.get('/articles', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching articles:', error);
@@ -17,7 +17,7 @@ export const articleService = {
   // Get article by ID
   getById: async (id) => {
     try {
-      const response = await api.article.getById(id);
+      const response = await api.get(`/articles/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching article:', error);
@@ -28,7 +28,8 @@ export const articleService = {
   // Get articles by channel
   getByChannel: async (channelId) => {
     try {
-      const response = await api.article.getByChannel(channelId);
+      console.log('📡 Fetching articles for channel:', channelId);
+      const response = await api.get(`/articles/channel/${channelId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching channel articles:', error);
@@ -39,7 +40,7 @@ export const articleService = {
   // Get articles by category
   getByCategory: async (category) => {
     try {
-      const response = await api.article.getByCategory(category);
+      const response = await api.get(`/articles/category/${category}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching articles by category:', error);
@@ -50,7 +51,7 @@ export const articleService = {
   // Get trending articles
   getTrending: async () => {
     try {
-      const response = await api.article.getTrending();
+      const response = await api.get('/articles/trending');
       return response.data;
     } catch (error) {
       console.error('Error fetching trending articles:', error);
@@ -59,98 +60,141 @@ export const articleService = {
   },
 
   // Get latest articles
-  getLatest: async (limit = 10) => {
+  getLatest: async () => {
     try {
-      const response = await api.article.getLatest();
-      return response.data.slice(0, limit);
+      const response = await api.get('/articles/latest');
+      return response.data;
     } catch (error) {
       console.error('Error fetching latest articles:', error);
       throw error;
     }
   },
 
-  // Get articles by owner (channel) - ADD THIS FUNCTION
+  // ─── Get owner articles ─────────────────────────────────────────────────────
   getOwnerArticles: async (channelId) => {
     try {
-      const response = await api.article.getByChannel(channelId);
-      return response.data || [];
+      console.log('📡 [getOwnerArticles] Fetching articles for channel:', channelId);
+      
+      if (!channelId) {
+        console.warn('⚠️ [getOwnerArticles] No channelId provided');
+        return [];
+      }
+
+      const response = await api.get(`/articles/channel/${channelId}`);
+      
+      if (response.data && response.data.data) {
+        if (response.data.data.articles) {
+          return response.data.data.articles;
+        }
+        if (Array.isArray(response.data.data)) {
+          return response.data.data;
+        }
+      }
+      
+      if (response.data && response.data.articles) {
+        return response.data.articles;
+      }
+      
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+
+      return [];
     } catch (error) {
-      console.error('Error fetching owner articles:', error);
+      console.error('❌ [getOwnerArticles] Error fetching owner articles:', error);
       return [];
     }
   },
 
-  // Create article
+  // ─── FIXED: Create article with image upload ───────────────────────────────
   create: async (articleData) => {
     try {
+      console.log('📤 Creating article with data:', articleData);
+      
+      // Use FormData for image upload
       const formData = new FormData();
       
-      Object.keys(articleData).forEach(key => {
-        if (key !== 'image') {
-          formData.append(key, articleData[key]);
-        }
-      });
-
-      if (articleData.image) {
-        const imageData = {
-          uri: articleData.image.uri,
+      // Add all text fields
+      formData.append('title', articleData.title);
+      formData.append('summary', articleData.summary);
+      formData.append('body', articleData.body);
+      formData.append('category', articleData.category);
+      formData.append('language', articleData.language);
+      formData.append('channelId', articleData.channelId);
+      
+      // Add image if present
+      if (articleData.image && articleData.image.base64) {
+        // For React Native, we need to create a file object
+        const imageFile = {
+          uri: articleData.image.uri || `data:image/jpeg;base64,${articleData.image.base64}`,
+          name: articleData.image.name || `article-${Date.now()}.jpg`,
           type: articleData.image.type || 'image/jpeg',
-          name: articleData.image.fileName || 'image.jpg',
         };
-        formData.append('image', imageData);
+        formData.append('image', imageFile);
       }
 
-      const response = await api.article.create(formData, {
+      const response = await api.post('/articles', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      
+      console.log('✅ Article created:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error creating article:', error);
+      console.error('❌ Error creating article:', error);
       throw error;
     }
   },
 
-  // Update article
+  // ─── Update article ─────────────────────────────────────────────────────────
   update: async (id, articleData) => {
     try {
+      console.log('📤 Updating article:', id);
+      
       const formData = new FormData();
       
-      Object.keys(articleData).forEach(key => {
-        if (key !== 'image') {
-          formData.append(key, articleData[key]);
-        }
-      });
-
-      if (articleData.image) {
-        const imageData = {
-          uri: articleData.image.uri,
+      // Add all text fields
+      if (articleData.title) formData.append('title', articleData.title);
+      if (articleData.summary) formData.append('summary', articleData.summary);
+      if (articleData.body) formData.append('body', articleData.body);
+      if (articleData.category) formData.append('category', articleData.category);
+      if (articleData.language) formData.append('language', articleData.language);
+      if (articleData.isPublished !== undefined) formData.append('isPublished', String(articleData.isPublished));
+      
+      // Add image if present
+      if (articleData.image && articleData.image.base64) {
+        const imageFile = {
+          uri: articleData.image.uri || `data:image/jpeg;base64,${articleData.image.base64}`,
+          name: articleData.image.name || `article-${Date.now()}.jpg`,
           type: articleData.image.type || 'image/jpeg',
-          name: articleData.image.fileName || 'image.jpg',
         };
-        formData.append('image', imageData);
+        formData.append('image', imageFile);
       }
 
-      const response = await api.article.update(id, formData, {
+      const response = await api.put(`/articles/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      
+      console.log('✅ Article updated:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error updating article:', error);
+      console.error('❌ Error updating article:', error);
       throw error;
     }
   },
 
-  // Delete article
+  // ─── Delete article ─────────────────────────────────────────────────────────
   delete: async (id) => {
     try {
-      const response = await api.article.delete(id);
+      console.log('📤 Deleting article:', id);
+      const response = await api.delete(`/articles/${id}`);
+      console.log('✅ Article deleted:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error deleting article:', error);
+      console.error('❌ Error deleting article:', error);
       throw error;
     }
   },
@@ -158,7 +202,7 @@ export const articleService = {
   // Like article
   like: async (id) => {
     try {
-      const response = await api.article.like(id);
+      const response = await api.post(`/articles/${id}/like`);
       return response.data;
     } catch (error) {
       console.error('Error liking article:', error);
@@ -169,7 +213,7 @@ export const articleService = {
   // Unlike article
   unlike: async (id) => {
     try {
-      const response = await api.article.unlike(id);
+      const response = await api.delete(`/articles/${id}/like`);
       return response.data;
     } catch (error) {
       console.error('Error unliking article:', error);
@@ -180,7 +224,7 @@ export const articleService = {
   // Add comment
   comment: async (id, commentData) => {
     try {
-      const response = await api.article.comment(id, commentData);
+      const response = await api.post(`/articles/${id}/comments`, commentData);
       return response.data;
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -191,7 +235,7 @@ export const articleService = {
   // Get comments
   getComments: async (id) => {
     try {
-      const response = await api.article.getComments(id);
+      const response = await api.get(`/articles/${id}/comments`);
       return response.data;
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -202,7 +246,7 @@ export const articleService = {
   // Search articles
   search: async (query) => {
     try {
-      const response = await api.article.search(query);
+      const response = await api.get(`/articles/search?q=${encodeURIComponent(query)}`);
       return response.data;
     } catch (error) {
       console.error('Error searching articles:', error);
@@ -211,7 +255,7 @@ export const articleService = {
   },
 };
 
-// Export individual functions for convenience
+// ─── Export individual functions ────────────────────────────────────────────
 export const {
   getAll: getArticles,
   getById: getArticleById,
@@ -219,7 +263,7 @@ export const {
   getByCategory: getArticlesByCategory,
   getTrending: getTrendingArticles,
   getLatest: getLatestArticles,
-  getOwnerArticles, // ADD THIS EXPORT
+  getOwnerArticles,
   create: createArticle,
   update: updateArticle,
   delete: deleteArticle,

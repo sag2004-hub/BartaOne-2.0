@@ -12,6 +12,8 @@ import {
   Dimensions,
   PixelRatio,
   ActivityIndicator,
+  Image,
+  SafeAreaView as SafeAreaViewRN,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -94,6 +96,9 @@ export default function ManagePosts() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [previewItem, setPreviewItem] = useState(null);
+  const [previewType, setPreviewType] = useState('article');
   const [channelId, setChannelId] = useState(null);
 
   useEffect(() => {
@@ -103,22 +108,22 @@ export default function ManagePosts() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // First get the channel data to get the MongoDB _id
       const channelData = await getChannelByOwner();
       console.log('📊 Channel data:', channelData);
       
       if (channelData && channelData._id) {
-        // Use the MongoDB _id from the channel
         const channelMongoId = channelData._id;
         setChannelId(channelMongoId);
+        console.log('📊 Channel MongoDB ID:', channelMongoId);
         
-        const [articlesData, videosData] = await Promise.all([
-          getOwnerArticles(channelMongoId),
-          getOwnerVideos(channelMongoId),
-        ]);
+        const articlesData = await getOwnerArticles(channelMongoId);
+        const videosData = await getOwnerVideos(channelMongoId);
         
-        setArticles(articlesData || []);
-        setVideos(videosData || []);
+        console.log('📊 Articles fetched:', articlesData);
+        console.log('📊 Videos fetched:', videosData);
+        
+        setArticles(Array.isArray(articlesData) ? articlesData : []);
+        setVideos(Array.isArray(videosData) ? videosData : []);
       } else {
         console.warn('No channel found for this user');
         setArticles([]);
@@ -127,6 +132,8 @@ export default function ManagePosts() {
     } catch (error) {
       console.error('Error loading posts:', error);
       Alert.alert('Error', 'Failed to load posts');
+      setArticles([]);
+      setVideos([]);
     } finally {
       setIsLoading(false);
     }
@@ -167,12 +174,205 @@ export default function ManagePosts() {
     );
   };
 
+  const handleEdit = (item, type) => {
+    setModalVisible(false);
+    setPreviewModalVisible(false);
+    // Navigate to the correct edit screen
+    if (type === 'article') {
+      router.push({
+        pathname: '/(owner)/UploadArticle',
+        params: { edit: item._id }
+      });
+    } else {
+      router.push({
+        pathname: '/(owner)/UploadVideo',
+        params: { edit: item._id }
+      });
+    }
+  };
+
+  const handlePreview = (item, type) => {
+    setPreviewItem(item);
+    setPreviewType(type);
+    setPreviewModalVisible(true);
+  };
+
+  // ─── Preview Modal Components ─────────────────────────────────────────────
+
+  const renderArticlePreview = (article) => {
+    const wordCount = article.body ? article.body.split(/\s+/).length : 0;
+    const readingTime = Math.ceil(wordCount / 200) || 1;
+
+    return (
+      <View style={[styles.previewContent, { backgroundColor: C.surface }]}>
+        {/* Preview Header */}
+        <View style={[styles.previewHeader, { borderBottomColor: C.border }]}>
+          <Text style={[styles.previewBadge, { color: C.accent, backgroundColor: C.accentBg }]}>
+            Preview
+          </Text>
+          <Text style={[styles.previewChannel, { color: C.secondary }]}>
+            {article.channelId?.channelName || 'Your Channel'}
+          </Text>
+        </View>
+
+        {/* Article Content */}
+        <ScrollView style={styles.previewScroll} showsVerticalScrollIndicator={false}>
+          {article.image && (
+            <Image 
+              source={{ uri: article.image }} 
+              style={styles.previewImage}
+              resizeMode="cover"
+            />
+          )}
+          
+          <View style={styles.previewBody}>
+            <View style={styles.previewCategoryRow}>
+              <Text style={[styles.previewCategory, { color: C.accent, backgroundColor: C.accentBg }]}>
+                {article.category || 'News'}
+              </Text>
+              <Text style={[styles.previewDate, { color: C.muted }]}>
+                {new Date(article.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </Text>
+            </View>
+
+            <Text style={[styles.previewTitle, { color: C.primary }]}>
+              {article.title}
+            </Text>
+
+            {article.summary && (
+              <Text style={[styles.previewSummary, { color: C.secondary }]}>
+                {article.summary}
+              </Text>
+            )}
+
+            <View style={[styles.previewDivider, { backgroundColor: C.border }]} />
+
+            <Text style={[styles.previewBodyText, { color: C.primary }]}>
+              {article.body}
+            </Text>
+
+            <View style={[styles.previewFooter, { borderTopColor: C.border }]}>
+              <View style={styles.previewStats}>
+                <View style={styles.previewStat}>
+                  <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
+                  <Text style={[styles.previewStatText, { color: C.muted }]}>
+                    {article.views || 0}
+                  </Text>
+                </View>
+                <View style={styles.previewStat}>
+                  <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
+                  <Text style={[styles.previewStatText, { color: C.muted }]}>
+                    {article.likes || 0}
+                  </Text>
+                </View>
+                <View style={styles.previewStat}>
+                  <Ionicons name="chatbubble-outline" size={scale(14)} color={C.muted} />
+                  <Text style={[styles.previewStatText, { color: C.muted }]}>
+                    {article.comments || 0}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.previewReadingTime, { color: C.muted }]}>
+                {readingTime} min read
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderVideoPreview = (video) => {
+    return (
+      <View style={[styles.previewContent, { backgroundColor: C.surface }]}>
+        {/* Preview Header */}
+        <View style={[styles.previewHeader, { borderBottomColor: C.border }]}>
+          <Text style={[styles.previewBadge, { color: C.accent, backgroundColor: C.accentBg }]}>
+            Preview
+          </Text>
+          <Text style={[styles.previewChannel, { color: C.secondary }]}>
+            {video.channelId?.channelName || 'Your Channel'}
+          </Text>
+        </View>
+
+        {/* Video Content */}
+        <ScrollView style={styles.previewScroll} showsVerticalScrollIndicator={false}>
+          {/* Video Thumbnail with Play Button */}
+          <View style={styles.previewVideoContainer}>
+            {video.thumbnail ? (
+              <Image 
+                source={{ uri: video.thumbnail }} 
+                style={styles.previewVideoThumbnail}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.previewVideoPlaceholder, { backgroundColor: C.bg }]}>
+                <Ionicons name="videocam" size={scale(48)} color={C.muted} />
+              </View>
+            )}
+            <View style={styles.previewPlayButton}>
+              <Ionicons name="play-circle" size={scale(64)} color={C.accent} />
+            </View>
+          </View>
+
+          <View style={styles.previewBody}>
+            <View style={styles.previewCategoryRow}>
+              <Text style={[styles.previewCategory, { color: C.accent, backgroundColor: C.accentBg }]}>
+                {video.category || 'Video'}
+              </Text>
+              <Text style={[styles.previewDate, { color: C.muted }]}>
+                {new Date(video.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </Text>
+            </View>
+
+            <Text style={[styles.previewTitle, { color: C.primary }]}>
+              {video.title}
+            </Text>
+
+            {video.description && (
+              <Text style={[styles.previewSummary, { color: C.secondary }]}>
+                {video.description}
+              </Text>
+            )}
+
+            <View style={[styles.previewDivider, { backgroundColor: C.border }]} />
+
+            <View style={[styles.previewFooter, { borderTopColor: C.border }]}>
+              <View style={styles.previewStats}>
+                <View style={styles.previewStat}>
+                  <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
+                  <Text style={[styles.previewStatText, { color: C.muted }]}>
+                    {video.views || 0}
+                  </Text>
+                </View>
+                <View style={styles.previewStat}>
+                  <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
+                  <Text style={[styles.previewStatText, { color: C.muted }]}>
+                    {video.likes || 0}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderArticleItem = (article) => (
     <TouchableOpacity
       key={article._id}
       style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}
       activeOpacity={0.7}
-      onPress={() => router.push(`/shared/ArticleDetails/${article._id}`)}
+      onPress={() => handlePreview(article, 'article')}
     >
       <View style={styles.postHeader}>
         <View style={styles.postIconWrap}>
@@ -186,7 +386,7 @@ export default function ManagePosts() {
             <View style={styles.postMeta}>
               <View style={[styles.statusBadge, { backgroundColor: C.iconGreenBg }]}>
                 <Text style={[styles.statusText, { color: C.iconGreen }]}>
-                  {article.status || 'Published'}
+                  {article.isPublished ? 'Published' : 'Draft'}
                 </Text>
               </View>
               <Text style={[styles.postDate, { color: C.muted }]}>
@@ -233,7 +433,7 @@ export default function ManagePosts() {
       key={video._id}
       style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}
       activeOpacity={0.7}
-      onPress={() => router.push(`/shared/VideoPlayer/${video._id}`)}
+      onPress={() => handlePreview(video, 'video')}
     >
       <View style={styles.postHeader}>
         <View style={styles.postIconWrap}>
@@ -247,7 +447,7 @@ export default function ManagePosts() {
             <View style={styles.postMeta}>
               <View style={[styles.statusBadge, { backgroundColor: C.iconGreenBg }]}>
                 <Text style={[styles.statusText, { color: C.iconGreen }]}>
-                  {video.status || 'Published'}
+                  {video.isPublished ? 'Published' : 'Draft'}
                 </Text>
               </View>
               <Text style={[styles.postDate, { color: C.muted }]}>
@@ -278,7 +478,7 @@ export default function ManagePosts() {
         </View>
         <View style={[styles.stat, styles.statCategory]}>
           <Text style={[styles.categoryText, { color: C.accent, backgroundColor: C.accentBg }]}>
-            {video.category || 'News'}
+            {video.category || 'Video'}
           </Text>
         </View>
       </View>
@@ -299,7 +499,7 @@ export default function ManagePosts() {
   }
 
   const currentData = activeTab === 'articles' ? articles : videos;
-  const hasData = currentData.length > 0;
+  const hasData = currentData && currentData.length > 0;
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -314,7 +514,12 @@ export default function ManagePosts() {
           <Ionicons name="arrow-back" size={scale(20)} color={C.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: C.primary }]}>Manage Posts</Text>
-        <View style={styles.headerRight} />
+        <TouchableOpacity 
+          style={[styles.createBtn, { backgroundColor: C.accent }]}
+          onPress={() => router.push(activeTab === 'articles' ? '/(owner)/UploadArticle' : '/(owner)/UploadVideo')}
+        >
+          <Ionicons name="add" size={scale(22)} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
       {/* Tabs */}
@@ -332,7 +537,7 @@ export default function ManagePosts() {
                 { color: activeTab === 'articles' ? C.accent : C.muted }
               ]}
             >
-              Articles ({articles.length})
+              Articles ({articles ? articles.length : 0})
             </Text>
           </View>
           {activeTab === 'articles' && <View style={[styles.tabIndicator, { backgroundColor: C.accent }]} />}
@@ -350,7 +555,7 @@ export default function ManagePosts() {
                 { color: activeTab === 'videos' ? C.accent : C.muted }
               ]}
             >
-              Videos ({videos.length})
+              Videos ({videos ? videos.length : 0})
             </Text>
           </View>
           {activeTab === 'videos' && <View style={[styles.tabIndicator, { backgroundColor: C.accent }]} />}
@@ -380,13 +585,13 @@ export default function ManagePosts() {
               title={`No ${activeTab} yet`}
               message={`Start publishing ${activeTab} to see them here`}
               buttonText={`Create ${activeTab === 'articles' ? 'Article' : 'Video'}`}
-              onPress={() => router.push(activeTab === 'articles' ? 'UploadArticle' : 'UploadVideo')}
+              onPress={() => router.push(activeTab === 'articles' ? '/(owner)/UploadArticle' : '/(owner)/UploadVideo')}
             />
           </View>
         )}
       </ScrollView>
 
-      {/* Action Modal */}
+      {/* ─── Action Modal ─────────────────────────────────────────────────────── */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -404,14 +609,7 @@ export default function ManagePosts() {
             
             <TouchableOpacity
               style={[styles.modalOption, { borderBottomColor: C.border }]}
-              onPress={() => {
-                setModalVisible(false);
-                router.push(
-                  activeTab === 'articles' 
-                    ? `UploadArticle?edit=${selectedItem?._id}` 
-                    : `UploadVideo?edit=${selectedItem?._id}`
-                );
-              }}
+              onPress={() => handleEdit(selectedItem, activeTab === 'articles' ? 'article' : 'video')}
             >
               <View style={[styles.modalOptionIconWrap, { backgroundColor: C.accentBg }]}>
                 <Ionicons name="create-outline" size={scale(20)} color={C.accent} />
@@ -442,6 +640,43 @@ export default function ManagePosts() {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* ─── Preview Modal ────────────────────────────────────────────────────── */}
+      <Modal
+        animationType="slide"
+        visible={previewModalVisible}
+        onRequestClose={() => setPreviewModalVisible(false)}
+        presentationStyle="fullScreen"
+      >
+        <SafeAreaViewRN style={[styles.previewModalContainer, { backgroundColor: C.bg }]}>
+          {/* Preview Modal Header */}
+          <View style={[styles.previewModalHeader, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+            <TouchableOpacity 
+              onPress={() => setPreviewModalVisible(false)}
+              style={styles.previewCloseBtn}
+            >
+              <Ionicons name="close" size={scale(24)} color={C.primary} />
+            </TouchableOpacity>
+            <Text style={[styles.previewModalTitle, { color: C.primary }]}>Preview</Text>
+            <TouchableOpacity 
+              onPress={() => handleEdit(previewItem, previewType)}
+              style={[styles.previewEditBtn, { backgroundColor: C.accent }]}
+            >
+              <Ionicons name="create-outline" size={scale(18)} color="#FFF" />
+              <Text style={styles.previewEditBtnText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Preview Content */}
+          <ScrollView style={styles.previewScrollContainer} showsVerticalScrollIndicator={false}>
+            {previewItem && (
+              previewType === 'article' 
+                ? renderArticlePreview(previewItem)
+                : renderVideoPreview(previewItem)
+            )}
+          </ScrollView>
+        </SafeAreaViewRN>
       </Modal>
     </SafeAreaView>
   );
@@ -489,8 +724,17 @@ function makeStyles(C) {
       fontWeight: '700',
       letterSpacing: -0.3,
     },
-    headerRight: {
+    createBtn: {
       width: scale(38),
+      height: scale(38),
+      borderRadius: scale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: C.accent,
+      shadowOffset: { width: 0, height: scale(3) },
+      shadowOpacity: 0.25,
+      shadowRadius: scale(8),
+      elevation: 3,
     },
 
     // Tabs
@@ -630,7 +874,7 @@ function makeStyles(C) {
       overflow: 'hidden',
     },
 
-    // Modal
+    // Action Modal
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.5)',
@@ -687,6 +931,178 @@ function makeStyles(C) {
     modalCancelText: {
       fontSize: sp(15),
       fontWeight: '600',
+    },
+
+    // ─── Preview Modal Styles ──────────────────────────────────────────────────
+    previewModalContainer: {
+      flex: 1,
+    },
+    previewModalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: scale(16),
+      paddingVertical: vs(12),
+      borderBottomWidth: 1,
+    },
+    previewCloseBtn: {
+      width: scale(38),
+      height: scale(38),
+      borderRadius: scale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    previewModalTitle: {
+      fontSize: sp(17),
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    previewEditBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(4),
+      paddingHorizontal: scale(12),
+      paddingVertical: vs(6),
+      borderRadius: scale(8),
+    },
+    previewEditBtnText: {
+      color: '#FFF',
+      fontSize: sp(12),
+      fontWeight: '600',
+    },
+    previewScrollContainer: {
+      flex: 1,
+    },
+
+    // Preview Content
+    previewContent: {
+      flex: 1,
+      margin: scale(16),
+      borderRadius: scale(16),
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: scale(4) },
+      shadowOpacity: 0.1,
+      shadowRadius: scale(12),
+      elevation: 4,
+    },
+    previewHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: scale(16),
+      paddingVertical: vs(12),
+      borderBottomWidth: 1,
+    },
+    previewBadge: {
+      fontSize: sp(10),
+      fontWeight: '700',
+      paddingHorizontal: scale(8),
+      paddingVertical: vs(2),
+      borderRadius: scale(4),
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    previewChannel: {
+      fontSize: sp(12),
+      fontWeight: '500',
+    },
+    previewScroll: {
+      flex: 1,
+    },
+    previewImage: {
+      width: '100%',
+      height: vs(220),
+    },
+    previewVideoContainer: {
+      width: '100%',
+      height: vs(220),
+      position: 'relative',
+      backgroundColor: '#000',
+    },
+    previewVideoThumbnail: {
+      width: '100%',
+      height: '100%',
+    },
+    previewVideoPlaceholder: {
+      width: '100%',
+      height: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    previewPlayButton: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    previewBody: {
+      padding: scale(16),
+    },
+    previewCategoryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: vs(8),
+    },
+    previewCategory: {
+      fontSize: sp(11),
+      fontWeight: '600',
+      paddingHorizontal: scale(8),
+      paddingVertical: vs(2),
+      borderRadius: scale(4),
+      textTransform: 'uppercase',
+      letterSpacing: 0.3,
+    },
+    previewDate: {
+      fontSize: sp(12),
+    },
+    previewTitle: {
+      fontSize: sp(22),
+      fontWeight: '800',
+      lineHeight: sp(28),
+      marginBottom: vs(8),
+      letterSpacing: -0.3,
+    },
+    previewSummary: {
+      fontSize: sp(15),
+      lineHeight: sp(22),
+      marginBottom: vs(12),
+      fontStyle: 'italic',
+    },
+    previewDivider: {
+      height: 1,
+      marginVertical: vs(12),
+    },
+    previewBodyText: {
+      fontSize: sp(15),
+      lineHeight: sp(24),
+    },
+    previewFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: vs(12),
+      marginTop: vs(12),
+      borderTopWidth: 1,
+    },
+    previewStats: {
+      flexDirection: 'row',
+      gap: scale(14),
+    },
+    previewStat: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(4),
+    },
+    previewStatText: {
+      fontSize: sp(12),
+    },
+    previewReadingTime: {
+      fontSize: sp(12),
     },
   });
 }

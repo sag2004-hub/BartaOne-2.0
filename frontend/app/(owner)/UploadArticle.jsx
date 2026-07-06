@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+// app/(owner)/UploadArticle.jsx
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,9 +22,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { useAuth } from '../../hooks/useAuth';
 import { createArticle } from '../../services/articleService';
+import { getChannelByOwner } from '../../services/channelService';
 import Loader from '../../components/Loader';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 const BASE_W = 390;
@@ -76,11 +80,20 @@ const DARK = {
   placeholder:      '#5C6E80',
 };
 
-export default function UploadArticle({ navigation }) {
+export default function UploadArticle() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
   const scheme = useColorScheme();
   const C = scheme === 'dark' ? DARK : LIGHT;
   const { user } = useAuth();
+  
+  // States
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingChannel, setIsLoadingChannel] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [articleId, setArticleId] = useState(null);
+  const [channelId, setChannelId] = useState(null);
+  const [channelData, setChannelData] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     summary: '',
@@ -89,6 +102,8 @@ export default function UploadArticle({ navigation }) {
     language: 'en',
   });
   const [image, setImage] = useState(null);
+  const [imageBase64, setImageBase64] = useState(null);
+  const [existingImage, setExistingImage] = useState(null);
   const [errors, setErrors] = useState({});
   const [focusedInput, setFocusedInput] = useState(null);
 
@@ -107,6 +122,87 @@ export default function UploadArticle({ navigation }) {
     { label: 'Other', value: 'other', icon: 'ellipsis-horizontal-outline' },
   ];
 
+  // ─── Check if editing ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (params.edit) {
+      setIsEditing(true);
+      setArticleId(params.edit);
+      loadArticleData(params.edit);
+    }
+  }, [params.edit]);
+
+  // ─── Load Channel ID ──────────────────────────────────────────────────────
+  useEffect(() => {
+    loadChannelId();
+  }, []);
+
+  const loadChannelId = async () => {
+    setIsLoadingChannel(true);
+    try {
+      console.log('📡 Loading channel for owner...');
+      const channel = await getChannelByOwner();
+      console.log('📡 Channel response:', channel);
+      
+      if (channel && channel._id) {
+        setChannelId(channel._id);
+        setChannelData(channel);
+        console.log('✅ Channel ID loaded:', channel._id);
+        console.log('✅ Channel name:', channel.channelName);
+      } else {
+        console.error('❌ No channel found or missing _id');
+        Alert.alert(
+          'No Channel Found',
+          'Please create a channel before publishing articles.',
+          [
+            {
+              text: 'Create Channel',
+              onPress: () => router.push('/(owner)/CreateChannel'),
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error loading channel:', error);
+      Alert.alert('Error', 'Failed to load channel information. Please try again.');
+    } finally {
+      setIsLoadingChannel(false);
+    }
+  };
+
+  // ─── Load Article Data for Editing ──────────────────────────────────────
+  const loadArticleData = async (id) => {
+    try {
+      setIsLoading(true);
+      // You'll need to implement getArticleById in your service
+      // For now, we'll just set loading to false
+      console.log('📡 Loading article for editing:', id);
+      // const article = await getArticleById(id);
+      // if (article) {
+      //   setFormData({
+      //     title: article.title || '',
+      //     summary: article.summary || '',
+      //     body: article.body || '',
+      //     category: article.category || 'news',
+      //     language: article.language || 'en',
+      //   });
+      //   if (article.image) {
+      //     setExistingImage(article.image);
+      //   }
+      // }
+    } catch (error) {
+      console.error('Error loading article:', error);
+      Alert.alert('Error', 'Failed to load article data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ─── Image Picker ──────────────────────────────────────────────────────────
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -118,14 +214,30 @@ export default function UploadArticle({ navigation }) {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [16, 9],
-      quality: 0.8,
+      quality: 0.7,
+      base64: true,
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0]);
+      const asset = result.assets[0];
+      setImage(asset);
+      setExistingImage(null); // Clear existing image when new one is selected
+      if (asset.base64) {
+        setImageBase64(asset.base64);
+      } else {
+        try {
+          const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          setImageBase64(base64);
+        } catch (error) {
+          console.error('Error reading image:', error);
+        }
+      }
     }
   };
 
+  // ─── Validation ────────────────────────────────────────────────────────────
   const validateForm = () => {
     const newErrors = {};
     if (!formData.title.trim()) {
@@ -137,45 +249,143 @@ export default function UploadArticle({ navigation }) {
     if (!formData.summary.trim()) {
       newErrors.summary = 'Summary is required';
     }
+    if (!image && !existingImage && !isEditing) {
+      newErrors.image = 'Cover image is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ─── Navigation Helpers ──────────────────────────────────────────────────
+  const goToManagePosts = () => {
+    try {
+      router.push('/(owner)/ManagePosts');
+    } catch (error) {
+      console.error('Navigation to ManagePosts failed:', error);
+      try {
+        router.push('/(owner)');
+      } catch (e) {
+        console.error('Fallback navigation failed:', e);
+      }
+    }
+  };
+
+  const goBack = () => {
+    try {
+      router.back();
+    } catch (error) {
+      console.error('Navigation back failed:', error);
+      try {
+        router.push('/(owner)');
+      } catch (e) {
+        console.error('Fallback navigation failed:', e);
+      }
+    }
+  };
+
+  // ─── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    if (!channelId) {
+      Alert.alert('Error', 'Channel not found. Please create a channel first.');
+      return;
+    }
+
     setIsLoading(true);
     try {
+      // Prepare the article data
       const articleData = {
-        ...formData,
-        channelId: user.uid,
-        image: image,
+        title: formData.title.trim(),
+        summary: formData.summary.trim(),
+        body: formData.body.trim(),
+        category: formData.category,
+        language: formData.language,
+        channelId: channelId,
       };
-      await createArticle(articleData);
+
+      console.log('📤 Publishing article with data:', {
+        ...articleData,
+        hasImage: !!image,
+        hasExistingImage: !!existingImage,
+      });
+
+      // If image is available, add it
+      if (image) {
+        const imageFile = {
+          uri: image.uri,
+          name: image.fileName || `article-${Date.now()}.jpg`,
+          type: image.mimeType || 'image/jpeg',
+          base64: imageBase64,
+        };
+        articleData.image = imageFile;
+      } else if (existingImage) {
+        // Keep existing image if no new one is selected
+        articleData.image = { keepExisting: true };
+      }
+
+      // Create the article using the service
+      const response = await createArticle(articleData);
+      
+      console.log('✅ Article published successfully:', response);
+
       Alert.alert(
-        'Success!',
-        'Your article has been published successfully!',
+        '🎉 Success!',
+        `Your article has been ${isEditing ? 'updated' : 'published'} successfully!`,
         [
           {
-            text: 'View Article',
-            onPress: () => navigation.navigate('ManagePosts'),
+            text: 'View Articles',
+            onPress: () => goToManagePosts(),
           },
           {
             text: 'OK',
             style: 'cancel',
+            onPress: () => {
+              if (!isEditing) {
+                setFormData({
+                  title: '',
+                  summary: '',
+                  body: '',
+                  category: 'news',
+                  language: 'en',
+                });
+                setImage(null);
+                setImageBase64(null);
+                setExistingImage(null);
+                setErrors({});
+              }
+            },
           },
         ]
       );
-      setFormData({
-        title: '',
-        summary: '',
-        body: '',
-        category: 'news',
-        language: 'en',
-      });
-      setImage(null);
+
     } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to publish article');
+      console.error('❌ Error publishing article:');
+      console.error('  Message:', error.message);
+      console.error('  Status:', error.status);
+      console.error('  Data:', error.data);
+      
+      let errorMessage = `Failed to ${isEditing ? 'update' : 'publish'} article. Please try again.`;
+      
+      if (error.status === 400) {
+        errorMessage = error.data?.message || 'Invalid article data. Please check your inputs.';
+      } else if (error.status === 401) {
+        errorMessage = 'Session expired. Please login again.';
+      } else if (error.status === 403) {
+        errorMessage = 'You don\'t have permission to publish articles.';
+      } else if (error.status === 404) {
+        errorMessage = 'Channel not found. Please create a channel first.';
+      } else if (error.status === 409) {
+        errorMessage = 'An article with this title already exists.';
+      } else if (error.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (error.status === 0) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -187,23 +397,32 @@ export default function UploadArticle({ navigation }) {
 
   const styles = makeStyles(C);
 
-  if (isLoading) {
-    return <Loader message="Publishing article..." />;
+  // ─── Loading State ────────────────────────────────────────────────────────
+  if (isLoadingChannel || isLoading) {
+    return <Loader message={isLoading ? 'Loading article...' : 'Loading channel...'} />;
   }
 
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.topStripe} />
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <View style={styles.headerLeft} />
-        <Text style={[styles.headerTitle, { color: C.primary }]}>Write Article</Text>
+        <TouchableOpacity 
+          style={styles.backBtn}
+          onPress={goBack}
+        >
+          <Ionicons name="arrow-back" size={scale(24)} color={C.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: C.primary }]}>
+          {isEditing ? 'Edit Article' : 'Write Article'}
+        </Text>
         <TouchableOpacity 
           style={[styles.publishBtn, { backgroundColor: C.accent }]}
           onPress={handleSubmit}
         >
-          <Text style={styles.publishText}>Publish</Text>
+          <Text style={styles.publishText}>{isEditing ? 'Update' : 'Publish'}</Text>
           <Ionicons name="send-outline" size={scale(16)} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -257,15 +476,20 @@ export default function UploadArticle({ navigation }) {
 
             {/* Image Upload */}
             <TouchableOpacity 
-              style={[styles.imageUpload, { 
-                borderColor: C.border,
-                backgroundColor: C.surfaceAlt,
-              }]} 
+              style={[
+                styles.imageUpload, 
+                { 
+                  borderColor: errors.image ? C.accent : C.border,
+                  backgroundColor: C.surfaceAlt,
+                }
+              ]} 
               onPress={pickImage}
               activeOpacity={0.8}
             >
               {image ? (
                 <Image source={{ uri: image.uri }} style={styles.imagePreview} />
+              ) : existingImage ? (
+                <Image source={{ uri: existingImage }} style={styles.imagePreview} />
               ) : (
                 <View style={styles.uploadPlaceholder}>
                   <View style={[styles.uploadIconWrap, { backgroundColor: C.accentBg }]}>
@@ -275,7 +499,7 @@ export default function UploadArticle({ navigation }) {
                   <Text style={[styles.uploadSubtext, { color: C.muted }]}>16:9 image recommended</Text>
                 </View>
               )}
-              {image && (
+              {(image || existingImage) && (
                 <View style={styles.imageOverlay}>
                   <View style={[styles.imageBadge, { backgroundColor: C.accent }]}>
                     <Ionicons name="camera-outline" size={scale(14)} color="#FFF" />
@@ -284,6 +508,9 @@ export default function UploadArticle({ navigation }) {
                 </View>
               )}
             </TouchableOpacity>
+            {errors.image && (
+              <Text style={[styles.errorText, { marginTop: -8, marginBottom: 8 }]}>{errors.image}</Text>
+            )}
 
             {/* Summary Input */}
             <View style={styles.inputGroup}>
@@ -445,8 +672,12 @@ function makeStyles(C) {
       paddingVertical: vs(12),
       borderBottomWidth: 1,
     },
-    headerLeft: {
+    backBtn: {
       width: scale(38),
+      height: scale(38),
+      borderRadius: scale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     headerTitle: {
       fontSize: sp(18),
