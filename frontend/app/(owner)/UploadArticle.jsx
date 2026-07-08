@@ -24,7 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { useAuth } from '../../hooks/useAuth';
-import { createArticle } from '../../services/articleService';
+import { createArticle, getArticleById, updateArticle } from '../../services/articleService';
 import { getChannelByOwner } from '../../services/channelService';
 import Loader from '../../components/Loader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -90,6 +90,7 @@ export default function UploadArticle() {
   // States
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingChannel, setIsLoadingChannel] = useState(true);
+  const [isLoadingArticle, setIsLoadingArticle] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [articleId, setArticleId] = useState(null);
   const [channelId, setChannelId] = useState(null);
@@ -177,28 +178,40 @@ export default function UploadArticle() {
   // ─── Load Article Data for Editing ──────────────────────────────────────
   const loadArticleData = async (id) => {
     try {
-      setIsLoading(true);
-      // You'll need to implement getArticleById in your service
-      // For now, we'll just set loading to false
+      setIsLoadingArticle(true);
       console.log('📡 Loading article for editing:', id);
-      // const article = await getArticleById(id);
-      // if (article) {
-      //   setFormData({
-      //     title: article.title || '',
-      //     summary: article.summary || '',
-      //     body: article.body || '',
-      //     category: article.category || 'news',
-      //     language: article.language || 'en',
-      //   });
-      //   if (article.image) {
-      //     setExistingImage(article.image);
-      //   }
-      // }
+      
+      const response = await getArticleById(id);
+      console.log('📡 Article response:', response);
+      
+      let article = response;
+      if (response && response.data) {
+        article = response.data;
+      }
+      
+      if (article) {
+        setFormData({
+          title: article.title || '',
+          summary: article.summary || '',
+          body: article.body || '',
+          category: article.category || 'news',
+          language: article.language || 'en',
+        });
+        
+        if (article.image) {
+          setExistingImage(article.image);
+        }
+        
+        console.log('✅ Article loaded successfully');
+      } else {
+        console.error('❌ No article data found');
+        Alert.alert('Error', 'Failed to load article data');
+      }
     } catch (error) {
-      console.error('Error loading article:', error);
-      Alert.alert('Error', 'Failed to load article data');
+      console.error('❌ Error loading article:', error);
+      Alert.alert('Error', 'Failed to load article data. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsLoadingArticle(false);
     }
   };
 
@@ -221,7 +234,7 @@ export default function UploadArticle() {
     if (!result.canceled) {
       const asset = result.assets[0];
       setImage(asset);
-      setExistingImage(null); // Clear existing image when new one is selected
+      setExistingImage(null);
       if (asset.base64) {
         setImageBase64(asset.base64);
       } else {
@@ -235,6 +248,22 @@ export default function UploadArticle() {
         }
       }
     }
+  };
+
+  // ─── Reset Form ──────────────────────────────────────────────────────────
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      summary: '',
+      body: '',
+      category: 'news',
+      language: 'en',
+    });
+    setImage(null);
+    setImageBase64(null);
+    setExistingImage(null);
+    setErrors({});
+    setFocusedInput(null);
   };
 
   // ─── Validation ────────────────────────────────────────────────────────────
@@ -294,7 +323,6 @@ export default function UploadArticle() {
 
     setIsLoading(true);
     try {
-      // Prepare the article data
       const articleData = {
         title: formData.title.trim(),
         summary: formData.summary.trim(),
@@ -308,9 +336,9 @@ export default function UploadArticle() {
         ...articleData,
         hasImage: !!image,
         hasExistingImage: !!existingImage,
+        isEditing: isEditing,
       });
 
-      // If image is available, add it
       if (image) {
         const imageFile = {
           uri: image.uri,
@@ -319,15 +347,22 @@ export default function UploadArticle() {
           base64: imageBase64,
         };
         articleData.image = imageFile;
-      } else if (existingImage) {
-        // Keep existing image if no new one is selected
+        console.log('📤 New image selected:', imageFile.name);
+      } else if (existingImage && isEditing) {
         articleData.image = { keepExisting: true };
+        console.log('📤 Keeping existing image');
       }
 
-      // Create the article using the service
-      const response = await createArticle(articleData);
+      let response;
+      if (isEditing && articleId) {
+        console.log('📤 Updating article:', articleId);
+        response = await updateArticle(articleId, articleData);
+      } else {
+        console.log('📤 Creating new article');
+        response = await createArticle(articleData);
+      }
       
-      console.log('✅ Article published successfully:', response);
+      console.log('✅ Article saved successfully:', response);
 
       Alert.alert(
         '🎉 Success!',
@@ -335,24 +370,17 @@ export default function UploadArticle() {
         [
           {
             text: 'View Articles',
-            onPress: () => goToManagePosts(),
+            onPress: () => {
+              resetForm();
+              goToManagePosts();
+            },
           },
           {
-            text: 'OK',
+            text: isEditing ? 'Continue Editing' : 'Write Another',
             style: 'cancel',
             onPress: () => {
               if (!isEditing) {
-                setFormData({
-                  title: '',
-                  summary: '',
-                  body: '',
-                  category: 'news',
-                  language: 'en',
-                });
-                setImage(null);
-                setImageBase64(null);
-                setExistingImage(null);
-                setErrors({});
+                resetForm();
               }
             },
           },
@@ -398,8 +426,12 @@ export default function UploadArticle() {
   const styles = makeStyles(C);
 
   // ─── Loading State ────────────────────────────────────────────────────────
-  if (isLoadingChannel || isLoading) {
-    return <Loader message={isLoading ? 'Loading article...' : 'Loading channel...'} />;
+  if (isLoadingChannel || isLoadingArticle || isLoading) {
+    let message = 'Loading...';
+    if (isLoadingChannel) message = 'Loading channel...';
+    else if (isLoadingArticle) message = 'Loading article...';
+    else if (isLoading) message = isEditing ? 'Updating article...' : 'Publishing article...';
+    return <Loader message={message} />;
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -407,7 +439,6 @@ export default function UploadArticle() {
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.topStripe} />
 
-      {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity 
           style={styles.backBtn}
@@ -635,7 +666,6 @@ export default function UploadArticle() {
               </View>
             </View>
 
-            {/* Bottom Spacer */}
             <View style={styles.bottomSpacer} />
           </View>
         </TouchableWithoutFeedback>
@@ -662,8 +692,6 @@ function makeStyles(C) {
       paddingHorizontal: scale(20),
       paddingBottom: vs(30),
     },
-
-    // Header
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -702,8 +730,6 @@ function makeStyles(C) {
       fontSize: sp(14),
       fontWeight: '700',
     },
-
-    // Inputs
     inputGroup: {
       marginBottom: vs(16),
     },
@@ -751,8 +777,6 @@ function makeStyles(C) {
       fontSize: sp(12),
       fontWeight: '500',
     },
-
-    // Image Upload
     imageUpload: {
       width: '100%',
       height: vs(180),
@@ -807,8 +831,6 @@ function makeStyles(C) {
     uploadSubtext: {
       fontSize: sp(12),
     },
-
-    // Category
     categoryGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -827,8 +849,6 @@ function makeStyles(C) {
       fontSize: sp(13),
       fontWeight: '600',
     },
-
-    // Stats
     statsRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -844,7 +864,6 @@ function makeStyles(C) {
       fontSize: sp(12),
       fontWeight: '500',
     },
-
     bottomSpacer: {
       height: vs(20),
     },

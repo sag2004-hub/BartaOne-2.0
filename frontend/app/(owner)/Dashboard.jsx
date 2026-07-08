@@ -16,10 +16,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router'; // Import useRouter
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { auth } from '../../services/firebase';
 import { getChannelByOwner, getChannelStats } from '../../services/channelService';
+import { getOwnerArticles } from '../../services/articleService';
+import { getOwnerVideos } from '../../services/videoService';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
 
@@ -82,13 +84,14 @@ const DARK = {
   iconAmberBg:      'rgba(251,191,36,0.12)',
 };
 
-export default function Dashboard({ navigation }) {
-  const router = useRouter(); // Add this line
+export default function Dashboard() {
+  const router = useRouter();
   const scheme = useColorScheme();
   const C = scheme === 'dark' ? DARK : LIGHT;
   const { isLoading: authLoading } = useAuth();
   const [channel, setChannel] = useState(null);
   const [stats, setStats] = useState({ articles: 0, videos: 0, live: 0, followers: 0 });
+  const [recentActivities, setRecentActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
@@ -101,6 +104,17 @@ export default function Dashboard({ navigation }) {
     loadDashboardData();
   }, [authLoading]);
 
+  // ─── Auto-refresh when screen comes into focus ──────────────────────────
+  useFocusEffect(
+    useCallback(() => {
+      console.log('📱 Dashboard focused - refreshing data...');
+      if (!authLoading && auth.currentUser) {
+        loadDashboardData();
+      }
+      return () => {};
+    }, [authLoading])
+  );
+
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
@@ -111,6 +125,8 @@ export default function Dashboard({ navigation }) {
 
       if (channelData) {
         setChannel(channelData);
+        
+        // Get stats
         try {
           const statsData = await getChannelStats(channelData._id || channelData.id);
           console.log('📊 Stats data:', statsData);
@@ -118,8 +134,67 @@ export default function Dashboard({ navigation }) {
         } catch (statsErr) {
           console.warn('⚠️ Stats load failed:', statsErr.message);
         }
+
+        // ─── Load recent activities ──────────────────────────────────────
+        try {
+          const [articles, videos] = await Promise.all([
+            getOwnerArticles(channelData._id),
+            getOwnerVideos(channelData._id)
+          ]);
+          
+          console.log('📊 Articles for recent:', articles?.length || 0);
+          console.log('📊 Videos for recent:', videos?.length || 0);
+          
+          // Combine and sort by date
+          const activities = [];
+          
+          // Add articles
+          if (articles && articles.length > 0) {
+            articles.forEach(article => {
+              activities.push({
+                id: article._id,
+                type: 'article',
+                title: article.title || 'Untitled Article',
+                createdAt: article.createdAt || article.publishedAt || new Date().toISOString(),
+                icon: 'newspaper-outline',
+                color: C.accent,
+                bgColor: C.accentBg,
+                route: 'ManagePosts',
+              });
+            });
+          }
+          
+          // Add videos
+          if (videos && videos.length > 0) {
+            videos.forEach(video => {
+              activities.push({
+                id: video._id,
+                type: 'video',
+                title: video.title || 'Untitled Video',
+                createdAt: video.createdAt || video.publishedAt || new Date().toISOString(),
+                icon: 'videocam-outline',
+                color: C.iconBlue,
+                bgColor: C.iconBlueBg,
+                route: 'ManagePosts',
+              });
+            });
+          }
+          
+          // Sort by date (newest first)
+          activities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          
+          // Take only the 5 most recent
+          setRecentActivities(activities.slice(0, 5));
+          console.log('📊 Recent activities:', activities.length);
+          
+        } catch (activityErr) {
+          console.warn('⚠️ Recent activities load failed:', activityErr.message);
+          setRecentActivities([]);
+        }
+        
       } else {
         setChannel(null);
+        setRecentActivities([]);
       }
     } catch (error) {
       console.error('❌ Error loading dashboard:', error);
@@ -148,7 +223,7 @@ export default function Dashboard({ navigation }) {
 
   const handleUploadOption = (route) => {
     setUploadModalVisible(false);
-    router.push(route); // Use router.push instead of navigation.navigate
+    router.push(route);
   };
 
   // ─── Go Live Modal Handlers ─────────────────────────────────────────────
@@ -162,7 +237,7 @@ export default function Dashboard({ navigation }) {
 
   const handleGoLiveOption = (route) => {
     setGoLiveModalVisible(false);
-    router.push(route); // Use router.push instead of navigation.navigate
+    router.push(route);
   };
 
   // ─── Subscribers Modal Handlers ─────────────────────────────────────────
@@ -176,7 +251,29 @@ export default function Dashboard({ navigation }) {
 
   const handleSubscribersOption = (route) => {
     setSubscribersModalVisible(false);
-    router.push(route); // Use router.push instead of navigation.navigate
+    router.push(route);
+  };
+
+  const handleRecentActivityPress = (activity) => {
+    if (activity.route) {
+      router.push(activity.route);
+    }
+  };
+
+  // ─── Format time ago ──────────────────────────────────────────────────────
+  const timeAgo = (dateString) => {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now - past;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return past.toLocaleDateString();
   };
 
   const quickActions = [
@@ -310,22 +407,64 @@ export default function Dashboard({ navigation }) {
           ))}
         </View>
 
-        {/* Recent Activity */}
+        {/* ─── Recent Activity ─────────────────────────────────────────────── */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: C.primary }]}>Recent Activity</Text>
-          <TouchableOpacity onPress={() => router.push('ManagePosts')}>
-            <Text style={[styles.seeAll, { color: C.accent }]}>See All</Text>
-          </TouchableOpacity>
         </View>
         <View style={[styles.recentCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <View style={styles.recentRow}>
-            <View style={[styles.recentDot, { backgroundColor: C.faint }]} />
-            <View>
-              <Text style={[styles.recentTitle, { color: C.secondary }]}>No recent activity</Text>
-              <Text style={[styles.recentSub, { color: C.muted }]}>Start publishing to see activity here</Text>
+          {recentActivities.length > 0 ? (
+            recentActivities.map((activity, index) => (
+              <TouchableOpacity
+                key={activity.id}
+                style={[
+                  styles.recentRow,
+                  index < recentActivities.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }
+                ]}
+                onPress={() => handleRecentActivityPress(activity)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.recentIcon, { backgroundColor: activity.bgColor || C.accentBg }]}>
+                  <Ionicons name={activity.icon} size={scale(16)} color={activity.color || C.accent} />
+                </View>
+                <View style={styles.recentContent}>
+                  <Text style={[styles.recentTitle, { color: C.primary }]} numberOfLines={1}>
+                    {activity.title}
+                  </Text>
+                  <Text style={[styles.recentSub, { color: C.muted }]}>
+                    {activity.type === 'article' ? '📄 Article' : '🎬 Video'} • {timeAgo(activity.createdAt)}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={scale(18)} color={C.muted} />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.recentEmpty}>
+              <Ionicons name="time-outline" size={scale(32)} color={C.muted} />
+              <Text style={[styles.recentEmptyTitle, { color: C.secondary }]}>No recent activity</Text>
+              <Text style={[styles.recentEmptySub, { color: C.muted }]}>Start publishing to see activity here</Text>
             </View>
-          </View>
+          )}
         </View>
+
+        {/* ─── Manage Articles & Videos ────────────────────────────────────── */}
+        <TouchableOpacity
+          style={[styles.manageCard, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => router.push('ManagePosts')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.manageContent}>
+            <View style={[styles.manageIconWrap, { backgroundColor: C.accentBg }]}>
+              <Ionicons name="folder-open-outline" size={scale(24)} color={C.accent} />
+            </View>
+            <View style={styles.manageTextWrap}>
+              <Text style={[styles.manageTitle, { color: C.primary }]}>Manage Articles & Videos</Text>
+              <Text style={[styles.manageSubtext, { color: C.muted }]}>
+                View, edit, and manage all your published content
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+          </View>
+        </TouchableOpacity>
 
         {/* Tip Card */}
         <View style={[styles.tipCard, { backgroundColor: C.accentBg, borderColor: C.accentBorder }]}>
@@ -731,23 +870,79 @@ function makeStyles(C) {
       shadowOpacity: C.cardShadowOpacity,
       shadowRadius: scale(8),
       elevation: 2,
-      marginBottom: vs(16),
+      marginBottom: vs(8),
     },
     recentRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      paddingVertical: vs(10),
       gap: scale(12),
     },
-    recentDot: {
-      width: scale(8),
-      height: scale(8),
-      borderRadius: scale(4),
+    recentIcon: {
+      width: scale(36),
+      height: scale(36),
+      borderRadius: scale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexShrink: 0,
+    },
+    recentContent: {
+      flex: 1,
     },
     recentTitle: {
       fontSize: sp(14),
-      fontWeight: '500',
+      fontWeight: '600',
     },
     recentSub: {
+      fontSize: sp(12),
+      marginTop: vs(2),
+    },
+    recentEmpty: {
+      alignItems: 'center',
+      paddingVertical: vs(20),
+      gap: vs(6),
+    },
+    recentEmptyTitle: {
+      fontSize: sp(15),
+      fontWeight: '600',
+    },
+    recentEmptySub: {
+      fontSize: sp(13),
+    },
+
+    // Manage Card
+    manageCard: {
+      marginHorizontal: scale(20),
+      padding: scale(16),
+      borderRadius: scale(14),
+      borderWidth: StyleSheet.hairlineWidth,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: scale(2) },
+      shadowOpacity: C.cardShadowOpacity,
+      shadowRadius: scale(8),
+      elevation: 2,
+      marginBottom: vs(16),
+    },
+    manageContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(14),
+    },
+    manageIconWrap: {
+      width: scale(48),
+      height: scale(48),
+      borderRadius: scale(12),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    manageTextWrap: {
+      flex: 1,
+    },
+    manageTitle: {
+      fontSize: sp(15),
+      fontWeight: '600',
+    },
+    manageSubtext: {
       fontSize: sp(12),
       marginTop: vs(2),
     },

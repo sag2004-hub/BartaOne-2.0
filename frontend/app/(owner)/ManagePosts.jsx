@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// app/(owner)/ManagePosts.jsx
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,10 +15,11 @@ import {
   ActivityIndicator,
   Image,
   SafeAreaView as SafeAreaViewRN,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { getChannelByOwner } from '../../services/channelService';
 import { getOwnerArticles, deleteArticle } from '../../services/articleService';
@@ -95,16 +97,12 @@ export default function ManagePosts() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
   const [previewType, setPreviewType] = useState('article');
   const [channelId, setChannelId] = useState(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
+  // ─── Load Data Function ──────────────────────────────────────────────────
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -138,6 +136,22 @@ export default function ManagePosts() {
       setIsLoading(false);
     }
   };
+
+  // ─── Auto-refresh when screen comes into focus ──────────────────────────
+  useFocusEffect(
+    useCallback(() => {
+      console.log('📱 ManagePosts screen focused - refreshing data...');
+      loadData();
+      return () => {
+        // Cleanup if needed
+      };
+    }, [])
+  );
+
+  // ─── Initial load ────────────────────────────────────────────────────────
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -175,9 +189,7 @@ export default function ManagePosts() {
   };
 
   const handleEdit = (item, type) => {
-    setModalVisible(false);
     setPreviewModalVisible(false);
-    // Navigate to the correct edit screen
     if (type === 'article') {
       router.push({
         pathname: '/(owner)/UploadArticle',
@@ -191,11 +203,197 @@ export default function ManagePosts() {
     }
   };
 
-  const handlePreview = (item, type) => {
+  const handleSeeMore = (item, type) => {
     setPreviewItem(item);
     setPreviewType(type);
     setPreviewModalVisible(true);
   };
+
+  // ─── Render Article Card ──────────────────────────────────────────────────
+  const renderArticleItem = (article) => (
+    <View
+      key={article._id}
+      style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}
+    >
+      {/* Thumbnail Image */}
+      {article.image && (
+        <Image 
+          source={{ uri: article.image }} 
+          style={styles.thumbnailImage}
+          resizeMode="cover"
+        />
+      )}
+      
+      {/* Content */}
+      <View style={styles.postContent}>
+        <View style={styles.postHeader}>
+          <View style={styles.postIconWrap}>
+            <View style={[styles.postIconBg, { backgroundColor: C.accentBg }]}>
+              <Ionicons name="newspaper-outline" size={scale(18)} color={C.accent} />
+            </View>
+            <View style={styles.postTitleWrap}>
+              <Text style={[styles.postTitle, { color: C.primary }]} numberOfLines={2}>
+                {article.title}
+              </Text>
+              <View style={styles.postMeta}>
+                <View style={[styles.statusBadge, { backgroundColor: C.iconGreenBg }]}>
+                  <Text style={[styles.statusText, { color: C.iconGreen }]}>
+                    {article.isPublished ? 'Published' : 'Draft'}
+                  </Text>
+                </View>
+                <Text style={[styles.postDate, { color: C.muted }]}>
+                  {new Date(article.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        
+        {/* Stats */}
+        <View style={styles.postStats}>
+          <View style={styles.stat}>
+            <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
+            <Text style={[styles.statText, { color: C.muted }]}>{article.views || 0}</Text>
+          </View>
+          <View style={styles.stat}>
+            <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
+            <Text style={[styles.statText, { color: C.muted }]}>{article.likes || 0}</Text>
+          </View>
+          <View style={styles.stat}>
+            <Ionicons name="chatbubble-outline" size={scale(14)} color={C.muted} />
+            <Text style={[styles.statText, { color: C.muted }]}>{article.comments || 0}</Text>
+          </View>
+          <View style={[styles.stat, styles.statCategory]}>
+            <Text style={[styles.categoryText, { color: C.accent, backgroundColor: C.accentBg }]}>
+              {article.category || 'News'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={[styles.actionRow, { borderTopColor: C.border }]}>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.seeMoreBtn, { backgroundColor: C.accentBg }]}
+            onPress={() => handleSeeMore(article, 'article')}
+          >
+            <Ionicons name="eye-outline" size={scale(16)} color={C.accent} />
+            <Text style={[styles.actionBtnText, { color: C.accent }]}>See More</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.actionRight}>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.editBtn, { backgroundColor: C.iconBlueBg }]}
+              onPress={() => handleEdit(article, 'article')}
+            >
+              <Ionicons name="create-outline" size={scale(16)} color={C.iconBlue} />
+              <Text style={[styles.actionBtnText, { color: C.iconBlue }]}>Edit</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.deleteBtn, { backgroundColor: C.accentBg }]}
+              onPress={() => handleDelete(article, 'article')}
+            >
+              <Ionicons name="trash-outline" size={scale(16)} color={C.accent} />
+              <Text style={[styles.actionBtnText, { color: C.accent }]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
+  // ─── Render Video Card ────────────────────────────────────────────────────
+  const renderVideoItem = (video) => (
+    <View
+      key={video._id}
+      style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}
+    >
+      {/* Thumbnail Image */}
+      {video.thumbnail ? (
+        <Image 
+          source={{ uri: video.thumbnail }} 
+          style={styles.thumbnailImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.thumbnailPlaceholder, { backgroundColor: C.bg }]}>
+          <Ionicons name="videocam" size={scale(40)} color={C.muted} />
+        </View>
+      )}
+      
+      {/* Content */}
+      <View style={styles.postContent}>
+        <View style={styles.postHeader}>
+          <View style={styles.postIconWrap}>
+            <View style={[styles.postIconBg, { backgroundColor: C.iconBlueBg }]}>
+              <Ionicons name="videocam-outline" size={scale(18)} color={C.iconBlue} />
+            </View>
+            <View style={styles.postTitleWrap}>
+              <Text style={[styles.postTitle, { color: C.primary }]} numberOfLines={2}>
+                {video.title}
+              </Text>
+              <View style={styles.postMeta}>
+                <View style={[styles.statusBadge, { backgroundColor: C.iconGreenBg }]}>
+                  <Text style={[styles.statusText, { color: C.iconGreen }]}>
+                    {video.isPublished ? 'Published' : 'Draft'}
+                  </Text>
+                </View>
+                <Text style={[styles.postDate, { color: C.muted }]}>
+                  {new Date(video.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        
+        {/* Stats */}
+        <View style={styles.postStats}>
+          <View style={styles.stat}>
+            <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
+            <Text style={[styles.statText, { color: C.muted }]}>{video.views || 0}</Text>
+          </View>
+          <View style={styles.stat}>
+            <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
+            <Text style={[styles.statText, { color: C.muted }]}>{video.likes || 0}</Text>
+          </View>
+          <View style={[styles.stat, styles.statCategory]}>
+            <Text style={[styles.categoryText, { color: C.accent, backgroundColor: C.accentBg }]}>
+              {video.category || 'Video'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={[styles.actionRow, { borderTopColor: C.border }]}>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.seeMoreBtn, { backgroundColor: C.accentBg }]}
+            onPress={() => handleSeeMore(video, 'video')}
+          >
+            <Ionicons name="eye-outline" size={scale(16)} color={C.accent} />
+            <Text style={[styles.actionBtnText, { color: C.accent }]}>See More</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.actionRight}>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.editBtn, { backgroundColor: C.iconBlueBg }]}
+              onPress={() => handleEdit(video, 'video')}
+            >
+              <Ionicons name="create-outline" size={scale(16)} color={C.iconBlue} />
+              <Text style={[styles.actionBtnText, { color: C.iconBlue }]}>Edit</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.deleteBtn, { backgroundColor: C.accentBg }]}
+              onPress={() => handleDelete(video, 'video')}
+            >
+              <Ionicons name="trash-outline" size={scale(16)} color={C.accent} />
+              <Text style={[styles.actionBtnText, { color: C.accent }]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
 
   // ─── Preview Modal Components ─────────────────────────────────────────────
 
@@ -289,7 +487,6 @@ export default function ManagePosts() {
   const renderVideoPreview = (video) => {
     return (
       <View style={[styles.previewContent, { backgroundColor: C.surface }]}>
-        {/* Preview Header */}
         <View style={[styles.previewHeader, { borderBottomColor: C.border }]}>
           <Text style={[styles.previewBadge, { color: C.accent, backgroundColor: C.accentBg }]}>
             Preview
@@ -299,9 +496,7 @@ export default function ManagePosts() {
           </Text>
         </View>
 
-        {/* Video Content */}
         <ScrollView style={styles.previewScroll} showsVerticalScrollIndicator={false}>
-          {/* Video Thumbnail with Play Button */}
           <View style={styles.previewVideoContainer}>
             {video.thumbnail ? (
               <Image 
@@ -366,124 +561,6 @@ export default function ManagePosts() {
       </View>
     );
   };
-
-  const renderArticleItem = (article) => (
-    <TouchableOpacity
-      key={article._id}
-      style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}
-      activeOpacity={0.7}
-      onPress={() => handlePreview(article, 'article')}
-    >
-      <View style={styles.postHeader}>
-        <View style={styles.postIconWrap}>
-          <View style={[styles.postIconBg, { backgroundColor: C.accentBg }]}>
-            <Ionicons name="newspaper-outline" size={scale(18)} color={C.accent} />
-          </View>
-          <View style={styles.postTitleWrap}>
-            <Text style={[styles.postTitle, { color: C.primary }]} numberOfLines={1}>
-              {article.title}
-            </Text>
-            <View style={styles.postMeta}>
-              <View style={[styles.statusBadge, { backgroundColor: C.iconGreenBg }]}>
-                <Text style={[styles.statusText, { color: C.iconGreen }]}>
-                  {article.isPublished ? 'Published' : 'Draft'}
-                </Text>
-              </View>
-              <Text style={[styles.postDate, { color: C.muted }]}>
-                {new Date(article.createdAt).toLocaleDateString()}
-              </Text>
-            </View>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={[styles.moreBtn, { backgroundColor: C.bg }]}
-          onPress={() => {
-            setSelectedItem(article);
-            setModalVisible(true);
-          }}
-        >
-          <Ionicons name="ellipsis-vertical" size={scale(18)} color={C.muted} />
-        </TouchableOpacity>
-      </View>
-      <View style={[styles.divider, { backgroundColor: C.border }]} />
-      <View style={styles.postStats}>
-        <View style={styles.stat}>
-          <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
-          <Text style={[styles.statText, { color: C.muted }]}>{article.views || 0}</Text>
-        </View>
-        <View style={styles.stat}>
-          <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
-          <Text style={[styles.statText, { color: C.muted }]}>{article.likes || 0}</Text>
-        </View>
-        <View style={styles.stat}>
-          <Ionicons name="chatbubble-outline" size={scale(14)} color={C.muted} />
-          <Text style={[styles.statText, { color: C.muted }]}>{article.comments || 0}</Text>
-        </View>
-        <View style={[styles.stat, styles.statCategory]}>
-          <Text style={[styles.categoryText, { color: C.accent, backgroundColor: C.accentBg }]}>
-            {article.category || 'News'}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderVideoItem = (video) => (
-    <TouchableOpacity
-      key={video._id}
-      style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}
-      activeOpacity={0.7}
-      onPress={() => handlePreview(video, 'video')}
-    >
-      <View style={styles.postHeader}>
-        <View style={styles.postIconWrap}>
-          <View style={[styles.postIconBg, { backgroundColor: C.iconBlueBg }]}>
-            <Ionicons name="videocam-outline" size={scale(18)} color={C.iconBlue} />
-          </View>
-          <View style={styles.postTitleWrap}>
-            <Text style={[styles.postTitle, { color: C.primary }]} numberOfLines={1}>
-              {video.title}
-            </Text>
-            <View style={styles.postMeta}>
-              <View style={[styles.statusBadge, { backgroundColor: C.iconGreenBg }]}>
-                <Text style={[styles.statusText, { color: C.iconGreen }]}>
-                  {video.isPublished ? 'Published' : 'Draft'}
-                </Text>
-              </View>
-              <Text style={[styles.postDate, { color: C.muted }]}>
-                {new Date(video.createdAt).toLocaleDateString()}
-              </Text>
-            </View>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={[styles.moreBtn, { backgroundColor: C.bg }]}
-          onPress={() => {
-            setSelectedItem(video);
-            setModalVisible(true);
-          }}
-        >
-          <Ionicons name="ellipsis-vertical" size={scale(18)} color={C.muted} />
-        </TouchableOpacity>
-      </View>
-      <View style={[styles.divider, { backgroundColor: C.border }]} />
-      <View style={styles.postStats}>
-        <View style={styles.stat}>
-          <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
-          <Text style={[styles.statText, { color: C.muted }]}>{video.views || 0}</Text>
-        </View>
-        <View style={styles.stat}>
-          <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
-          <Text style={[styles.statText, { color: C.muted }]}>{video.likes || 0}</Text>
-        </View>
-        <View style={[styles.stat, styles.statCategory]}>
-          <Text style={[styles.categoryText, { color: C.accent, backgroundColor: C.accentBg }]}>
-            {video.category || 'Video'}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
 
   const styles = makeStyles(C);
 
@@ -590,57 +667,6 @@ export default function ManagePosts() {
           </View>
         )}
       </ScrollView>
-
-      {/* ─── Action Modal ─────────────────────────────────────────────────────── */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setModalVisible(false)}
-        >
-          <View style={[styles.modalContent, { backgroundColor: C.surface }]}>
-            <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
-            <Text style={[styles.modalTitle, { color: C.primary }]}>Post Options</Text>
-            
-            <TouchableOpacity
-              style={[styles.modalOption, { borderBottomColor: C.border }]}
-              onPress={() => handleEdit(selectedItem, activeTab === 'articles' ? 'article' : 'video')}
-            >
-              <View style={[styles.modalOptionIconWrap, { backgroundColor: C.accentBg }]}>
-                <Ionicons name="create-outline" size={scale(20)} color={C.accent} />
-              </View>
-              <Text style={[styles.modalOptionText, { color: C.primary }]}>Edit</Text>
-              <Ionicons name="chevron-forward" size={scale(18)} color={C.muted} style={styles.modalOptionArrow} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modalOption}
-              onPress={() => {
-                setModalVisible(false);
-                handleDelete(selectedItem, activeTab === 'articles' ? 'article' : 'video');
-              }}
-            >
-              <View style={[styles.modalOptionIconWrap, { backgroundColor: C.accentBg }]}>
-                <Ionicons name="trash-outline" size={scale(20)} color={C.accent} />
-              </View>
-              <Text style={[styles.modalOptionText, { color: C.accent }]}>Delete</Text>
-              <Ionicons name="chevron-forward" size={scale(18)} color={C.muted} style={styles.modalOptionArrow} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modalCancelBtn, { borderColor: C.border }]}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={[styles.modalCancelText, { color: C.secondary }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       {/* ─── Preview Modal ────────────────────────────────────────────────────── */}
       <Modal
@@ -784,7 +810,6 @@ function makeStyles(C) {
     // Post Card
     postCard: {
       borderRadius: scale(14),
-      padding: scale(16),
       marginBottom: vs(12),
       borderWidth: StyleSheet.hairlineWidth,
       shadowColor: '#000',
@@ -792,6 +817,21 @@ function makeStyles(C) {
       shadowOpacity: C.cardShadowOpacity,
       shadowRadius: scale(8),
       elevation: 2,
+      overflow: 'hidden',
+    },
+    thumbnailImage: {
+      width: '100%',
+      height: vs(180),
+      backgroundColor: C.bg,
+    },
+    thumbnailPlaceholder: {
+      width: '100%',
+      height: vs(180),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    postContent: {
+      padding: scale(14),
     },
     postHeader: {
       flexDirection: 'row',
@@ -815,9 +855,10 @@ function makeStyles(C) {
       flex: 1,
     },
     postTitle: {
-      fontSize: sp(15),
+      fontSize: sp(16),
       fontWeight: '600',
       marginBottom: vs(4),
+      lineHeight: sp(22),
     },
     postMeta: {
       flexDirection: 'row',
@@ -836,22 +877,11 @@ function makeStyles(C) {
     postDate: {
       fontSize: sp(11),
     },
-    moreBtn: {
-      width: scale(30),
-      height: scale(30),
-      borderRadius: scale(8),
-      justifyContent: 'center',
-      alignItems: 'center',
-      flexShrink: 0,
-    },
-    divider: {
-      height: StyleSheet.hairlineWidth,
-      marginVertical: vs(10),
-    },
     postStats: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: scale(14),
+      marginTop: vs(6),
     },
     stat: {
       flexDirection: 'row',
@@ -874,64 +904,37 @@ function makeStyles(C) {
       overflow: 'hidden',
     },
 
-    // Action Modal
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'flex-end',
+    // Action Buttons
+    actionRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: vs(10),
+      marginTop: vs(8),
+      borderTopWidth: 1,
     },
-    modalContent: {
-      borderTopLeftRadius: scale(24),
-      borderTopRightRadius: scale(24),
-      padding: scale(20),
-      paddingBottom: vs(30),
+    actionRight: {
+      flexDirection: 'row',
+      gap: scale(8),
     },
-    modalHandle: {
-      width: scale(40),
-      height: scale(4),
-      borderRadius: scale(2),
-      alignSelf: 'center',
-      marginBottom: vs(14),
-    },
-    modalTitle: {
-      fontSize: sp(17),
-      fontWeight: '700',
-      marginBottom: vs(12),
-      letterSpacing: -0.2,
-    },
-    modalOption: {
+    actionBtn: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: vs(12),
-      gap: scale(12),
-      borderBottomWidth: StyleSheet.hairlineWidth,
+      gap: scale(4),
+      paddingHorizontal: scale(12),
+      paddingVertical: vs(6),
+      borderRadius: scale(8),
     },
-    modalOptionIconWrap: {
-      width: scale(38),
-      height: scale(38),
-      borderRadius: scale(10),
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    modalOptionText: {
-      fontSize: sp(15),
+    actionBtnText: {
+      fontSize: sp(12),
       fontWeight: '600',
+    },
+    seeMoreBtn: {
       flex: 1,
+      justifyContent: 'center',
     },
-    modalOptionArrow: {
-      opacity: 0.5,
-    },
-    modalCancelBtn: {
-      paddingVertical: vs(14),
-      borderRadius: scale(12),
-      alignItems: 'center',
-      borderWidth: 1,
-      marginTop: vs(8),
-    },
-    modalCancelText: {
-      fontSize: sp(15),
-      fontWeight: '600',
-    },
+    editBtn: {},
+    deleteBtn: {},
 
     // ─── Preview Modal Styles ──────────────────────────────────────────────────
     previewModalContainer: {

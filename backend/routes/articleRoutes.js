@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { verifyFirebaseToken } = require('../middleware/verifyFirebaseToken');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { uploadArticleImage } = require('../middleware/uploadMiddleware'); // ← Use uploadArticleImage
 const {
   getAllArticles,
   getArticleById,
@@ -35,9 +36,10 @@ router.get('/:id/comments', asyncHandler(getComments));
 // Protected routes - require authentication
 router.use(verifyFirebaseToken);
 
-// Article CRUD - REMOVED uploadArticleMedia middleware
-router.post('/', asyncHandler(createArticle));  // ← Changed this line
-router.put('/:id', asyncHandler(updateArticle)); // ← Changed this line
+// ─── FIXED: Use uploadArticleImage middleware ───────────────────────────────
+// uploadArticleImage is a single middleware that handles single image upload
+router.post('/', uploadArticleImage, asyncHandler(createArticle));
+router.put('/:id', uploadArticleImage, asyncHandler(updateArticle));
 router.delete('/:id', asyncHandler(deleteArticle));
 
 // Like routes

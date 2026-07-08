@@ -92,10 +92,7 @@ const upload = (config = {}) => {
   });
 };
 
-// Error handling helper for multer (called explicitly, NOT registered
-// directly in the middleware chain, since Express only auto-detects
-// 4-arg error handlers when they immediately follow a thrown error in
-// the chain - not when placed as a plain array item).
+// Error handling helper for multer
 const handleMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
@@ -117,11 +114,9 @@ const handleMulterError = (err, req, res, next) => {
   next();
 };
 
-// Specific upload middlewares
-// Each of these now returns a SINGLE middleware function (not an array).
-// It runs multer manually and forwards multer's own callback-style error
-// into handleMulterError with all 4 real arguments, guaranteeing `next`
-// is never misaligned/undefined.
+// ─── FIXED: Specific upload middlewares ──────────────────────────────────────
+
+// Upload single image - For articles (field name: 'image')
 const uploadSingleImage = (fieldName = 'image') => {
   return (req, res, next) => {
     uploadImage.single(fieldName)(req, res, (err) => {
@@ -133,6 +128,7 @@ const uploadSingleImage = (fieldName = 'image') => {
   };
 };
 
+// Upload multiple images
 const uploadMultipleImages = (fieldName = 'images', maxCount = 5) => {
   return (req, res, next) => {
     uploadImage.array(fieldName, maxCount)(req, res, (err) => {
@@ -144,6 +140,7 @@ const uploadMultipleImages = (fieldName = 'images', maxCount = 5) => {
   };
 };
 
+// Upload single video
 const uploadSingleVideo = (fieldName = 'video') => {
   return (req, res, next) => {
     uploadVideo.single(fieldName)(req, res, (err) => {
@@ -155,6 +152,7 @@ const uploadSingleVideo = (fieldName = 'video') => {
   };
 };
 
+// ─── FIXED: Upload channel media ─────────────────────────────────────────────
 const uploadChannelMedia = () => {
   return (req, res, next) => {
     uploadMedia.fields([
@@ -169,11 +167,11 @@ const uploadChannelMedia = () => {
   };
 };
 
+// ─── FIXED: Upload article media (SINGLE image) ─────────────────────────────
+// Using uploadImage.single() instead of uploadMedia.fields()
 const uploadArticleMedia = () => {
   return (req, res, next) => {
-    uploadMedia.fields([
-      { name: 'image', maxCount: 1 },
-    ])(req, res, (err) => {
+    uploadImage.single('image')(req, res, (err) => {
       if (err) {
         return handleMulterError(err, req, res, next);
       }
@@ -182,6 +180,7 @@ const uploadArticleMedia = () => {
   };
 };
 
+// ─── FIXED: Upload video media ───────────────────────────────────────────────
 const uploadVideoMedia = () => {
   return (req, res, next) => {
     uploadMedia.fields([
@@ -196,6 +195,10 @@ const uploadVideoMedia = () => {
   };
 };
 
+// ─── ADD: Simple uploadArticleMedia as a single middleware ──────────────────
+// This is what you'll use in your routes
+const uploadArticleImage = uploadImage.single('image');
+
 module.exports = {
   uploadImage,
   uploadVideo,
@@ -208,6 +211,7 @@ module.exports = {
   uploadChannelMedia,
   uploadArticleMedia,
   uploadVideoMedia,
+  uploadArticleImage, // ← Added this for simpler usage
   imageFileFilter,
   videoFileFilter,
   mediaFileFilter,

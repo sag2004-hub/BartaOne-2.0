@@ -1,10 +1,11 @@
 // backend/controllers/articleController.js
 const Article = require('../models/Article');
 const Channel = require('../models/Channel');
-const User = require('../models/User'); // ← ADD THIS - WAS MISSING
+const User = require('../models/User');
 const Like = require('../models/Like');
 const Comment = require('../models/Comment');
-const { sendResponse, sendError } = require('../utils/response'); // ← ADD THIS - WAS MISSING
+const { sendResponse, sendError } = require('../utils/response');
+const cloudinaryService = require('../services/cloudinaryService');
 
 // Get all articles
 exports.getAllArticles = async (req, res) => {
@@ -54,11 +55,9 @@ exports.getArticleById = async (req, res) => {
       return sendError(res, 404, 'Article not found');
     }
 
-    // Increment views
     article.views += 1;
     await article.save();
 
-    // Check if user liked the article
     let isLiked = false;
     if (req.user?.uid) {
       const user = await User.findOne({ firebaseUid: req.user.uid });
@@ -172,6 +171,8 @@ exports.createArticle = async (req, res) => {
   try {
     console.log('📥 Create article request received');
     console.log('📥 Request body:', req.body);
+    console.log('📥 Request file:', req.file ? req.file.originalname : 'No file');
+    console.log('📥 File buffer size:', req.file ? req.file.buffer.length : 0);
     
     const firebaseUid = req.user?.uid;
 
@@ -201,23 +202,27 @@ exports.createArticle = async (req, res) => {
     console.log('✅ Channel found:', channel.channelName, 'ID:', channel._id);
 
     // Extract data from request body
-    const { title, body, summary, category, language, image, channelId } = req.body;
+    const { title, body, summary, category, language } = req.body;
 
     // Validate required fields
-    if (!title || !body || !summary) {
-      console.error('❌ Missing required fields');
-      return sendError(res, 400, 'Title, body, and summary are required');
+    if (!title || !title.trim()) {
+      console.error('❌ Missing title');
+      return sendError(res, 400, 'Title is required');
     }
-
-    // Use channelId from request or from channel object
-    // CRITICAL FIX: Use channel._id (MongoDB ID) instead of the Firebase UID
-    const finalChannelId = channel._id; // ← USE THIS, NOT channelId from request
-
-    console.log('✅ Using channel ID:', finalChannelId);
+    
+    if (!body || !body.trim()) {
+      console.error('❌ Missing body');
+      return sendError(res, 400, 'Body content is required');
+    }
+    
+    if (!summary || !summary.trim()) {
+      console.error('❌ Missing summary');
+      return sendError(res, 400, 'Summary is required');
+    }
 
     // Create article data
     const articleData = {
-      channelId: finalChannelId, // ← Use MongoDB channel ID
+      channelId: channel._id,
       title: title.trim(),
       body: body.trim(),
       summary: summary.trim(),
@@ -227,17 +232,27 @@ exports.createArticle = async (req, res) => {
       publishedAt: new Date(),
     };
 
-    // Handle image if provided as base64
-    if (image && image.base64) {
+    // Handle image upload from memory buffer
+    if (req.file) {
       try {
-        // In production, you should upload to Cloudinary or other storage
-        // For now, we'll save the base64 string
-        articleData.image = `data:${image.type || 'image/jpeg'};base64,${image.base64}`;
-        console.log('✅ Image added to article (base64 length:', image.base64.length, ')');
+        console.log('📤 Uploading image to Cloudinary from memory buffer...');
+        console.log('📤 Image size:', req.file.buffer.length, 'bytes');
+        console.log('📤 Image type:', req.file.mimetype);
+        
+        const result = await cloudinaryService.uploadArticleImage(
+          req.file.buffer, 
+          channel._id.toString()
+        );
+        
+        articleData.image = result.secure_url;
+        console.log('✅ Image uploaded to Cloudinary:', result.secure_url);
+        console.log('✅ Public ID:', result.public_id);
+        
       } catch (imgError) {
-        console.error('❌ Error processing image:', imgError);
-        // Continue without image
+        console.error('❌ Error uploading image to Cloudinary:', imgError);
       }
+    } else {
+      console.log('📤 No image to upload');
     }
 
     const article = new Article(articleData);
@@ -273,23 +288,72 @@ exports.updateArticle = async (req, res) => {
       return sendError(res, 404, 'Article not found');
     }
 
-    // Check if user owns the channel
     if (article.channelId.ownerId.toString() !== user._id.toString()) {
       return sendError(res, 403, 'Unauthorized to update this article');
     }
 
-    const { title, body, summary, category, language, isPublished, image } = req.body;
+    const { title, body, summary, category, language, isPublished, keepExistingImage } = req.body;
 
     if (title) article.title = title.trim();
     if (body) article.body = body.trim();
     if (summary) article.summary = summary.trim();
     if (category) article.category = category;
     if (language) article.language = language;
-    if (isPublished !== undefined) article.isPublished = isPublished;
+    if (isPublished !== undefined) article.isPublished = isPublished === 'true';
 
-    // Handle image if provided
-    if (image && image.base64) {
-      article.image = `data:${image.type || 'image/jpeg'};base64,${image.base64}`;
+    // Handle image update
+    if (req.file) {
+      try {
+        console.log('📤 Uploading new image to Cloudinary from memory buffer...');
+        console.log('📤 New image size:', req.file.buffer.length, 'bytes');
+        
+        // Delete old image if exists
+        if (article.image) {
+          try {
+            const urlParts = article.image.split('/');
+            const publicIdWithExt = urlParts[urlParts.length - 1];
+            const publicId = publicIdWithExt.split('.')[0];
+            const folder = urlParts[urlParts.length - 2];
+            const fullPublicId = `${folder}/${publicId}`;
+            
+            await cloudinaryService.deleteFromCloudinary(fullPublicId);
+            console.log('✅ Old image deleted from Cloudinary');
+          } catch (deleteError) {
+            console.warn('⚠️ Could not delete old image:', deleteError.message);
+          }
+        }
+        
+        // Upload new image
+        const result = await cloudinaryService.uploadArticleImage(
+          req.file.buffer, 
+          article.channelId._id.toString()
+        );
+        article.image = result.secure_url;
+        console.log('✅ New image uploaded:', result.secure_url);
+        
+      } catch (imgError) {
+        console.error('❌ Error uploading image:', imgError);
+      }
+    } else if (keepExistingImage === 'true') {
+      // Keep existing image - do nothing
+      console.log('📤 Keeping existing image');
+    } else if (!req.file && !keepExistingImage) {
+      // No image provided and not keeping existing - remove image
+      if (article.image) {
+        try {
+          const urlParts = article.image.split('/');
+          const publicIdWithExt = urlParts[urlParts.length - 1];
+          const publicId = publicIdWithExt.split('.')[0];
+          const folder = urlParts[urlParts.length - 2];
+          const fullPublicId = `${folder}/${publicId}`;
+          
+          await cloudinaryService.deleteFromCloudinary(fullPublicId);
+          console.log('✅ Image removed from Cloudinary');
+        } catch (deleteError) {
+          console.warn('⚠️ Could not delete image:', deleteError.message);
+        }
+        article.image = null;
+      }
     }
 
     article.updatedAt = new Date();
@@ -322,9 +386,24 @@ exports.deleteArticle = async (req, res) => {
       return sendError(res, 404, 'Article not found');
     }
 
-    // Check if user owns the channel
     if (article.channelId.ownerId.toString() !== user._id.toString()) {
       return sendError(res, 403, 'Unauthorized to delete this article');
+    }
+
+    // Delete image from Cloudinary if exists
+    if (article.image) {
+      try {
+        const urlParts = article.image.split('/');
+        const publicIdWithExt = urlParts[urlParts.length - 1];
+        const publicId = publicIdWithExt.split('.')[0];
+        const folder = urlParts[urlParts.length - 2];
+        const fullPublicId = `${folder}/${publicId}`;
+        
+        await cloudinaryService.deleteFromCloudinary(fullPublicId);
+        console.log('✅ Image deleted from Cloudinary');
+      } catch (deleteError) {
+        console.warn('⚠️ Could not delete image from Cloudinary:', deleteError.message);
+      }
     }
 
     await article.deleteOne();
@@ -356,7 +435,6 @@ exports.likeArticle = async (req, res) => {
       return sendError(res, 404, 'Article not found');
     }
 
-    // Check if already liked
     const existingLike = await Like.findOne({
       userId: user._id,
       articleId: article._id,
@@ -452,7 +530,6 @@ exports.addComment = async (req, res) => {
     });
     await comment.save();
 
-    // Increment comment count
     article.comments += 1;
     await article.save();
 
@@ -471,7 +548,7 @@ exports.getComments = async (req, res) => {
 
     const comments = await Comment.find({
       articleId: id,
-      parentCommentId: null, // Only top-level comments
+      parentCommentId: null,
     })
       .populate('userId', 'name profilePicture')
       .limit(limit * 1)
@@ -483,7 +560,6 @@ exports.getComments = async (req, res) => {
       parentCommentId: null,
     });
 
-    // Get replies for each comment
     const commentsWithReplies = await Promise.all(
       comments.map(async (comment) => {
         const replies = await Comment.find({

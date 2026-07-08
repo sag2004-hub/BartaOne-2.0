@@ -17,6 +17,7 @@ export const articleService = {
   // Get article by ID
   getById: async (id) => {
     try {
+      console.log('📡 Fetching article by ID:', id);
       const response = await api.get(`/articles/${id}`);
       return response.data;
     } catch (error) {
@@ -70,7 +71,7 @@ export const articleService = {
     }
   },
 
-  // ─── Get owner articles ─────────────────────────────────────────────────────
+  // Get owner articles
   getOwnerArticles: async (channelId) => {
     try {
       console.log('📡 [getOwnerArticles] Fetching articles for channel:', channelId);
@@ -106,15 +107,13 @@ export const articleService = {
     }
   },
 
-  // ─── FIXED: Create article with image upload ───────────────────────────────
+  // ─── CREATE ARTICLE ────────────────────────────────────────────────────────
   create: async (articleData) => {
     try {
       console.log('📤 Creating article with data:', articleData);
       
-      // Use FormData for image upload
       const formData = new FormData();
       
-      // Add all text fields
       formData.append('title', articleData.title);
       formData.append('summary', articleData.summary);
       formData.append('body', articleData.body);
@@ -122,15 +121,14 @@ export const articleService = {
       formData.append('language', articleData.language);
       formData.append('channelId', articleData.channelId);
       
-      // Add image if present
-      if (articleData.image && articleData.image.base64) {
-        // For React Native, we need to create a file object
+      if (articleData.image && articleData.image.uri) {
         const imageFile = {
-          uri: articleData.image.uri || `data:image/jpeg;base64,${articleData.image.base64}`,
+          uri: articleData.image.uri,
           name: articleData.image.name || `article-${Date.now()}.jpg`,
           type: articleData.image.type || 'image/jpeg',
         };
         formData.append('image', imageFile);
+        console.log('📤 Image attached:', imageFile.name);
       }
 
       const response = await api.post('/articles', formData, {
@@ -147,14 +145,14 @@ export const articleService = {
     }
   },
 
-  // ─── Update article ─────────────────────────────────────────────────────────
+  // ─── UPDATE ARTICLE ────────────────────────────────────────────────────────
   update: async (id, articleData) => {
     try {
       console.log('📤 Updating article:', id);
+      console.log('📤 Update data:', articleData);
       
       const formData = new FormData();
       
-      // Add all text fields
       if (articleData.title) formData.append('title', articleData.title);
       if (articleData.summary) formData.append('summary', articleData.summary);
       if (articleData.body) formData.append('body', articleData.body);
@@ -162,14 +160,17 @@ export const articleService = {
       if (articleData.language) formData.append('language', articleData.language);
       if (articleData.isPublished !== undefined) formData.append('isPublished', String(articleData.isPublished));
       
-      // Add image if present
-      if (articleData.image && articleData.image.base64) {
+      if (articleData.image && articleData.image.uri) {
         const imageFile = {
-          uri: articleData.image.uri || `data:image/jpeg;base64,${articleData.image.base64}`,
+          uri: articleData.image.uri,
           name: articleData.image.name || `article-${Date.now()}.jpg`,
           type: articleData.image.type || 'image/jpeg',
         };
         formData.append('image', imageFile);
+        console.log('📤 New image attached for update:', imageFile.name);
+      } else if (articleData.image && articleData.image.keepExisting) {
+        formData.append('keepExistingImage', 'true');
+        console.log('📤 Keeping existing image');
       }
 
       const response = await api.put(`/articles/${id}`, formData, {
@@ -186,7 +187,7 @@ export const articleService = {
     }
   },
 
-  // ─── Delete article ─────────────────────────────────────────────────────────
+  // ─── DELETE ARTICLE ────────────────────────────────────────────────────────
   delete: async (id) => {
     try {
       console.log('📤 Deleting article:', id);
