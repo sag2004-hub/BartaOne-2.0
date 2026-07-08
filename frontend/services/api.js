@@ -7,34 +7,27 @@ import { Platform } from 'react-native';
 
 // ─── Determine Base URL ──────────────────────────────────────────────────────
 const getBaseURL = () => {
-  // If API_URL is set in .env, use it
   if (API_URL) {
     console.log('🔗 Using API_URL from env:', API_URL);
     return API_URL;
   }
 
-  // Fallback for development
   if (__DEV__) {
-    // Your computer's IP address - replace with your actual IP
-    const DEV_IP = '192.168.29.16'; // ← CHANGE THIS TO YOUR IP
+    const DEV_IP = '192.168.29.16';
     const PORT = '5000';
     
     if (Platform.OS === 'android') {
-      // Android emulator can use localhost
       return `http://10.0.2.2:${PORT}/api`;
     }
-    // Physical device or iOS simulator
     return `http://${DEV_IP}:${PORT}/api`;
   }
 
-  // Production URL
   return 'https://your-production-url.com/api';
 };
 
 const BASE_URL = getBaseURL();
 console.log('🌐 [api.js] Base URL:', BASE_URL);
 
-// ─── Create axios instance ──────────────────────────────────────────────────
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -48,19 +41,15 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      // Log the request
       console.log(`📤 ${config.method?.toUpperCase() || 'GET'} ${config.url}`);
       
       let token = null;
 
-      // Priority 1: get a fresh token directly from Firebase currentUser
       if (auth.currentUser) {
         token = await auth.currentUser.getIdToken();
-        // Keep AsyncStorage in sync so other parts of the app have it too
         await AsyncStorage.setItem('authToken', token);
         console.log('🔑 [api.js] token from Firebase currentUser ✅');
       } else {
-        // Fallback: try AsyncStorage (covers already-logged-in sessions)
         token = await AsyncStorage.getItem('authToken');
         console.log('🔑 [api.js] token from AsyncStorage:', token ? 'EXISTS ✅' : 'NULL ❌');
       }
@@ -71,6 +60,13 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       } else {
         console.warn('⚠️ [api.js] No token available for request');
+      }
+      
+      // ─── IMPORTANT: Don't override Content-Type for FormData ──────────────
+      // If the config already has a Content-Type header, keep it
+      // For FormData, axios will set the correct Content-Type with boundary
+      if (!config.headers['Content-Type'] && !config.headers['content-type']) {
+        config.headers['Content-Type'] = 'application/json';
       }
       
       return config;
@@ -92,9 +88,7 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    // Log the error details
     if (error.response) {
-      // Server responded with error
       console.error(`❌ [api.js] API Error ${error.response.status}:`, {
         url: error.config?.url,
         data: error.response.data,
@@ -114,7 +108,6 @@ api.interceptors.response.use(
       return Promise.reject(apiError);
     } 
     else if (error.request) {
-      // No response received
       console.error('❌ [api.js] No response received. Server may be unreachable.');
       console.error('   URL:', error.config?.baseURL + error.config?.url);
       console.error('   Method:', error.config?.method);
@@ -135,20 +128,7 @@ api.interceptors.response.use(
   }
 );
 
-// ─── Test Connection Function ───────────────────────────────────────────────
-export const testConnection = async () => {
-  try {
-    console.log('🔍 Testing API connection...');
-    const response = await api.get('/health');
-    console.log('✅ API connection successful:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('❌ API connection failed:', error.message);
-    throw error;
-  }
-};
-
-// ─── Export the raw axios instance for modules that call api.get/api.post directly
+// ─── Export ──────────────────────────────────────────────────────────────────
 export { api };
 
 // ─── API Methods ──────────────────────────────────────────────────────────────
@@ -303,8 +283,6 @@ export const uploadAPI = {
 };
 
 // ─── Live Service Functions ──────────────────────────────────────────────────
-// These are the functions used by the GoLive component
-
 export const startLiveStream = async (data) => {
   try {
     console.log('📡 Starting live stream...', data);
@@ -320,8 +298,6 @@ export const startLiveStream = async (data) => {
 export const scheduleLiveStream = async (data) => {
   try {
     console.log('📡 Scheduling live stream...', data);
-    // If your backend has a schedule endpoint, use it
-    // Otherwise, you might need to create a new API method
     const response = await api.post('/live/schedule', data);
     console.log('✅ Live stream scheduled:', response.data);
     return response.data;

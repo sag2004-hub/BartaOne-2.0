@@ -1,3 +1,4 @@
+// backend/middleware/uploadMiddleware.js
 const multer = require('multer');
 const path = require('path');
 const { sendError } = require('../utils/response');
@@ -114,7 +115,7 @@ const handleMulterError = (err, req, res, next) => {
   next();
 };
 
-// ─── FIXED: Specific upload middlewares ──────────────────────────────────────
+// ─── Specific upload middlewares ──────────────────────────────────────────────
 
 // Upload single image - For articles (field name: 'image')
 const uploadSingleImage = (fieldName = 'image') => {
@@ -152,7 +153,7 @@ const uploadSingleVideo = (fieldName = 'video') => {
   };
 };
 
-// ─── FIXED: Upload channel media ─────────────────────────────────────────────
+// Upload channel media (logo + banner)
 const uploadChannelMedia = () => {
   return (req, res, next) => {
     uploadMedia.fields([
@@ -167,8 +168,7 @@ const uploadChannelMedia = () => {
   };
 };
 
-// ─── FIXED: Upload article media (SINGLE image) ─────────────────────────────
-// Using uploadImage.single() instead of uploadMedia.fields()
+// Upload article media (single image)
 const uploadArticleMedia = () => {
   return (req, res, next) => {
     uploadImage.single('image')(req, res, (err) => {
@@ -180,7 +180,7 @@ const uploadArticleMedia = () => {
   };
 };
 
-// ─── FIXED: Upload video media ───────────────────────────────────────────────
+// ─── FIXED: Upload video media (video + thumbnail) ───────────────────────────
 const uploadVideoMedia = () => {
   return (req, res, next) => {
     uploadMedia.fields([
@@ -195,24 +195,34 @@ const uploadVideoMedia = () => {
   };
 };
 
-// ─── ADD: Simple uploadArticleMedia as a single middleware ──────────────────
-// This is what you'll use in your routes
+// ─── Simple middlewares (single file uploads) ──────────────────────────────
 const uploadArticleImage = uploadImage.single('image');
+const uploadSingleVideoFile = uploadVideo.single('video');
 
 module.exports = {
+  // Multer instances
   uploadImage,
   uploadVideo,
   uploadMedia,
   upload,
+  
+  // Error handler
   handleMulterError,
+  
+  // File filters
+  imageFileFilter,
+  videoFileFilter,
+  mediaFileFilter,
+  
+  // Upload middlewares (functions that return middleware)
   uploadSingleImage,
   uploadMultipleImages,
   uploadSingleVideo,
   uploadChannelMedia,
   uploadArticleMedia,
   uploadVideoMedia,
-  uploadArticleImage, // ← Added this for simpler usage
-  imageFileFilter,
-  videoFileFilter,
-  mediaFileFilter,
+  
+  // Simple middlewares (ready to use)
+  uploadArticleImage,
+  uploadSingleVideoFile,
 };

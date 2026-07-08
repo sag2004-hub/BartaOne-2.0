@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+// app/(owner)/UploadVideo.jsx
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,8 +22,10 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../hooks/useAuth';
-import { uploadVideo } from '../../services/videoService';
+import { createVideo, updateVideo, getVideoById } from '../../services/videoService';
+import { getChannelByOwner } from '../../services/channelService';
 import Loader from '../../components/Loader';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 const BASE_W = 390;
@@ -91,20 +94,31 @@ const DARK = {
   iconAmberBg:      'rgba(251,191,36,0.12)',
 };
 
-export default function UploadVideo({ navigation }) {
+export default function UploadVideo() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
   const scheme = useColorScheme();
   const C = scheme === 'dark' ? DARK : LIGHT;
   const { user } = useAuth();
+  
+  // States
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingChannel, setIsLoadingChannel] = useState(true);
+  const [isLoadingVideo, setIsLoadingVideo] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [videoId, setVideoId] = useState(null);
+  const [channelId, setChannelId] = useState(null);
+  const [channelData, setChannelData] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'news',
+    category: 'sports',
     language: 'en',
-    isAdultContent: false,
+    isChildFriendly: true,
   });
-  const [video, setVideo] = useState(null);
+  const [videoFile, setVideoFile] = useState(null);
   const [thumbnail, setThumbnail] = useState(null);
+  const [existingThumbnail, setExistingThumbnail] = useState(null);
   const [errors, setErrors] = useState({});
   const [focusedInput, setFocusedInput] = useState(null);
 
@@ -113,15 +127,123 @@ export default function UploadVideo({ navigation }) {
   const descriptionInputRef = useRef(null);
 
   const categories = [
+    { label: 'Sports', value: 'sports', icon: 'basketball-outline' },
     { label: 'News', value: 'news', icon: 'newspaper-outline' },
     { label: 'Entertainment', value: 'entertainment', icon: 'film-outline' },
-    { label: 'Sports', value: 'sports', icon: 'basketball-outline' },
     { label: 'Business', value: 'business', icon: 'business-outline' },
     { label: 'Technology', value: 'technology', icon: 'hardware-chip-outline' },
     { label: 'Lifestyle', value: 'lifestyle', icon: 'leaf-outline' },
     { label: 'Other', value: 'other', icon: 'ellipsis-horizontal-outline' },
   ];
 
+  // ─── Check if editing ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (params.edit) {
+      setIsEditing(true);
+      setVideoId(params.edit);
+      loadVideoData(params.edit);
+    }
+  }, [params.edit]);
+
+  // ─── Load Channel ID ──────────────────────────────────────────────────────
+  useEffect(() => {
+    loadChannelId();
+  }, []);
+
+  const loadChannelId = async () => {
+    setIsLoadingChannel(true);
+    try {
+      console.log('📡 Loading channel for owner...');
+      const channel = await getChannelByOwner();
+      console.log('📡 Channel response:', channel);
+      
+      if (channel && channel._id) {
+        setChannelId(channel._id);
+        setChannelData(channel);
+        console.log('✅ Channel ID loaded:', channel._id);
+        console.log('✅ Channel name:', channel.channelName);
+      } else {
+        console.error('❌ No channel found or missing _id');
+        Alert.alert(
+          'No Channel Found',
+          'Please create a channel before uploading videos.',
+          [
+            {
+              text: 'Create Channel',
+              onPress: () => router.push('/(owner)/CreateChannel'),
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error loading channel:', error);
+      Alert.alert('Error', 'Failed to load channel information. Please try again.');
+    } finally {
+      setIsLoadingChannel(false);
+    }
+  };
+
+  // ─── Load Video Data for Editing ──────────────────────────────────────────
+  const loadVideoData = async (id) => {
+    try {
+      setIsLoadingVideo(true);
+      console.log('📡 Loading video for editing:', id);
+      
+      const response = await getVideoById(id);
+      console.log('📡 Video response:', response);
+      
+      let video = response;
+      if (response && response.data) {
+        video = response.data;
+      }
+      
+      if (video) {
+        setFormData({
+          title: video.title || '',
+          description: video.description || '',
+          category: video.category || 'sports',
+          language: video.language || 'en',
+          isChildFriendly: video.isChildFriendly !== undefined ? video.isChildFriendly : true,
+        });
+        
+        if (video.thumbnail) {
+          setExistingThumbnail(video.thumbnail);
+        }
+        
+        console.log('✅ Video loaded successfully');
+      } else {
+        console.error('❌ No video data found');
+        Alert.alert('Error', 'Failed to load video data');
+      }
+    } catch (error) {
+      console.error('❌ Error loading video:', error);
+      Alert.alert('Error', 'Failed to load video data. Please try again.');
+    } finally {
+      setIsLoadingVideo(false);
+    }
+  };
+
+  // ─── Reset Form ──────────────────────────────────────────────────────────
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      category: 'sports',
+      language: 'en',
+      isChildFriendly: true,
+    });
+    setVideoFile(null);
+    setThumbnail(null);
+    setExistingThumbnail(null);
+    setErrors({});
+  };
+
+  // ─── Pick Video ────────────────────────────────────────────────────────────
   const pickVideo = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -132,15 +254,18 @@ export default function UploadVideo({ navigation }) {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: true,
-      quality: 0.7,
+      quality: 0.8,
     });
 
     if (!result.canceled) {
-      setVideo(result.assets[0]);
+      const asset = result.assets[0];
+      setVideoFile(asset);
       setErrors({ ...errors, video: null });
+      console.log('📤 Video selected:', asset.fileName, 'Size:', asset.fileSize);
     }
   };
 
+  // ─── Pick Thumbnail ────────────────────────────────────────────────────────
   const pickThumbnail = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -156,10 +281,14 @@ export default function UploadVideo({ navigation }) {
     });
 
     if (!result.canceled) {
-      setThumbnail(result.assets[0]);
+      const asset = result.assets[0];
+      setThumbnail(asset);
+      setExistingThumbnail(null);
+      console.log('📤 Thumbnail selected:', asset.fileName);
     }
   };
 
+  // ─── Validation ────────────────────────────────────────────────────────────
   const validateForm = () => {
     const newErrors = {};
     if (!formData.title.trim()) {
@@ -168,50 +297,162 @@ export default function UploadVideo({ navigation }) {
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
     }
-    if (!video) {
+    if (!videoFile && !isEditing) {
       newErrors.video = 'Please select a video';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ─── Navigation Helpers ──────────────────────────────────────────────────
+  const goToManagePosts = () => {
+    try {
+      router.push('/(owner)/ManagePosts');
+    } catch (error) {
+      console.error('Navigation to ManagePosts failed:', error);
+      try {
+        router.push('/(owner)');
+      } catch (e) {
+        console.error('Fallback navigation failed:', e);
+      }
+    }
+  };
+
+  const goBack = () => {
+    try {
+      router.back();
+    } catch (error) {
+      console.error('Navigation back failed:', error);
+      try {
+        router.push('/(owner)');
+      } catch (e) {
+        console.error('Fallback navigation failed:', e);
+      }
+    }
+  };
+
+  // ─── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    if (!channelId) {
+      Alert.alert('Error', 'Channel not found. Please create a channel first.');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const videoData = {
-        ...formData,
-        channelId: user.uid,
-        video: video,
-        thumbnail: thumbnail,
-      };
-      await uploadVideo(videoData);
+      // Prepare form data for multipart upload
+      const formDataToSend = new FormData();
+      
+      // Add text fields
+      formDataToSend.append('title', formData.title.trim());
+      formDataToSend.append('description', formData.description.trim());
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('language', formData.language);
+      formDataToSend.append('isChildFriendly', String(formData.isChildFriendly));
+      formDataToSend.append('channelId', channelId);
+
+      // ─── FIXED: Add video file ─────────────────────────────────────────────
+      if (videoFile) {
+        // Get the file name from the URI
+        const uriParts = videoFile.uri.split('/');
+        const fileName = uriParts[uriParts.length - 1];
+        
+        // Create a proper file object for FormData
+        const videoFileObj = {
+          uri: videoFile.uri,
+          name: videoFile.fileName || fileName || `video-${Date.now()}.mp4`,
+          type: videoFile.mimeType || 'video/mp4',
+        };
+        
+        formDataToSend.append('video', videoFileObj);
+        console.log('📤 Video file attached:', videoFileObj.name);
+        console.log('📤 Video URI:', videoFileObj.uri);
+        console.log('📤 Video type:', videoFileObj.type);
+      }
+
+      // ─── Add thumbnail if present ──────────────────────────────────────────
+      if (thumbnail) {
+        const uriParts = thumbnail.uri.split('/');
+        const fileName = uriParts[uriParts.length - 1];
+        
+        const thumbnailFileObj = {
+          uri: thumbnail.uri,
+          name: thumbnail.fileName || fileName || `thumbnail-${Date.now()}.jpg`,
+          type: thumbnail.mimeType || 'image/jpeg',
+        };
+        formDataToSend.append('thumbnail', thumbnailFileObj);
+        console.log('📤 Thumbnail attached:', thumbnailFileObj.name);
+      } else if (existingThumbnail && isEditing) {
+        // Keep existing thumbnail
+        formDataToSend.append('keepExistingThumbnail', 'true');
+        console.log('📤 Keeping existing thumbnail');
+      }
+
+      console.log('📤 FormData prepared for upload');
+
+      let response;
+      if (isEditing && videoId) {
+        console.log('📤 Updating video:', videoId);
+        response = await updateVideo(videoId, formDataToSend);
+      } else {
+        console.log('📤 Creating new video');
+        response = await createVideo(formDataToSend);
+      }
+      
+      console.log('✅ Video saved successfully:', response);
+
       Alert.alert(
-        'Success!',
-        'Your video has been uploaded successfully!',
+        '🎉 Success!',
+        `Your video has been ${isEditing ? 'updated' : 'uploaded'} successfully!`,
         [
           {
             text: 'View Videos',
-            onPress: () => navigation.navigate('ManagePosts'),
+            onPress: () => {
+              resetForm();
+              goToManagePosts();
+            },
           },
           {
-            text: 'OK',
+            text: isEditing ? 'Continue Editing' : 'Upload Another',
             style: 'cancel',
+            onPress: () => {
+              if (!isEditing) {
+                resetForm();
+              }
+            },
           },
         ]
       );
-      setFormData({
-        title: '',
-        description: '',
-        category: 'news',
-        language: 'en',
-        isAdultContent: false,
-      });
-      setVideo(null);
-      setThumbnail(null);
+
     } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to upload video');
+      console.error('❌ Error uploading video:');
+      console.error('  Message:', error.message);
+      console.error('  Status:', error.status);
+      console.error('  Data:', error.data);
+      
+      let errorMessage = `Failed to ${isEditing ? 'update' : 'upload'} video. Please try again.`;
+      
+      if (error.status === 400) {
+        errorMessage = error.data?.message || 'Invalid video data. Please check your inputs.';
+      } else if (error.status === 401) {
+        errorMessage = 'Session expired. Please login again.';
+      } else if (error.status === 403) {
+        errorMessage = 'You don\'t have permission to upload videos.';
+      } else if (error.status === 404) {
+        errorMessage = 'Channel not found. Please create a channel first.';
+      } else if (error.status === 409) {
+        errorMessage = 'A video with this title already exists.';
+      } else if (error.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (error.status === 0) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -221,29 +462,42 @@ export default function UploadVideo({ navigation }) {
     nextRef.current?.focus();
   };
 
-  const toggleAdultContent = () => {
-    setFormData({ ...formData, isAdultContent: !formData.isAdultContent });
+  const toggleChildFriendly = () => {
+    setFormData({ ...formData, isChildFriendly: !formData.isChildFriendly });
   };
 
   const styles = makeStyles(C);
 
-  if (isLoading) {
-    return <Loader message="Uploading video..." />;
+  // ─── Loading State ────────────────────────────────────────────────────────
+  if (isLoadingChannel || isLoadingVideo || isLoading) {
+    let message = 'Loading...';
+    if (isLoadingChannel) message = 'Loading channel...';
+    else if (isLoadingVideo) message = 'Loading video...';
+    else if (isLoading) message = isEditing ? 'Updating video...' : 'Uploading video...';
+    return <Loader message={message} />;
   }
 
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.topStripe} />
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <View style={styles.headerLeft} />
-        <Text style={[styles.headerTitle, { color: C.primary }]}>Upload Video</Text>
+        <TouchableOpacity 
+          style={styles.backBtn}
+          onPress={goBack}
+        >
+          <Ionicons name="arrow-back" size={scale(24)} color={C.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: C.primary }]}>
+          {isEditing ? 'Edit Video' : 'Upload Video'}
+        </Text>
         <TouchableOpacity 
           style={[styles.uploadBtn, { backgroundColor: C.accent }]}
           onPress={handleSubmit}
         >
-          <Text style={styles.uploadText}>Upload</Text>
+          <Text style={styles.uploadText}>{isEditing ? 'Update' : 'Upload'}</Text>
           <Ionicons name="cloud-upload-outline" size={scale(16)} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -262,52 +516,54 @@ export default function UploadVideo({ navigation }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View>
             {/* Video Upload */}
-            <View style={styles.inputGroup}>
-              <View style={styles.inputLabelRow}>
-                <Text style={[styles.inputLabel, { color: C.secondary }]}>Video File *</Text>
-                {errors.video && (
-                  <Text style={styles.errorText}>{errors.video}</Text>
-                )}
+            {!isEditing && (
+              <View style={styles.inputGroup}>
+                <View style={styles.inputLabelRow}>
+                  <Text style={[styles.inputLabel, { color: C.secondary }]}>Video File *</Text>
+                  {errors.video && (
+                    <Text style={styles.errorText}>{errors.video}</Text>
+                  )}
+                </View>
+                <TouchableOpacity 
+                  style={[
+                    styles.videoUpload, 
+                    { 
+                      borderColor: errors.video ? C.accent : C.border,
+                      backgroundColor: C.surfaceAlt,
+                    }
+                  ]} 
+                  onPress={pickVideo}
+                  activeOpacity={0.8}
+                >
+                  {videoFile ? (
+                    <View style={styles.videoPreview}>
+                      <View style={[styles.videoIconWrap, { backgroundColor: C.accentBg }]}>
+                        <Ionicons name="videocam" size={scale(32)} color={C.accent} />
+                      </View>
+                      <Text style={[styles.videoName, { color: C.primary }]} numberOfLines={1}>
+                        {videoFile.fileName || 'Video selected'}
+                      </Text>
+                      <View style={[styles.videoBadge, { backgroundColor: C.accent }]}>
+                        <Ionicons name="checkmark" size={scale(12)} color="#FFF" />
+                        <Text style={styles.videoBadgeText}>Selected</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.uploadPlaceholder}>
+                      <View style={[styles.uploadIconWrap, { backgroundColor: C.accentBg }]}>
+                        <Ionicons name="cloud-upload-outline" size={scale(32)} color={C.accent} />
+                      </View>
+                      <Text style={[styles.uploadTitle, { color: C.secondary }]}>Select Video</Text>
+                      <Text style={[styles.uploadSubtext, { color: C.muted }]}>MP4, MOV, AVI supported</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity 
-                style={[
-                  styles.videoUpload, 
-                  { 
-                    borderColor: errors.video ? C.accent : C.border,
-                    backgroundColor: C.surfaceAlt,
-                  }
-                ]} 
-                onPress={pickVideo}
-                activeOpacity={0.8}
-              >
-                {video ? (
-                  <View style={styles.videoPreview}>
-                    <View style={[styles.videoIconWrap, { backgroundColor: C.accentBg }]}>
-                      <Ionicons name="videocam" size={scale(32)} color={C.accent} />
-                    </View>
-                    <Text style={[styles.videoName, { color: C.primary }]} numberOfLines={1}>
-                      {video.fileName || 'Video selected'}
-                    </Text>
-                    <View style={[styles.videoBadge, { backgroundColor: C.accent }]}>
-                      <Ionicons name="checkmark" size={scale(12)} color="#FFF" />
-                      <Text style={styles.videoBadgeText}>Selected</Text>
-                    </View>
-                  </View>
-                ) : (
-                  <View style={styles.uploadPlaceholder}>
-                    <View style={[styles.uploadIconWrap, { backgroundColor: C.accentBg }]}>
-                      <Ionicons name="cloud-upload-outline" size={scale(32)} color={C.accent} />
-                    </View>
-                    <Text style={[styles.uploadTitle, { color: C.secondary }]}>Select Video</Text>
-                    <Text style={[styles.uploadSubtext, { color: C.muted }]}>MP4, MOV, AVI supported</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
+            )}
 
             {/* Thumbnail Upload */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: C.secondary }]}>Thumbnail (Optional)</Text>
+              <Text style={[styles.inputLabel, { color: C.secondary }]}>Thumbnail</Text>
               <TouchableOpacity 
                 style={[
                   styles.thumbnailUpload, 
@@ -321,6 +577,8 @@ export default function UploadVideo({ navigation }) {
               >
                 {thumbnail ? (
                   <Image source={{ uri: thumbnail.uri }} style={styles.thumbnailPreview} />
+                ) : existingThumbnail ? (
+                  <Image source={{ uri: existingThumbnail }} style={styles.thumbnailPreview} />
                 ) : (
                   <View style={styles.thumbnailPlaceholder}>
                     <Ionicons name="image-outline" size={scale(24)} color={C.muted} />
@@ -328,7 +586,7 @@ export default function UploadVideo({ navigation }) {
                     <Text style={[styles.thumbnailSubtext, { color: C.faint }]}>16:9 image recommended</Text>
                   </View>
                 )}
-                {thumbnail && (
+                {(thumbnail || existingThumbnail) && (
                   <View style={styles.thumbnailOverlay}>
                     <View style={[styles.thumbnailBadge, { backgroundColor: C.accent }]}>
                       <Ionicons name="camera-outline" size={scale(12)} color="#FFF" />
@@ -372,7 +630,7 @@ export default function UploadVideo({ navigation }) {
               </View>
             </View>
 
-            {/* Description - Now Mandatory */}
+            {/* Description */}
             <View style={styles.inputGroup}>
               <View style={styles.inputLabelRow}>
                 <Text style={[styles.inputLabel, { color: C.secondary }]}>Description *</Text>
@@ -446,25 +704,25 @@ export default function UploadVideo({ navigation }) {
               </View>
             </View>
 
-            {/* 18+ Content Toggle */}
+            {/* Child Friendly Toggle */}
             <View style={styles.inputGroup}>
               <View style={styles.toggleContainer}>
                 <View style={styles.toggleLeft}>
-                  <View style={[styles.toggleIconWrap, { backgroundColor: formData.isAdultContent ? C.accentBg : C.iconBlueBg }]}>
+                  <View style={[styles.toggleIconWrap, { backgroundColor: formData.isChildFriendly ? C.iconGreenBg : C.accentBg }]}>
                     <Ionicons 
-                      name={formData.isAdultContent ? 'warning-outline' : 'people-outline'} 
+                      name={formData.isChildFriendly ? 'people-outline' : 'warning-outline'} 
                       size={scale(20)} 
-                      color={formData.isAdultContent ? C.accent : C.iconBlue} 
+                      color={formData.isChildFriendly ? C.iconGreen : C.accent} 
                     />
                   </View>
                   <View>
                     <Text style={[styles.toggleTitle, { color: C.primary }]}>
-                      {formData.isAdultContent ? '18+ Content' : 'Child Friendly'}
+                      {formData.isChildFriendly ? 'Child Friendly' : '18+ Content'}
                     </Text>
                     <Text style={[styles.toggleSubtext, { color: C.muted }]}>
-                      {formData.isAdultContent 
-                        ? 'This video contains mature content' 
-                        : 'This video is suitable for all ages'}
+                      {formData.isChildFriendly 
+                        ? 'This video is suitable for all ages' 
+                        : 'This video contains mature content'}
                     </Text>
                   </View>
                 </View>
@@ -472,16 +730,16 @@ export default function UploadVideo({ navigation }) {
                   style={[
                     styles.toggleSwitch,
                     { 
-                      backgroundColor: formData.isAdultContent ? C.accent : C.iconBlue,
+                      backgroundColor: formData.isChildFriendly ? C.iconGreen : C.accent,
                     }
                   ]}
-                  onPress={toggleAdultContent}
+                  onPress={toggleChildFriendly}
                   activeOpacity={0.7}
                 >
                   <View style={[
                     styles.toggleThumb,
                     { 
-                      transform: [{ translateX: formData.isAdultContent ? scale(18) : 0 }],
+                      transform: [{ translateX: formData.isChildFriendly ? 0 : scale(18) }],
                       backgroundColor: '#FFFFFF',
                     }
                   ]} />
@@ -490,18 +748,18 @@ export default function UploadVideo({ navigation }) {
             </View>
 
             {/* Video Info Stats */}
-            {video && (
+            {videoFile && (
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
                   <Ionicons name="videocam-outline" size={scale(16)} color={C.muted} />
                   <Text style={[styles.statText, { color: C.muted }]}>
-                    {video.fileName || 'Video ready'}
+                    {videoFile.fileName || 'Video ready'}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
                   <Ionicons name="time-outline" size={scale(16)} color={C.muted} />
                   <Text style={[styles.statText, { color: C.muted }]}>
-                    {video.duration ? `${Math.round(video.duration)}s` : 'Ready'}
+                    {videoFile.duration ? `${Math.round(videoFile.duration)}s` : 'Ready'}
                   </Text>
                 </View>
               </View>
@@ -544,8 +802,12 @@ function makeStyles(C) {
       paddingVertical: vs(12),
       borderBottomWidth: 1,
     },
-    headerLeft: {
+    backBtn: {
       width: scale(38),
+      height: scale(38),
+      borderRadius: scale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     headerTitle: {
       fontSize: sp(18),
@@ -745,7 +1007,7 @@ function makeStyles(C) {
       fontWeight: '600',
     },
 
-    // 18+ Toggle
+    // Toggle
     toggleContainer: {
       flexDirection: 'row',
       alignItems: 'center',

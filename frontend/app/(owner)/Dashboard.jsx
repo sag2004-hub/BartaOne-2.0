@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// app/(owner)/Dashboard.jsx
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,6 +14,8 @@ import {
   PixelRatio,
   Modal,
   TouchableWithoutFeedback,
+  Image,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -84,6 +87,46 @@ const DARK = {
   iconAmberBg:      'rgba(251,191,36,0.12)',
 };
 
+// ─── Pro Tips Data ──────────────────────────────────────────────────────────
+const PRO_TIPS = [
+  {
+    id: 1,
+    title: '🚀 Grow Your Audience',
+    text: 'Regular posting helps grow your audience. Try to publish at least 3 articles per week!',
+    icon: 'rocket-outline',
+  },
+  {
+    id: 2,
+    title: '📸 Visual Content',
+    text: 'Posts with images get 94% more views. Always add a cover image to your articles!',
+    icon: 'image-outline',
+  },
+  {
+    id: 3,
+    title: '📱 Mobile First',
+    text: '80% of users access news on mobile. Optimize your content for mobile viewing!',
+    icon: 'phone-portrait-outline',
+  },
+  {
+    id: 4,
+    title: '⏰ Best Time to Post',
+    text: 'Post between 7-9 AM and 6-8 PM for maximum engagement with your audience.',
+    icon: 'time-outline',
+  },
+  {
+    id: 5,
+    title: '🎯 Know Your Audience',
+    text: 'Use analytics to understand what content resonates most with your followers.',
+    icon: 'analytics-outline',
+  },
+  {
+    id: 6,
+    title: '📝 Engaging Headlines',
+    text: 'Strong headlines increase click-through rates by up to 500%. Make them count!',
+    icon: 'megaphone-outline',
+  },
+];
+
 export default function Dashboard() {
   const router = useRouter();
   const scheme = useColorScheme();
@@ -97,6 +140,15 @@ export default function Dashboard() {
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [goLiveModalVisible, setGoLiveModalVisible] = useState(false);
   const [subscribersModalVisible, setSubscribersModalVisible] = useState(false);
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
+  
+  // ─── Animation Refs ──────────────────────────────────────────────────────
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  
+  // ─── Get channel logo from channel data ──────────────────────────────────
+  const channelLogo = channel?.logo || null;
+  const channelName = channel?.channelName || 'My Channel';
 
   useEffect(() => {
     if (authLoading) return;
@@ -114,6 +166,45 @@ export default function Dashboard() {
       return () => {};
     }, [authLoading])
   );
+
+  // ─── Pro Tip Carousel Animation ──────────────────────────────────────────
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Fade out
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: -20,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Change tip
+        setCurrentTipIndex((prev) => (prev + 1) % PRO_TIPS.length);
+        // Reset animation
+        slideAnim.setValue(20);
+        // Fade in
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    }, 4000); // Change every 4 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   const loadDashboardData = async () => {
     try {
@@ -336,6 +427,8 @@ export default function Dashboard() {
     );
   }
 
+  const currentTip = PRO_TIPS[currentTipIndex];
+
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.topStripe} />
@@ -357,7 +450,7 @@ export default function Dashboard() {
           <View style={styles.headerLeft}>
             <Text style={[styles.greeting, { color: C.muted }]}>Welcome back</Text>
             <Text style={[styles.channelName, { color: C.primary }]} numberOfLines={1}>
-              {channel.channelName || 'My Channel'}
+              {channelName}
             </Text>
             {channel.isVerified && (
               <View style={styles.verifiedRow}>
@@ -366,11 +459,25 @@ export default function Dashboard() {
               </View>
             )}
           </View>
+          
+          {/* ─── Channel Logo Button ─────────────────────────────────────────── */}
           <TouchableOpacity 
-            style={[styles.profileBtn, { backgroundColor: C.bg }]} 
+            style={[styles.profileBtn, { backgroundColor: C.bg, borderColor: C.border }]} 
             onPress={() => router.push('Profile')}
           >
-            <Ionicons name="person-outline" size={scale(22)} color={C.primary} />
+            {channelLogo ? (
+              <Image 
+                source={{ uri: channelLogo }} 
+                style={styles.profileImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.logoPlaceholder, { backgroundColor: C.accentBg }]}>
+                <Text style={[styles.logoPlaceholderText, { color: C.accent }]}>
+                  {channelName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -466,17 +573,41 @@ export default function Dashboard() {
           </View>
         </TouchableOpacity>
 
-        {/* Tip Card */}
-        <View style={[styles.tipCard, { backgroundColor: C.accentBg, borderColor: C.accentBorder }]}>
+        {/* ─── Pro Tip Carousel ────────────────────────────────────────────── */}
+        <Animated.View 
+          style={[
+            styles.tipCard, 
+            { 
+              backgroundColor: C.accentBg, 
+              borderColor: C.accentBorder,
+              opacity: fadeAnim,
+              transform: [{ translateX: slideAnim }],
+            }
+          ]}
+        >
           <View style={[styles.tipIconWrap, { backgroundColor: C.accent + '18' }]}>
-            <Ionicons name="bulb-outline" size={scale(22)} color={C.accent} />
+            <Ionicons name={currentTip.icon} size={scale(22)} color={C.accent} />
           </View>
           <View style={styles.tipContent}>
-            <Text style={[styles.tipTitle, { color: C.primary }]}>Pro Tip</Text>
-            <Text style={[styles.tipText, { color: C.secondary }]}>
-              Regular posting helps grow your audience. Try to publish at least 3 articles per week!
-            </Text>
+            <Text style={[styles.tipTitle, { color: C.primary }]}>{currentTip.title}</Text>
+            <Text style={[styles.tipText, { color: C.secondary }]}>{currentTip.text}</Text>
           </View>
+        </Animated.View>
+
+        {/* ─── Dots Indicator ────────────────────────────────────────────────── */}
+        <View style={styles.dotsContainer}>
+          {PRO_TIPS.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                {
+                  backgroundColor: index === currentTipIndex ? C.accent : C.border,
+                  width: index === currentTipIndex ? scale(16) : scale(6),
+                },
+              ]}
+            />
+          ))}
         </View>
 
         {/* Bottom padding */}
@@ -757,13 +888,29 @@ function makeStyles(C) {
       fontWeight: '600',
     },
     profileBtn: {
-      width: scale(42),
-      height: scale(42),
-      borderRadius: scale(21),
+      width: scale(44),
+      height: scale(44),
+      borderRadius: scale(22),
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: C.border,
+      borderWidth: 2,
+      overflow: 'hidden',
+    },
+    profileImage: {
+      width: scale(44),
+      height: scale(44),
+      borderRadius: scale(22),
+    },
+    logoPlaceholder: {
+      width: scale(44),
+      height: scale(44),
+      borderRadius: scale(22),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    logoPlaceholderText: {
+      fontSize: sp(20),
+      fontWeight: '700',
     },
 
     // Stats Grid
@@ -947,7 +1094,7 @@ function makeStyles(C) {
       marginTop: vs(2),
     },
 
-    // Tip Card
+    // Pro Tip Card
     tipCard: {
       flexDirection: 'row',
       marginHorizontal: scale(20),
@@ -955,7 +1102,7 @@ function makeStyles(C) {
       borderRadius: scale(14),
       gap: scale(12),
       borderWidth: 1,
-      marginBottom: vs(8),
+      marginBottom: vs(4),
     },
     tipIconWrap: {
       width: scale(44),
@@ -976,6 +1123,21 @@ function makeStyles(C) {
     tipText: {
       fontSize: sp(13),
       lineHeight: sp(19),
+    },
+
+    // Dots Indicator
+    dotsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: vs(8),
+      marginBottom: vs(8),
+      gap: scale(6),
+    },
+    dot: {
+      height: scale(4),
+      borderRadius: scale(2),
+      marginHorizontal: scale(2),
     },
 
     bottomSpacer: {

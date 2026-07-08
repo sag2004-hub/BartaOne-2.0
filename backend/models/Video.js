@@ -1,3 +1,4 @@
+// backend/models/Video.js
 const mongoose = require('mongoose');
 
 const VideoSchema = new mongoose.Schema({
@@ -32,7 +33,7 @@ const VideoSchema = new mongoose.Schema({
   category: {
     type: String,
     enum: ['news', 'entertainment', 'sports', 'business', 'technology', 'lifestyle', 'other'],
-    default: 'news',
+    default: 'sports',
     index: true,
   },
   language: {
@@ -56,6 +57,10 @@ const VideoSchema = new mongoose.Schema({
     default: true,
     index: true,
   },
+  isChildFriendly: {
+    type: Boolean,
+    default: true,
+  },
   publishedAt: {
     type: Date,
     default: Date.now,
@@ -68,39 +73,47 @@ const VideoSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  // ─── Use timestamps option instead of pre('save') hook ──────────────────
+  timestamps: {
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  },
+  // Ensure virtuals are included in JSON output
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
 });
 
-// Update timestamp on save
-VideoSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
+// ─── REMOVED the problematic pre('save') hook ──────────────────────────────
+// The timestamps option will handle updatedAt automatically
+
+// ─── Virtual for duration formatting ──────────────────────────────────────
+VideoSchema.virtual('formattedDuration').get(function() {
+  if (!this.duration) return '0:00';
+  return this.duration;
 });
 
-// Method to increment views
+// ─── Methods ──────────────────────────────────────────────────────────────
 VideoSchema.methods.incrementViews = function() {
   this.views += 1;
   return this.save();
 };
 
-// Method to increment likes
 VideoSchema.methods.incrementLikes = function() {
   this.likes += 1;
   return this.save();
 };
 
-// Method to decrement likes
 VideoSchema.methods.decrementLikes = function() {
   this.likes = Math.max(this.likes - 1, 0);
   return this.save();
 };
 
-// Method to increment comments
 VideoSchema.methods.incrementComments = function() {
   this.comments += 1;
   return this.save();
 };
 
-// Method to decrement comments
 VideoSchema.methods.decrementComments = function() {
   this.comments = Math.max(this.comments - 1, 0);
   return this.save();

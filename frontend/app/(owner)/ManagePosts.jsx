@@ -1,5 +1,5 @@
 // app/(owner)/ManagePosts.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,12 @@ import {
   ActivityIndicator,
   Image,
   SafeAreaView as SafeAreaViewRN,
-  TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import { useAuth } from '../../hooks/useAuth';
 import { getChannelByOwner } from '../../services/channelService';
 import { getOwnerArticles, deleteArticle } from '../../services/articleService';
@@ -96,13 +97,31 @@ export default function ManagePosts() {
   const [videos, setVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
   const [previewType, setPreviewType] = useState('article');
   const [channelId, setChannelId] = useState(null);
+  
+  // Video player states
+  const [videoPlayerVisible, setVideoPlayerVisible] = useState(false);
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoStatus, setVideoStatus] = useState(null);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const videoRef = useRef(null);
 
-  // ─── Load Data Function ──────────────────────────────────────────────────
+  useFocusEffect(
+    useCallback(() => {
+      console.log('📱 ManagePosts screen focused - refreshing data...');
+      loadData();
+      return () => {};
+    }, [])
+  );
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -136,22 +155,6 @@ export default function ManagePosts() {
       setIsLoading(false);
     }
   };
-
-  // ─── Auto-refresh when screen comes into focus ──────────────────────────
-  useFocusEffect(
-    useCallback(() => {
-      console.log('📱 ManagePosts screen focused - refreshing data...');
-      loadData();
-      return () => {
-        // Cleanup if needed
-      };
-    }, [])
-  );
-
-  // ─── Initial load ────────────────────────────────────────────────────────
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -190,6 +193,7 @@ export default function ManagePosts() {
 
   const handleEdit = (item, type) => {
     setPreviewModalVisible(false);
+    setVideoPlayerVisible(false);
     if (type === 'article') {
       router.push({
         pathname: '/(owner)/UploadArticle',
@@ -209,13 +213,56 @@ export default function ManagePosts() {
     setPreviewModalVisible(true);
   };
 
+  // ─── Video Player Functions ────────────────────────────────────────────────
+  const openVideoPlayer = (url, title) => {
+    setVideoUrl(url);
+    setVideoTitle(title || 'Video');
+    setVideoPlayerVisible(true);
+    setIsVideoLoading(true);
+  };
+
+  const closeVideoPlayer = async () => {
+    if (videoRef.current) {
+      await videoRef.current.stopAsync();
+      await videoRef.current.unloadAsync();
+    }
+    setVideoPlayerVisible(false);
+    setVideoUrl(null);
+    setVideoStatus(null);
+    setIsVideoLoading(false);
+  };
+
+  const onPlaybackStatusUpdate = (status) => {
+    setVideoStatus(status);
+    if (status.isLoaded) {
+      setIsVideoLoading(false);
+    }
+    if (status.didJustFinish) {
+      // Video finished playing
+      console.log('Video finished playing');
+    }
+  };
+
+  const onVideoLoadStart = () => {
+    setIsVideoLoading(true);
+  };
+
+  const onVideoError = (error) => {
+    console.error('Video Error:', error);
+    setIsVideoLoading(false);
+    Alert.alert(
+      'Playback Error',
+      'Unable to play this video. Please try again later.',
+      [{ text: 'OK' }]
+    );
+  };
+
   // ─── Render Article Card ──────────────────────────────────────────────────
   const renderArticleItem = (article) => (
     <View
       key={article._id}
       style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}
     >
-      {/* Thumbnail Image */}
       {article.image && (
         <Image 
           source={{ uri: article.image }} 
@@ -224,7 +271,6 @@ export default function ManagePosts() {
         />
       )}
       
-      {/* Content */}
       <View style={styles.postContent}>
         <View style={styles.postHeader}>
           <View style={styles.postIconWrap}>
@@ -249,7 +295,6 @@ export default function ManagePosts() {
           </View>
         </View>
         
-        {/* Stats */}
         <View style={styles.postStats}>
           <View style={styles.stat}>
             <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
@@ -270,7 +315,6 @@ export default function ManagePosts() {
           </View>
         </View>
 
-        {/* Action Buttons */}
         <View style={[styles.actionRow, { borderTopColor: C.border }]}>
           <TouchableOpacity
             style={[styles.actionBtn, styles.seeMoreBtn, { backgroundColor: C.accentBg }]}
@@ -308,7 +352,6 @@ export default function ManagePosts() {
       key={video._id}
       style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}
     >
-      {/* Thumbnail Image */}
       {video.thumbnail ? (
         <Image 
           source={{ uri: video.thumbnail }} 
@@ -321,7 +364,6 @@ export default function ManagePosts() {
         </View>
       )}
       
-      {/* Content */}
       <View style={styles.postContent}>
         <View style={styles.postHeader}>
           <View style={styles.postIconWrap}>
@@ -346,7 +388,6 @@ export default function ManagePosts() {
           </View>
         </View>
         
-        {/* Stats */}
         <View style={styles.postStats}>
           <View style={styles.stat}>
             <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
@@ -363,7 +404,6 @@ export default function ManagePosts() {
           </View>
         </View>
 
-        {/* Action Buttons */}
         <View style={[styles.actionRow, { borderTopColor: C.border }]}>
           <TouchableOpacity
             style={[styles.actionBtn, styles.seeMoreBtn, { backgroundColor: C.accentBg }]}
@@ -395,15 +435,13 @@ export default function ManagePosts() {
     </View>
   );
 
-  // ─── Preview Modal Components ─────────────────────────────────────────────
-
+  // ─── Preview Modal ─────────────────────────────────────────────────────────
   const renderArticlePreview = (article) => {
     const wordCount = article.body ? article.body.split(/\s+/).length : 0;
     const readingTime = Math.ceil(wordCount / 200) || 1;
 
     return (
       <View style={[styles.previewContent, { backgroundColor: C.surface }]}>
-        {/* Preview Header */}
         <View style={[styles.previewHeader, { borderBottomColor: C.border }]}>
           <Text style={[styles.previewBadge, { color: C.accent, backgroundColor: C.accentBg }]}>
             Preview
@@ -413,7 +451,6 @@ export default function ManagePosts() {
           </Text>
         </View>
 
-        {/* Article Content */}
         <ScrollView style={styles.previewScroll} showsVerticalScrollIndicator={false}>
           {article.image && (
             <Image 
@@ -497,7 +534,16 @@ export default function ManagePosts() {
         </View>
 
         <ScrollView style={styles.previewScroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.previewVideoContainer}>
+          <TouchableOpacity
+            style={styles.previewVideoContainer}
+            activeOpacity={0.9}
+            onPress={() => {
+              if (video.videoUrl) {
+                setPreviewModalVisible(false);
+                openVideoPlayer(video.videoUrl, video.title);
+              }
+            }}
+          >
             {video.thumbnail ? (
               <Image 
                 source={{ uri: video.thumbnail }} 
@@ -512,7 +558,7 @@ export default function ManagePosts() {
             <View style={styles.previewPlayButton}>
               <Ionicons name="play-circle" size={scale(64)} color={C.accent} />
             </View>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.previewBody}>
             <View style={styles.previewCategoryRow}>
@@ -539,6 +585,19 @@ export default function ManagePosts() {
             )}
 
             <View style={[styles.previewDivider, { backgroundColor: C.border }]} />
+
+            <TouchableOpacity
+              style={[styles.watchVideoBtn, { backgroundColor: C.accent }]}
+              onPress={() => {
+                if (video.videoUrl) {
+                  setPreviewModalVisible(false);
+                  openVideoPlayer(video.videoUrl, video.title);
+                }
+              }}
+            >
+              <Ionicons name="play-circle" size={scale(24)} color="#FFF" />
+              <Text style={styles.watchVideoText}>Play Video</Text>
+            </TouchableOpacity>
 
             <View style={[styles.previewFooter, { borderTopColor: C.border }]}>
               <View style={styles.previewStats}>
@@ -582,7 +641,6 @@ export default function ManagePosts() {
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.topStripe} />
 
-      {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity 
           style={[styles.backBtn, { backgroundColor: C.bg }]} 
@@ -599,7 +657,6 @@ export default function ManagePosts() {
         </TouchableOpacity>
       </View>
 
-      {/* Tabs */}
       <View style={[styles.tabContainer, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'articles' && styles.tabActive]}
@@ -676,7 +733,6 @@ export default function ManagePosts() {
         presentationStyle="fullScreen"
       >
         <SafeAreaViewRN style={[styles.previewModalContainer, { backgroundColor: C.bg }]}>
-          {/* Preview Modal Header */}
           <View style={[styles.previewModalHeader, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
             <TouchableOpacity 
               onPress={() => setPreviewModalVisible(false)}
@@ -694,7 +750,6 @@ export default function ManagePosts() {
             </TouchableOpacity>
           </View>
 
-          {/* Preview Content */}
           <ScrollView style={styles.previewScrollContainer} showsVerticalScrollIndicator={false}>
             {previewItem && (
               previewType === 'article' 
@@ -702,6 +757,60 @@ export default function ManagePosts() {
                 : renderVideoPreview(previewItem)
             )}
           </ScrollView>
+        </SafeAreaViewRN>
+      </Modal>
+
+      {/* ─── Video Player Modal ──────────────────────────────────────────────── */}
+      <Modal
+        visible={videoPlayerVisible}
+        onRequestClose={closeVideoPlayer}
+        presentationStyle="fullScreen"
+        animationType="slide"
+      >
+        <SafeAreaViewRN style={[styles.videoPlayerContainer, { backgroundColor: '#000' }]}>
+          {/* Video Player Header */}
+          <View style={styles.videoPlayerHeader}>
+            <TouchableOpacity onPress={closeVideoPlayer} style={styles.videoPlayerCloseBtn}>
+              <Ionicons name="arrow-back" size={scale(28)} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.videoPlayerTitle} numberOfLines={1}>
+              {videoTitle || 'Video'}
+            </Text>
+            <View style={{ width: scale(40) }} />
+          </View>
+
+          {/* Video Player */}
+          <View style={styles.videoPlayerWrapper}>
+            {videoUrl ? (
+              <Video
+                ref={videoRef}
+                source={{ uri: videoUrl }}
+                style={styles.videoPlayer}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                isLooping={false}
+                onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+                onLoadStart={onVideoLoadStart}
+                onError={onVideoError}
+                shouldPlay
+                rate={1.0}
+                volume={1.0}
+                isMuted={false}
+              />
+            ) : (
+              <View style={styles.videoPlayerLoading}>
+                <ActivityIndicator size="large" color={C.accent} />
+                <Text style={styles.videoPlayerLoadingText}>Loading video...</Text>
+              </View>
+            )}
+            
+            {isVideoLoading && (
+              <View style={styles.videoPlayerLoadingOverlay}>
+                <ActivityIndicator size="large" color="#FFFFFF" />
+                <Text style={styles.videoPlayerLoadingText}>Buffering...</Text>
+              </View>
+            )}
+          </View>
         </SafeAreaViewRN>
       </Modal>
     </SafeAreaView>
@@ -728,8 +837,6 @@ function makeStyles(C) {
       fontSize: sp(14),
       fontWeight: '500',
     },
-
-    // Header
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -762,8 +869,6 @@ function makeStyles(C) {
       shadowRadius: scale(8),
       elevation: 3,
     },
-
-    // Tabs
     tabContainer: {
       flexDirection: 'row',
       borderBottomWidth: 1,
@@ -795,8 +900,6 @@ function makeStyles(C) {
       height: 2.5,
       borderRadius: scale(2),
     },
-
-    // Content
     content: {
       padding: scale(14),
       flexGrow: 1,
@@ -806,8 +909,6 @@ function makeStyles(C) {
       justifyContent: 'center',
       paddingTop: vs(40),
     },
-
-    // Post Card
     postCard: {
       borderRadius: scale(14),
       marginBottom: vs(12),
@@ -903,8 +1004,6 @@ function makeStyles(C) {
       borderRadius: scale(6),
       overflow: 'hidden',
     },
-
-    // Action Buttons
     actionRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -935,8 +1034,6 @@ function makeStyles(C) {
     },
     editBtn: {},
     deleteBtn: {},
-
-    // ─── Preview Modal Styles ──────────────────────────────────────────────────
     previewModalContainer: {
       flex: 1,
     },
@@ -976,8 +1073,6 @@ function makeStyles(C) {
     previewScrollContainer: {
       flex: 1,
     },
-
-    // Preview Content
     previewContent: {
       flex: 1,
       margin: scale(16),
@@ -1022,10 +1117,13 @@ function makeStyles(C) {
       height: vs(220),
       position: 'relative',
       backgroundColor: '#000',
+      borderRadius: scale(8),
+      overflow: 'hidden',
     },
     previewVideoThumbnail: {
       width: '100%',
       height: '100%',
+      resizeMode: 'cover',
     },
     previewVideoPlaceholder: {
       width: '100%',
@@ -1041,6 +1139,7 @@ function makeStyles(C) {
       bottom: 0,
       justifyContent: 'center',
       alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.3)',
     },
     previewBody: {
       padding: scale(16),
@@ -1084,6 +1183,20 @@ function makeStyles(C) {
       fontSize: sp(15),
       lineHeight: sp(24),
     },
+    watchVideoBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: scale(8),
+      paddingVertical: vs(14),
+      borderRadius: scale(10),
+      marginVertical: vs(12),
+    },
+    watchVideoText: {
+      color: '#FFFFFF',
+      fontSize: sp(16),
+      fontWeight: '700',
+    },
     previewFooter: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -1106,6 +1219,68 @@ function makeStyles(C) {
     },
     previewReadingTime: {
       fontSize: sp(12),
+    },
+
+    // ─── Video Player Styles ──────────────────────────────────────────────────
+    videoPlayerContainer: {
+      flex: 1,
+      backgroundColor: '#000',
+    },
+    videoPlayerHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: scale(16),
+      paddingTop: Platform.OS === 'ios' ? vs(10) : vs(16),
+      paddingBottom: vs(12),
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      zIndex: 10,
+    },
+    videoPlayerCloseBtn: {
+      width: scale(40),
+      height: scale(40),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    videoPlayerTitle: {
+      flex: 1,
+      fontSize: sp(16),
+      fontWeight: '600',
+      color: '#FFFFFF',
+      marginHorizontal: scale(12),
+      textAlign: 'center',
+    },
+    videoPlayerWrapper: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#000',
+    },
+    videoPlayer: {
+      width: SW,
+      height: SW * 0.5625,
+      backgroundColor: '#000',
+    },
+    videoPlayerLoading: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: vs(12),
+    },
+    videoPlayerLoadingOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      gap: vs(12),
+    },
+    videoPlayerLoadingText: {
+      color: '#FFFFFF',
+      fontSize: sp(14),
+      fontWeight: '500',
     },
   });
 }

@@ -1,5 +1,5 @@
 // services/videoService.js
-import { api } from './api'; // ← Using named import
+import { api } from './api';
 
 // Video Service
 export const videoService = {
@@ -17,6 +17,7 @@ export const videoService = {
   // Get video by ID
   getById: async (id) => {
     try {
+      console.log('📡 Fetching video by ID:', id);
       const response = await api.get(`/videos/${id}`);
       return response.data;
     } catch (error) {
@@ -30,7 +31,6 @@ export const videoService = {
     try {
       console.log('📡 Fetching videos for channel:', channelId);
       const response = await api.get(`/videos/channel/${channelId}`);
-      console.log('📡 Full response:', JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error) {
       console.error('Error fetching channel videos:', error);
@@ -49,7 +49,7 @@ export const videoService = {
     }
   },
 
-  // ─── FIXED: Get owner videos ──────────────────────────────────────────────
+  // ─── Get owner videos ──────────────────────────────────────────────────────
   getOwnerVideos: async (channelId) => {
     try {
       console.log('📡 [getOwnerVideos] Fetching videos for channel:', channelId);
@@ -60,34 +60,24 @@ export const videoService = {
       }
 
       const response = await api.get(`/videos/channel/${channelId}`);
-      console.log('📡 [getOwnerVideos] Response status:', response.status);
-      console.log('📡 [getOwnerVideos] Response data:', JSON.stringify(response.data, null, 2));
-
-      // The API returns { success, message, data: { videos: [...], total, page, pages } }
+      
       if (response.data && response.data.data) {
         if (response.data.data.videos) {
-          const videos = response.data.data.videos;
-          console.log(`✅ [getOwnerVideos] Found ${videos.length} videos`);
-          return videos;
+          return response.data.data.videos;
         }
         if (Array.isArray(response.data.data)) {
-          console.log(`✅ [getOwnerVideos] Found ${response.data.data.length} videos (data is array)`);
           return response.data.data;
         }
       }
       
       if (response.data && response.data.videos) {
-        const videos = response.data.videos;
-        console.log(`✅ [getOwnerVideos] Found ${videos.length} videos in data.videos`);
-        return videos;
+        return response.data.videos;
       }
       
       if (Array.isArray(response.data)) {
-        console.log(`✅ [getOwnerVideos] Found ${response.data.length} videos (response is array)`);
         return response.data;
       }
 
-      console.warn('⚠️ [getOwnerVideos] No videos found in response');
       return [];
     } catch (error) {
       console.error('❌ [getOwnerVideos] Error fetching owner videos:', error);
@@ -95,11 +85,28 @@ export const videoService = {
     }
   },
 
-  // Create video
+  // ─── CREATE VIDEO ──────────────────────────────────────────────────────────
   create: async (videoData) => {
     try {
       console.log('📤 Creating video with data:', videoData);
-      const response = await api.post('/videos', videoData);
+      
+      // If videoData is already FormData, use it directly
+      let formData = videoData;
+      
+      // If not FormData, create FormData from the object
+      if (!(videoData instanceof FormData)) {
+        formData = new FormData();
+        Object.keys(videoData).forEach(key => {
+          formData.append(key, videoData[key]);
+        });
+      }
+      
+      const response = await api.post('/videos', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
       console.log('✅ Video created:', response.data);
       return response.data;
     } catch (error) {
@@ -108,11 +115,26 @@ export const videoService = {
     }
   },
 
-  // Update video
+  // ─── UPDATE VIDEO ──────────────────────────────────────────────────────────
   update: async (id, videoData) => {
     try {
       console.log('📤 Updating video:', id);
-      const response = await api.put(`/videos/${id}`, videoData);
+      
+      let formData = videoData;
+      
+      if (!(videoData instanceof FormData)) {
+        formData = new FormData();
+        Object.keys(videoData).forEach(key => {
+          formData.append(key, videoData[key]);
+        });
+      }
+      
+      const response = await api.put(`/videos/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
       console.log('✅ Video updated:', response.data);
       return response.data;
     } catch (error) {
@@ -121,7 +143,7 @@ export const videoService = {
     }
   },
 
-  // Delete video
+  // ─── DELETE VIDEO ──────────────────────────────────────────────────────────
   delete: async (id) => {
     try {
       console.log('📤 Deleting video:', id);

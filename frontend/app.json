@@ -48,7 +48,8 @@
       "expo-web-browser",
       "expo-audio",
       "expo-video",
-      "expo-router"
+      "expo-router",
+      "react-native-video"
     ],
     "extra": {
       "eas": {

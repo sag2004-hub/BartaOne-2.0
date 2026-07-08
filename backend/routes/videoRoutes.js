@@ -1,3 +1,4 @@
+// backend/routes/videoRoutes.js
 const express = require('express');
 const router = express.Router();
 const { verifyFirebaseToken } = require('../middleware/verifyFirebaseToken');
@@ -29,9 +30,9 @@ router.get('/:id/comments', asyncHandler(getComments));
 // Protected routes - require authentication
 router.use(verifyFirebaseToken);
 
-// Video CRUD
-router.post('/', uploadVideoMedia, asyncHandler(uploadVideo));
-router.put('/:id', uploadVideoMedia, asyncHandler(updateVideo));
+// ─── FIXED: Use uploadVideoMedia() which returns the middleware function ────
+router.post('/', uploadVideoMedia(), asyncHandler(uploadVideo));
+router.put('/:id', uploadVideoMedia(), asyncHandler(updateVideo));
 router.delete('/:id', asyncHandler(deleteVideo));
 
 // Like routes
