@@ -1,17 +1,16 @@
 // screens/ViewerLogin.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   StatusBar,
   Animated,
   Easing,
   useColorScheme,
-  PixelRatio,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -25,18 +24,29 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../services/firebase';
-import { authAPI } from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
-const { width: SW, height: SH } = Dimensions.get('window');
 const BASE_WIDTH = 390;
 const BASE_HEIGHT = 844;
+const MAX_CONTENT_WIDTH = 480;
+
+const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
+const EASE_OUT_SOFT = Easing.bezier(0.16, 1, 0.3, 1);
 
 // ─── Responsive Helpers ────────────────────────────────────────────────────
-const scale = (size) => Math.round((SW / BASE_WIDTH) * size);
-const verticalScale = (size) => Math.round((SH / BASE_HEIGHT) * size);
-const moderateScale = (size, factor = 0.5) => 
-  Math.round(size + (scale(size) - size) * factor);
+const createScalers = (windowWidth, windowHeight) => {
+  const widthRatio = windowWidth / BASE_WIDTH;
+  const clampedRatio = Math.min(Math.max(widthRatio, 0.85), 1.25);
+
+  const scale = (size) => Math.round(clampedRatio * size);
+  const verticalScale = (size) =>
+    Math.round((windowHeight / BASE_HEIGHT) * size);
+  const moderateScale = (size, factor = 0.5) =>
+    Math.round(size + (scale(size) - size) * factor);
+
+  return { scale, verticalScale, moderateScale };
+};
 
 // ─── Theme Configuration ──────────────────────────────────────────────────
 const THEMES = {
@@ -46,6 +56,8 @@ const THEMES = {
       surface: '#FFFFFF',
       border: '#E4E0D8',
       accent: '#C8001A',
+      accentBg: '#FFF0F2',
+      accentBorder: 'rgba(200,0,26,0.18)',
       primary: '#1A2733',
       secondary: '#4A5A6B',
       muted: '#8A97A5',
@@ -64,6 +76,8 @@ const THEMES = {
       surface: '#161B22',
       border: '#2A3340',
       accent: '#E8192C',
+      accentBg: 'rgba(232,25,44,0.12)',
+      accentBorder: 'rgba(232,25,44,0.25)',
       primary: '#EDF2F7',
       secondary: '#8B9BAB',
       muted: '#5C6E80',
@@ -89,12 +103,15 @@ const AnimatedInput = ({
   rightElement,
   delay = 0,
   colors,
+  S,
   onSubmitEditing,
   returnKeyType,
   inputRef,
+  onFocus,
+  onBlur,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const slideAnim = useRef(new Animated.Value(24)).current;
+  const slideAnim = useRef(new Animated.Value(16)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [borderColor, setBorderColor] = useState(colors.inputBorder);
 
@@ -102,44 +119,53 @@ const AnimatedInput = ({
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 420,
+        duration: 360,
         delay,
-        easing: Easing.out(Easing.exp),
+        easing: EASE_OUT,
         useNativeDriver: true,
       }),
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 420,
+        duration: 360,
         delay,
-        easing: Easing.out(Easing.exp),
+        easing: EASE_OUT,
         useNativeDriver: true,
       }),
     ]).start();
   }, [delay, slideAnim, fadeAnim]);
 
   useEffect(() => {
-    const color = isFocused ? colors.inputFocusBorder : colors.inputBorder;
-    setBorderColor(color);
+    setBorderColor(isFocused ? colors.inputFocusBorder : colors.inputBorder);
   }, [isFocused, colors.inputFocusBorder, colors.inputBorder]);
 
-  const styles = createStyles(colors);
+  const styles = createStyles(colors, S);
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    if (onFocus) onFocus();
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (onBlur) onBlur();
+  };
 
   return (
     <Animated.View
       style={[
         styles.inputWrapper,
-        { 
-          borderColor: borderColor,
-          opacity: fadeAnim, 
-          transform: [{ translateY: slideAnim }] 
+        {
+          borderColor,
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
         },
       ]}
     >
-      <Ionicons 
-        name={icon} 
-        size={scale(19)} 
-        color={isFocused ? colors.accent : colors.muted} 
-        style={styles.inputIcon} 
+      <Ionicons
+        name={icon}
+        size={S.scale(19)}
+        color={isFocused ? colors.accent : colors.muted}
+        style={styles.inputIcon}
       />
       <TextInput
         ref={inputRef}
@@ -152,8 +178,8 @@ const AnimatedInput = ({
         keyboardType={keyboardType || 'default'}
         autoCapitalize="none"
         autoCorrect={false}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         onSubmitEditing={onSubmitEditing}
         returnKeyType={returnKeyType || 'next'}
       />
@@ -163,114 +189,97 @@ const AnimatedInput = ({
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────
-const ViewerLogin = ({ navigation }) => {
+export default function ViewerLogin() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const theme = isDarkMode ? THEMES.dark : THEMES.light;
   const { colors } = theme;
 
+  const { width: winWidth, height: winHeight } = useWindowDimensions();
+  const S = useMemo(
+    () => createScalers(winWidth, winHeight),
+    [winWidth, winHeight]
+  );
+  const { scale, verticalScale, moderateScale } = S;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Refs for input focus management
+
   const passwordInputRef = useRef(null);
   const scrollViewRef = useRef(null);
 
   // ── Animation Refs ──
   const headerFade = useRef(new Animated.Value(0)).current;
-  const headerSlide = useRef(new Animated.Value(-20)).current;
-  const lineFade = useRef(new Animated.Value(0)).current;
-  const lineScale = useRef(new Animated.Value(0)).current;
+  const headerSlide = useRef(new Animated.Value(-16)).current;
   const titleFade = useRef(new Animated.Value(0)).current;
-  const titleSlide = useRef(new Animated.Value(20)).current;
+  const titleSlide = useRef(new Animated.Value(14)).current;
   const btnFade = useRef(new Animated.Value(0)).current;
-  const btnSlide = useRef(new Animated.Value(20)).current;
+  const btnSlide = useRef(new Animated.Value(14)).current;
   const footerFade = useRef(new Animated.Value(0)).current;
   const btnScale = useRef(new Animated.Value(1)).current;
 
   // ── Animation Effects ──
   useEffect(() => {
-    // Header animation
     Animated.parallel([
       Animated.timing(headerFade, {
         toValue: 1,
-        duration: 380,
-        easing: Easing.out(Easing.cubic),
+        duration: 340,
+        easing: EASE_OUT,
         useNativeDriver: true,
       }),
       Animated.timing(headerSlide, {
         toValue: 0,
-        duration: 380,
-        easing: Easing.out(Easing.cubic),
+        duration: 340,
+        easing: EASE_OUT,
         useNativeDriver: true,
       }),
     ]).start();
 
-    // Red line expansion
     Animated.sequence([
-      Animated.delay(180),
-      Animated.parallel([
-        Animated.timing(lineFade, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(lineScale, {
-          toValue: 1,
-          duration: 350,
-          easing: Easing.out(Easing.exp),
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-
-    // Title slide up
-    Animated.sequence([
-      Animated.delay(260),
+      Animated.delay(140),
       Animated.parallel([
         Animated.timing(titleFade, {
           toValue: 1,
-          duration: 380,
-          easing: Easing.out(Easing.cubic),
+          duration: 360,
+          easing: EASE_OUT,
           useNativeDriver: true,
         }),
         Animated.timing(titleSlide, {
           toValue: 0,
-          duration: 380,
-          easing: Easing.out(Easing.cubic),
+          duration: 360,
+          easing: EASE_OUT,
           useNativeDriver: true,
         }),
       ]),
     ]).start();
 
-    // Button animation
     Animated.sequence([
-      Animated.delay(500),
+      Animated.delay(440),
       Animated.parallel([
         Animated.timing(btnFade, {
           toValue: 1,
-          duration: 350,
-          easing: Easing.out(Easing.cubic),
+          duration: 320,
+          easing: EASE_OUT,
           useNativeDriver: true,
         }),
         Animated.timing(btnSlide, {
           toValue: 0,
-          duration: 350,
-          easing: Easing.out(Easing.cubic),
+          duration: 320,
+          easing: EASE_OUT,
           useNativeDriver: true,
         }),
       ]),
     ]).start();
 
-    // Footer animation
     Animated.sequence([
-      Animated.delay(600),
+      Animated.delay(540),
       Animated.timing(footerFade, {
         toValue: 1,
-        duration: 300,
-        easing: Easing.out(Easing.cubic),
+        duration: 280,
+        easing: EASE_OUT_SOFT,
         useNativeDriver: true,
       }),
     ]).start();
@@ -279,9 +288,10 @@ const ViewerLogin = ({ navigation }) => {
   // ── Handlers ──
   const handlePressIn = () => {
     Animated.spring(btnScale, {
-      toValue: 0.97,
+      toValue: 0.965,
       useNativeDriver: true,
-      speed: 50,
+      friction: 7,
+      tension: 140,
     }).start();
   };
 
@@ -289,50 +299,84 @@ const ViewerLogin = ({ navigation }) => {
     Animated.spring(btnScale, {
       toValue: 1,
       useNativeDriver: true,
-      speed: 50,
+      friction: 6,
+      tension: 120,
     }).start();
   };
 
+  const goBack = () => {
+    router.replace('/(auth)/SelectRole');
+  };
+
+  const scrollToInput = (ref, offset = 80) => {
+    setTimeout(() => {
+      ref.current?.measureLayout(scrollViewRef.current, (x, y) => {
+        scrollViewRef.current?.scrollTo({ y: y - offset, animated: true });
+      });
+    }, 300);
+  };
+
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
+    if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
     setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth, 
-        email.trim(), 
-        password.trim()
-      );
-      const idToken = await userCredential.user.getIdToken(true);
-      await authAPI.login(
-        { email: email.trim() },
-        { headers: { Authorization: `Bearer ${idToken}` } }
-      );
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      const tokenResult = await userCredential.user.getIdTokenResult(true);
+      const role = tokenResult.claims?.role;
+
+      if (role && role !== 'viewer') {
+        await auth.signOut();
+        Alert.alert(
+          'Access Denied',
+          'This login is for viewers only. Please use the owner login.'
+        );
+        return;
+      }
+
+      await AsyncStorage.setItem('userRole', role || 'viewer');
+
       router.replace('/(viewer)/Home');
     } catch (error) {
-      Alert.alert('Login Failed', error.message);
+      console.error('❌ ViewerLogin error:', error.message);
+
+      let message = error.message;
+      if (
+        error.code === 'auth/user-not-found' ||
+        error.code === 'auth/wrong-password' ||
+        error.code === 'auth/invalid-credential'
+      ) {
+        message = 'Incorrect email or password. Please try again.';
+      } else if (error.code === 'auth/too-many-requests') {
+        message = 'Too many failed attempts. Please try again later.';
+      }
+
+      Alert.alert('Login Failed', message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const styles = createStyles(colors);
+  const styles = createStyles(colors, S);
 
-  // ── Render ──
   return (
-    <SafeAreaView style={styles.root} edges={['bottom']}>
-      <StatusBar 
-        barStyle={theme.statusBarStyle} 
-        backgroundColor={colors.background} 
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <StatusBar
+        barStyle={theme.statusBarStyle}
+        backgroundColor={colors.background}
       />
+
+      {/* ─── Top Stripe ─────────────────────────────────────────────────────── */}
+      <View style={[styles.topStripe, { backgroundColor: colors.accent }]} />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
       >
         <ScrollView
           ref={scrollViewRef}
@@ -341,34 +385,45 @@ const ViewerLogin = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           scrollEnabled={true}
+          keyboardDismissMode="interactive"
+          bounces={true}
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View>
+            <View style={styles.responsiveWrap}>
               {/* Header */}
               <Animated.View
                 style={[
                   styles.header,
-                  { 
-                    opacity: headerFade, 
-                    transform: [{ translateY: headerSlide }] 
-                  },
+                  { opacity: headerFade, transform: [{ translateY: headerSlide }] },
                 ]}
               >
-                <Text style={styles.headerLabel}>Viewer Login</Text>
-                <Text style={styles.headerTitle}>Welcome Back</Text>
+                <TouchableOpacity
+                  style={[styles.backBtn, { backgroundColor: colors.background }]}
+                  onPress={goBack}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="arrow-back" size={scale(20)} color={colors.primary} />
+                </TouchableOpacity>
+
+                <View style={styles.headerTextBlock}>
+                  <Text style={styles.headerLabel}>Viewer Login</Text>
+                  <Text style={styles.headerTitle}>Welcome Back</Text>
+                </View>
+
+                <View style={styles.headerRight} />
               </Animated.View>
 
-              {/* Red Underline */}
+              {/* ─── Red Underline under Welcome Back ────────────────────── */}
               <Animated.View
                 style={[
                   styles.underlineContainer,
-                  { 
-                    opacity: lineFade, 
-                    transform: [{ scaleX: lineScale }] 
+                  {
+                    opacity: titleFade,
+                    transform: [{ scaleX: titleFade }],
                   },
                 ]}
               >
-                <View style={styles.underline} />
+                <View style={[styles.underline, { backgroundColor: colors.accent }]} />
               </Animated.View>
 
               {/* Content */}
@@ -377,15 +432,20 @@ const ViewerLogin = ({ navigation }) => {
                 <Animated.View
                   style={[
                     styles.welcomeSection,
-                    { 
-                      opacity: titleFade, 
-                      transform: [{ translateY: titleSlide }] 
-                    },
+                    { opacity: titleFade, transform: [{ translateY: titleSlide }] },
                   ]}
                 >
+                  <View style={styles.badgeContainer}>
+                    <View style={[styles.badge, { backgroundColor: colors.accentBg }]}>
+                      <Ionicons name="eye-outline" size={scale(14)} color={colors.accent} />
+                      <Text style={[styles.badgeText, { color: colors.accent }]}>
+                        Viewer
+                      </Text>
+                    </View>
+                  </View>
                   <Text style={styles.welcomeText}>
-                    Stay updated with{'\n'}
-                    <Text style={{ color: colors.accent }}>local news</Text>
+                    Stay Updated With{'\n'}
+                    <Text style={{ color: colors.accent }}>Local News!</Text>
                   </Text>
                   <Text style={[styles.subtitle, { color: colors.secondary }]}>
                     Login to access your personalized news feed
@@ -399,12 +459,14 @@ const ViewerLogin = ({ navigation }) => {
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
-                  delay={340}
+                  delay={260}
                   colors={colors}
+                  S={S}
                   returnKeyType="next"
                   onSubmitEditing={() => {
                     passwordInputRef.current?.focus();
                   }}
+                  onFocus={() => scrollToInput(passwordInputRef)}
                 />
 
                 {/* Password Input */}
@@ -415,13 +477,15 @@ const ViewerLogin = ({ navigation }) => {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
-                  delay={420}
+                  delay={330}
                   colors={colors}
+                  S={S}
                   returnKeyType="done"
                   onSubmitEditing={handleLogin}
+                  onFocus={() => scrollToInput(passwordInputRef)}
                   rightElement={
                     <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
+                      onPress={() => setShowPassword((prev) => !prev)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Ionicons
@@ -434,11 +498,8 @@ const ViewerLogin = ({ navigation }) => {
                 />
 
                 {/* Forgot Password */}
-                <Animated.View 
-                  style={{ 
-                    opacity: btnFade, 
-                    transform: [{ translateY: btnSlide }] 
-                  }}
+                <Animated.View
+                  style={{ opacity: btnFade, transform: [{ translateY: btnSlide }] }}
                 >
                   <TouchableOpacity
                     style={styles.forgotPassword}
@@ -452,20 +513,15 @@ const ViewerLogin = ({ navigation }) => {
 
                 {/* Login Button */}
                 <Animated.View
-                  style={[
-                    { 
-                      opacity: btnFade, 
-                      transform: [{ translateY: btnSlide }, { scale: btnScale }] 
-                    },
-                  ]}
+                  style={{
+                    opacity: btnFade,
+                    transform: [{ translateY: btnSlide }, { scale: btnScale }],
+                  }}
                 >
                   <TouchableOpacity
                     style={[
                       styles.loginButton,
-                      { 
-                        backgroundColor: colors.accent, 
-                        opacity: isLoading ? 0.75 : 1 
-                      },
+                      { backgroundColor: colors.accent, opacity: isLoading ? 0.75 : 1 },
                     ]}
                     onPress={handleLogin}
                     onPressIn={handlePressIn}
@@ -478,25 +534,14 @@ const ViewerLogin = ({ navigation }) => {
                     ) : (
                       <>
                         <Text style={styles.loginButtonText}>Login</Text>
-                        <Ionicons 
-                          name="arrow-forward" 
-                          size={scale(18)} 
-                          color="#FFFFFF" 
-                        />
+                        <Ionicons name="arrow-forward" size={scale(18)} color="#FFFFFF" />
                       </>
                     )}
                   </TouchableOpacity>
                 </Animated.View>
 
-                {/* Footer with extra bottom padding for scrolling */}
-                <Animated.View
-                  style={[
-                    styles.footerInScroll,
-                    { 
-                      opacity: footerFade,
-                    },
-                  ]}
-                >
+                {/* Footer */}
+                <Animated.View style={[styles.footerInScroll, { opacity: footerFade }]}>
                   <Text style={[styles.footerText, { color: colors.muted }]}>
                     Don't have an account?{' '}
                   </Text>
@@ -507,7 +552,6 @@ const ViewerLogin = ({ navigation }) => {
                   </TouchableOpacity>
                 </Animated.View>
 
-                {/* Extra bottom padding to ensure scrollability */}
                 <View style={styles.extraBottomPadding} />
               </View>
             </View>
@@ -516,140 +560,205 @@ const ViewerLogin = ({ navigation }) => {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-};
+}
 
 // ─── Styles ──────────────────────────────────────────────────────────────
-const createStyles = (colors) => StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  header: {
-    alignItems: 'center',
-    paddingTop: verticalScale(28),
-    paddingBottom: verticalScale(10),
-    paddingHorizontal: scale(20),
-  },
-  headerLabel: {
-    fontSize: moderateScale(9),
-    fontWeight: '700',
-    color: colors.muted,
-    letterSpacing: 1.8,
-    textTransform: 'uppercase',
-    marginBottom: verticalScale(3),
-  },
-  headerTitle: {
-    fontSize: moderateScale(24),
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: -0.4,
-  },
-  underlineContainer: {
-    width: '100%',
-    marginBottom: verticalScale(10),
-  },
-  underline: {
-    height: 3,
-    backgroundColor: colors.accent,
-    width: '100%',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: scale(22),
-    paddingTop: verticalScale(22),
-  },
-  welcomeSection: {
-    marginBottom: verticalScale(26),
-  },
-  welcomeText: {
-    fontSize: moderateScale(26),
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: -0.5,
-    lineHeight: moderateScale(34),
-    marginBottom: verticalScale(8),
-  },
-  subtitle: {
-    fontSize: moderateScale(13),
-    lineHeight: moderateScale(19),
-    fontWeight: '400',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderRadius: scale(13),
-    paddingHorizontal: scale(16),
-    marginBottom: verticalScale(14),
-    backgroundColor: colors.inputBackground,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  inputIcon: {
-    marginRight: scale(11),
-  },
-  input: {
-    flex: 1,
-    paddingVertical: verticalScale(14),
-    fontSize: moderateScale(15),
-    fontWeight: '400',
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: verticalScale(22),
-  },
-  forgotPasswordText: {
-    fontSize: moderateScale(13),
-    fontWeight: '600',
-  },
-  loginButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: verticalScale(15),
-    borderRadius: scale(14),
-    gap: scale(9),
-    shadowColor: '#C8001A',
-    shadowOffset: { width: 0, height: scale(5) },
-    shadowOpacity: 0.28,
-    shadowRadius: scale(14),
-    elevation: 5,
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: moderateScale(16),
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  footerInScroll: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: verticalScale(40),
-    paddingVertical: verticalScale(12),
-  },
-  footerText: {
-    fontSize: moderateScale(13),
-  },
-  signupText: {
-    fontSize: moderateScale(13),
-    fontWeight: '700',
-  },
-  extraBottomPadding: {
-    height: verticalScale(60),
-  },
-});
+const createStyles = (colors, S) => {
+  const { scale, verticalScale, moderateScale } = S;
 
-export default ViewerLogin;
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    topStripe: {
+      height: 3,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: verticalScale(20),
+    },
+    responsiveWrap: {
+      width: '100%',
+      maxWidth: MAX_CONTENT_WIDTH,
+      alignSelf: 'center',
+    },
+
+    // ─── Header ─────────────────────────────────────────────────────────────
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: verticalScale(28),
+      paddingBottom: verticalScale(10),
+      paddingHorizontal: scale(20),
+    },
+    backBtn: {
+      width: scale(38),
+      height: scale(38),
+      borderRadius: scale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    headerTextBlock: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    headerRight: {
+      width: scale(38),
+    },
+    headerLabel: {
+      fontSize: moderateScale(9),
+      fontWeight: '700',
+      color: colors.muted,
+      letterSpacing: 1.8,
+      textTransform: 'uppercase',
+      marginBottom: verticalScale(3),
+    },
+    headerTitle: {
+      fontSize: moderateScale(24),
+      fontWeight: '800',
+      color: colors.primary,
+      letterSpacing: -0.4,
+    },
+
+    // ─── Red Underline ──────────────────────────────────────────────────────
+    underlineContainer: {
+      width: '100%',
+      paddingHorizontal: scale(20),
+      marginBottom: verticalScale(8),
+    },
+    underline: {
+      height: 2,
+      width: '100%',
+    },
+
+    // ─── Content ────────────────────────────────────────────────────────────
+    content: {
+      flex: 1,
+      paddingHorizontal: scale(22),
+      paddingTop: verticalScale(12),
+    },
+    welcomeSection: {
+      marginBottom: verticalScale(22),
+    },
+    badgeContainer: {
+      marginBottom: verticalScale(8),
+    },
+    badge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: scale(12),
+      paddingVertical: verticalScale(4),
+      borderRadius: scale(20),
+      alignSelf: 'flex-start',
+      gap: scale(6),
+      marginTop: verticalScale(20),
+    },
+    badgeText: {
+      fontSize: moderateScale(11),
+      fontWeight: '600',
+      letterSpacing: 0.3,
+      color: colors.accent,
+    },
+    welcomeText: {
+      fontSize: moderateScale(26),
+      fontWeight: '800',
+      color: colors.primary,
+      letterSpacing: -0.5,
+      lineHeight: moderateScale(34),
+      marginBottom: verticalScale(6),
+      marginTop: verticalScale(10),
+    },
+    subtitle: {
+      fontSize: moderateScale(13),
+      lineHeight: moderateScale(19),
+      fontWeight: '400',
+      color: colors.secondary,
+    },
+
+    // ─── Inputs ─────────────────────────────────────────────────────────────
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderRadius: scale(13),
+      paddingHorizontal: scale(16),
+      marginBottom: verticalScale(14),
+      backgroundColor: colors.inputBackground,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      elevation: 1,
+    },
+    inputIcon: {
+      marginRight: scale(11),
+    },
+    input: {
+      flex: 1,
+      paddingVertical: verticalScale(14),
+      fontSize: moderateScale(15),
+      fontWeight: '400',
+    },
+
+    // ─── Forgot Password ────────────────────────────────────────────────────
+    forgotPassword: {
+      alignSelf: 'flex-end',
+      marginBottom: verticalScale(22),
+    },
+    forgotPasswordText: {
+      fontSize: moderateScale(13),
+      fontWeight: '600',
+      color: colors.accent,
+    },
+
+    // ─── Login Button ──────────────────────────────────────────────────────
+    loginButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: verticalScale(15),
+      borderRadius: scale(14),
+      gap: scale(9),
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: scale(5) },
+      shadowOpacity: 0.28,
+      shadowRadius: scale(14),
+      elevation: 5,
+    },
+    loginButtonText: {
+      color: '#FFFFFF',
+      fontSize: moderateScale(16),
+      fontWeight: '700',
+      letterSpacing: 0.2,
+    },
+
+    // ─── Footer ─────────────────────────────────────────────────────────────
+    footerInScroll: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: verticalScale(30),
+      paddingVertical: verticalScale(12),
+    },
+    footerText: {
+      fontSize: moderateScale(13),
+      color: colors.muted,
+    },
+    signupText: {
+      fontSize: moderateScale(13),
+      fontWeight: '700',
+      color: colors.accent,
+    },
+    extraBottomPadding: {
+      height: verticalScale(60),
+    },
+  });
+};

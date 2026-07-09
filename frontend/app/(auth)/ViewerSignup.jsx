@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+// screens/ViewerSignup.jsx
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   StatusBar,
   Animated,
   Easing,
   useColorScheme,
-  PixelRatio,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -23,23 +23,33 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { authAPI } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';   // ← ADD
-import { useUser } from '../../context/UserContext';   // ← ADD
+import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../context/AuthContext';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
-const { width: SW, height: SH } = Dimensions.get('window');
 const BASE_WIDTH = 390;
 const BASE_HEIGHT = 844;
+const MAX_CONTENT_WIDTH = 480;
+
+const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
+const EASE_OUT_SOFT = Easing.bezier(0.16, 1, 0.3, 1);
 
 // ─── Responsive Helpers ────────────────────────────────────────────────────
-const scale = (size) => Math.round((SW / BASE_WIDTH) * size);
-const verticalScale = (size) => Math.round((SH / BASE_HEIGHT) * size);
-const moderateScale = (size, factor = 0.5) => 
-  Math.round(size + (scale(size) - size) * factor);
+const createScalers = (windowWidth, windowHeight) => {
+  const widthRatio = windowWidth / BASE_WIDTH;
+  const clampedRatio = Math.min(Math.max(widthRatio, 0.85), 1.25);
+
+  const scale = (size) => Math.round(clampedRatio * size);
+  const verticalScale = (size) =>
+    Math.round((windowHeight / BASE_HEIGHT) * size);
+  const moderateScale = (size, factor = 0.5) =>
+    Math.round(size + (scale(size) - size) * factor);
+
+  return { scale, verticalScale, moderateScale };
+};
 
 // ─── Theme Configuration ──────────────────────────────────────────────────
 const THEMES = {
@@ -104,14 +114,13 @@ const AnimatedInput = ({
   rightElement,
   delay = 0,
   colors,
+  S,
   onSubmitEditing,
   returnKeyType,
   inputRef,
-  onFocus,
-  onBlur,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const slideAnim = useRef(new Animated.Value(24)).current;
+  const slideAnim = useRef(new Animated.Value(16)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [borderColor, setBorderColor] = useState(colors.inputBorder);
 
@@ -119,54 +128,43 @@ const AnimatedInput = ({
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 420,
+        duration: 360,
         delay,
-        easing: Easing.out(Easing.exp),
+        easing: EASE_OUT,
         useNativeDriver: true,
       }),
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 420,
+        duration: 360,
         delay,
-        easing: Easing.out(Easing.exp),
+        easing: EASE_OUT,
         useNativeDriver: true,
       }),
     ]).start();
   }, [delay, slideAnim, fadeAnim]);
 
   useEffect(() => {
-    const color = isFocused ? colors.inputFocusBorder : colors.inputBorder;
-    setBorderColor(color);
+    setBorderColor(isFocused ? colors.inputFocusBorder : colors.inputBorder);
   }, [isFocused, colors.inputFocusBorder, colors.inputBorder]);
 
-  const styles = createStyles(colors);
-
-  const handleFocus = () => {
-    setIsFocused(true);
-    if (onFocus) onFocus();
-  };
-
-  const handleBlur = () => {
-    setIsFocused(false);
-    if (onBlur) onBlur();
-  };
+  const styles = createStyles(colors, S);
 
   return (
     <Animated.View
       style={[
         styles.inputWrapper,
-        { 
-          borderColor: borderColor,
-          opacity: fadeAnim, 
-          transform: [{ translateY: slideAnim }] 
+        {
+          borderColor,
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
         },
       ]}
     >
-      <Ionicons 
-        name={icon} 
-        size={scale(19)} 
-        color={isFocused ? colors.accent : colors.muted} 
-        style={styles.inputIcon} 
+      <Ionicons
+        name={icon}
+        size={S.scale(19)}
+        color={isFocused ? colors.accent : colors.muted}
+        style={styles.inputIcon}
       />
       <TextInput
         ref={inputRef}
@@ -179,8 +177,8 @@ const AnimatedInput = ({
         keyboardType={keyboardType || 'default'}
         autoCapitalize="none"
         autoCorrect={false}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
         onSubmitEditing={onSubmitEditing}
         returnKeyType={returnKeyType || 'next'}
       />
@@ -190,8 +188,8 @@ const AnimatedInput = ({
 };
 
 // ─── Terms Content Component ─────────────────────────────────────────────
-const TermsContent = ({ colors }) => {
-  const styles = createStyles(colors);
+const TermsContent = ({ colors, S }) => {
+  const styles = createStyles(colors, S);
   return (
     <View>
       <Text style={[styles.termsSectionTitle, { color: colors.primary }]}>1. Acceptance of Terms</Text>
@@ -285,9 +283,12 @@ export default function ViewerSignup() {
   const theme = isDarkMode ? THEMES.dark : THEMES.light;
   const { colors } = theme;
 
-  // ── Context hooks ──────────────────────────────────────────────────────
-  const { setSigningUp } = useAuth();                                      // ← ADD
-  const { suppressNextProfileLoad, resumeProfileLoad } = useUser();        // ← ADD
+  const { width: winWidth, height: winHeight } = useWindowDimensions();
+  const S = useMemo(
+    () => createScalers(winWidth, winHeight),
+    [winWidth, winHeight]
+  );
+  const { scale, verticalScale, moderateScale } = S;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -299,7 +300,6 @@ export default function ViewerSignup() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsModalVisible, setTermsModalVisible] = useState(false);
 
-  // Refs for input focus management
   const emailInputRef = useRef(null);
   const passwordInputRef = useRef(null);
   const confirmPasswordInputRef = useRef(null);
@@ -307,92 +307,83 @@ export default function ViewerSignup() {
 
   // ── Animation Refs ──
   const headerFade = useRef(new Animated.Value(0)).current;
-  const headerSlide = useRef(new Animated.Value(-20)).current;
-  const lineFade = useRef(new Animated.Value(0)).current;
-  const lineScale = useRef(new Animated.Value(0)).current;
+  const headerSlide = useRef(new Animated.Value(-16)).current;
   const titleFade = useRef(new Animated.Value(0)).current;
-  const titleSlide = useRef(new Animated.Value(20)).current;
+  const titleSlide = useRef(new Animated.Value(14)).current;
   const btnFade = useRef(new Animated.Value(0)).current;
-  const btnSlide = useRef(new Animated.Value(20)).current;
+  const btnSlide = useRef(new Animated.Value(14)).current;
   const footerFade = useRef(new Animated.Value(0)).current;
   const btnScale = useRef(new Animated.Value(1)).current;
+  const underlineScale = useRef(new Animated.Value(0)).current;
+
+  const { setSigningUp } = useAuth();
+  const { suppressNextProfileLoad, resumeProfileLoad } = useUser();
 
   // ── Animation Effects ──
   useEffect(() => {
     Animated.parallel([
       Animated.timing(headerFade, {
         toValue: 1,
-        duration: 380,
-        easing: Easing.out(Easing.cubic),
+        duration: 340,
+        easing: EASE_OUT,
         useNativeDriver: true,
       }),
       Animated.timing(headerSlide, {
         toValue: 0,
-        duration: 380,
-        easing: Easing.out(Easing.cubic),
+        duration: 340,
+        easing: EASE_OUT,
         useNativeDriver: true,
       }),
     ]).start();
 
     Animated.sequence([
-      Animated.delay(180),
-      Animated.parallel([
-        Animated.timing(lineFade, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(lineScale, {
-          toValue: 1,
-          duration: 350,
-          easing: Easing.out(Easing.exp),
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-
-    Animated.sequence([
-      Animated.delay(260),
+      Animated.delay(140),
       Animated.parallel([
         Animated.timing(titleFade, {
           toValue: 1,
-          duration: 380,
-          easing: Easing.out(Easing.cubic),
+          duration: 360,
+          easing: EASE_OUT,
           useNativeDriver: true,
         }),
         Animated.timing(titleSlide, {
           toValue: 0,
-          duration: 380,
-          easing: Easing.out(Easing.cubic),
+          duration: 360,
+          easing: EASE_OUT,
+          useNativeDriver: true,
+        }),
+        Animated.timing(underlineScale, {
+          toValue: 1,
+          duration: 400,
+          easing: EASE_OUT,
           useNativeDriver: true,
         }),
       ]),
     ]).start();
 
     Animated.sequence([
-      Animated.delay(500),
+      Animated.delay(440),
       Animated.parallel([
         Animated.timing(btnFade, {
           toValue: 1,
-          duration: 350,
-          easing: Easing.out(Easing.cubic),
+          duration: 320,
+          easing: EASE_OUT,
           useNativeDriver: true,
         }),
         Animated.timing(btnSlide, {
           toValue: 0,
-          duration: 350,
-          easing: Easing.out(Easing.cubic),
+          duration: 320,
+          easing: EASE_OUT,
           useNativeDriver: true,
         }),
       ]),
     ]).start();
 
     Animated.sequence([
-      Animated.delay(600),
+      Animated.delay(540),
       Animated.timing(footerFade, {
         toValue: 1,
-        duration: 300,
-        easing: Easing.out(Easing.cubic),
+        duration: 280,
+        easing: EASE_OUT_SOFT,
         useNativeDriver: true,
       }),
     ]).start();
@@ -401,9 +392,10 @@ export default function ViewerSignup() {
   // ── Handlers ──
   const handlePressIn = () => {
     Animated.spring(btnScale, {
-      toValue: 0.97,
+      toValue: 0.965,
       useNativeDriver: true,
-      speed: 50,
+      friction: 7,
+      tension: 140,
     }).start();
   };
 
@@ -411,20 +403,16 @@ export default function ViewerSignup() {
     Animated.spring(btnScale, {
       toValue: 1,
       useNativeDriver: true,
-      speed: 50,
+      friction: 6,
+      tension: 120,
     }).start();
   };
 
-  const scrollToInput = (ref) => {
-    setTimeout(() => {
-      ref.current?.measureLayout(scrollViewRef.current, (x, y) => {
-        scrollViewRef.current?.scrollTo({ y: y - 80, animated: true });
-      });
-    }, 300);
+  const goBack = () => {
+    router.replace('/(auth)/SelectRole');
   };
 
   const handleSignup = async () => {
-    // ── Validation ──────────────────────────────────────────────────────
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -443,75 +431,40 @@ export default function ViewerSignup() {
     }
 
     setIsLoading(true);
-
-    // 🔒 Block both contexts BEFORE Firebase creates the user.
-    // This prevents onAuthStateChanged (AuthContext) and the user useEffect
-    // (UserContext) from firing a GET /profile while the user doesn't yet
-    // exist in MongoDB.
     setSigningUp(true);
     suppressNextProfileLoad();
 
     try {
       console.log('📝 ===== STARTING VIEWER SIGNUP =====');
-      console.log('📧 Email:', email);
-      console.log('👤 Name:', name);
 
-      // 1. Create user in Firebase Auth
-      console.log('1️⃣ Creating Firebase user...');
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log('✅ Firebase user created. UID:', userCredential.user.uid);
 
-      // 2. Update display name
-      console.log('2️⃣ Updating profile...');
       await updateProfile(userCredential.user, { displayName: name });
       console.log('✅ Profile updated');
 
-      // 3. Get fresh Firebase token
-      console.log('3️⃣ Getting Firebase token...');
       const idToken = await userCredential.user.getIdToken(true);
-      console.log('✅ Token obtained.');
+      console.log('✅ Token obtained');
 
-      // 4. Persist token
-      console.log('4️⃣ Saving token to AsyncStorage...');
-      await AsyncStorage.setItem('authToken', idToken);
-      console.log('✅ Token saved');
-
-      // 5. Register user in MongoDB via backend
-      console.log('5️⃣ Registering in backend...');
       const response = await authAPI.register(
         { name, email, role: 'viewer' },
         { headers: { Authorization: `Bearer ${idToken}` } }
       );
-      console.log('✅ Backend response:', response.data);
+      console.log('✅ Backend response:', JSON.stringify(response.data, null, 2));
 
-      // ✅ User now exists in MongoDB — safe to unblock both contexts
       setSigningUp(false);
       resumeProfileLoad();
 
-      console.log('7️⃣ Navigating to home...');
       Alert.alert(
         'Success',
         'Account created successfully!',
-        [
-          {
-            text: 'Continue',
-            onPress: () => router.replace('/(viewer)/Home'),
-          },
-        ]
+        [{ text: 'Continue', onPress: () => router.replace('/(viewer)/Home') }]
       );
-
     } catch (error) {
-      // 🔓 Always unblock on error so normal auth flow resumes
+      console.error('❌ Viewer signup error:', error.message);
+
       setSigningUp(false);
       resumeProfileLoad();
-
-      console.error('❌ ===== SIGNUP ERROR =====');
-      console.error('❌ Error message:', error.message);
-
-      if (error.response) {
-        console.error('❌ Response status:', error.response.status);
-        console.error('❌ Response data:', error.response.data);
-      }
 
       let errorMessage = 'Something went wrong. Please try again.';
       if (error.response?.data?.message) {
@@ -519,22 +472,23 @@ export default function ViewerSignup() {
       } else if (error.message) {
         errorMessage = error.message;
       }
-
       Alert.alert('Signup Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const styles = createStyles(colors);
+  const styles = createStyles(colors, S);
 
-  // ── Render ──
   return (
-    <SafeAreaView style={styles.root} edges={['bottom']}>
-      <StatusBar 
-        barStyle={theme.statusBarStyle} 
-        backgroundColor={colors.background} 
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <StatusBar
+        barStyle={theme.statusBarStyle}
+        backgroundColor={colors.background}
       />
+
+      {/* ─── Top Stripe ────────────────────────────────────────────────── */}
+      <View style={[styles.topStripe, { backgroundColor: colors.accent }]} />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -549,10 +503,10 @@ export default function ViewerSignup() {
           keyboardShouldPersistTaps="handled"
           scrollEnabled={true}
           keyboardDismissMode="interactive"
-          automaticallyAdjustContentInsets={true}
+          bounces={true}
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View>
+            <View style={styles.responsiveWrap}>
               {/* Header */}
               <Animated.View
                 style={[
@@ -560,18 +514,33 @@ export default function ViewerSignup() {
                   { opacity: headerFade, transform: [{ translateY: headerSlide }] },
                 ]}
               >
-                <Text style={styles.headerLabel}>Viewer Signup</Text>
-                <Text style={styles.headerTitle}>Create Account</Text>
+                <TouchableOpacity
+                  style={[styles.backBtn, { backgroundColor: colors.background }]}
+                  onPress={goBack}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="arrow-back" size={scale(20)} color={colors.primary} />
+                </TouchableOpacity>
+
+                <View style={styles.headerTextBlock}>
+                  <Text style={styles.headerLabel}>Viewer Signup</Text>
+                  <Text style={styles.headerTitle}>Create Account</Text>
+                </View>
+
+                <View style={styles.headerRight} />
               </Animated.View>
 
-              {/* Red Underline */}
+              {/* ─── Full Width Red Underline ─────────────────────────────── */}
               <Animated.View
                 style={[
-                  styles.underlineContainer,
-                  { opacity: lineFade, transform: [{ scaleX: lineScale }] },
+                  styles.underlineWrapper,
+                  {
+                    opacity: titleFade,
+                    transform: [{ scaleX: underlineScale }],
+                  },
                 ]}
               >
-                <View style={styles.underline} />
+                <View style={[styles.underline, { backgroundColor: colors.accent }]} />
               </Animated.View>
 
               {/* Content */}
@@ -597,15 +566,11 @@ export default function ViewerSignup() {
                   placeholder="Full Name"
                   value={name}
                   onChangeText={setName}
-                  delay={340}
+                  delay={260}
                   colors={colors}
+                  S={S}
                   returnKeyType="next"
                   onSubmitEditing={() => emailInputRef.current?.focus()}
-                  onFocus={() => {
-                    setTimeout(() => {
-                      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-                    }, 100);
-                  }}
                 />
 
                 {/* Email Input */}
@@ -616,11 +581,11 @@ export default function ViewerSignup() {
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
-                  delay={400}
+                  delay={320}
                   colors={colors}
+                  S={S}
                   returnKeyType="next"
                   onSubmitEditing={() => passwordInputRef.current?.focus()}
-                  onFocus={() => scrollToInput(emailInputRef)}
                 />
 
                 {/* Password Input */}
@@ -631,11 +596,11 @@ export default function ViewerSignup() {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
-                  delay={460}
+                  delay={380}
                   colors={colors}
+                  S={S}
                   returnKeyType="next"
                   onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
-                  onFocus={() => scrollToInput(passwordInputRef)}
                   rightElement={
                     <TouchableOpacity
                       onPress={() => setShowPassword(!showPassword)}
@@ -658,11 +623,11 @@ export default function ViewerSignup() {
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!showConfirmPassword}
-                  delay={520}
+                  delay={440}
                   colors={colors}
+                  S={S}
                   returnKeyType="done"
                   onSubmitEditing={handleSignup}
-                  onFocus={() => scrollToInput(confirmPasswordInputRef)}
                   rightElement={
                     <TouchableOpacity
                       onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -711,9 +676,10 @@ export default function ViewerSignup() {
 
                 {/* Signup Button */}
                 <Animated.View
-                  style={[
-                    { opacity: btnFade, transform: [{ translateY: btnSlide }, { scale: btnScale }] },
-                  ]}
+                  style={{
+                    opacity: btnFade,
+                    transform: [{ translateY: btnSlide }, { scale: btnScale }],
+                  }}
                 >
                   <TouchableOpacity
                     style={[
@@ -738,14 +704,14 @@ export default function ViewerSignup() {
                 </Animated.View>
 
                 {/* Footer */}
-                <Animated.View
-                  style={[styles.footerInScroll, { opacity: footerFade }]}
-                >
+                <Animated.View style={[styles.footerInScroll, { opacity: footerFade }]}>
                   <Text style={[styles.footerText, { color: colors.muted }]}>
                     Already have an account?{' '}
                   </Text>
                   <TouchableOpacity onPress={() => router.push('/(auth)/ViewerLogin')}>
-                    <Text style={[styles.loginText, { color: colors.accent }]}>Log In</Text>
+                    <Text style={[styles.loginText, { color: colors.accent }]}>
+                      Log In
+                    </Text>
                   </TouchableOpacity>
                 </Animated.View>
 
@@ -756,7 +722,7 @@ export default function ViewerSignup() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ─── Terms & Conditions Modal ───────────────────────────────────── */}
+      {/* ─── Terms & Conditions Modal ─────────────────────────────────────── */}
       <Modal
         visible={termsModalVisible}
         animationType="slide"
@@ -780,7 +746,7 @@ export default function ViewerSignup() {
               contentContainerStyle={styles.modalContent}
               showsVerticalScrollIndicator={true}
             >
-              <TermsContent colors={colors} />
+              <TermsContent colors={colors} S={S} />
             </ScrollView>
           </View>
         </View>
@@ -790,214 +756,261 @@ export default function ViewerSignup() {
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────
-const createStyles = (colors) => StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: verticalScale(20),
-  },
-  header: {
-    alignItems: 'center',
-    paddingTop: verticalScale(28),
-    paddingBottom: verticalScale(10),
-    paddingHorizontal: scale(20),
-  },
-  headerLabel: {
-    fontSize: moderateScale(9),
-    fontWeight: '700',
-    color: colors.muted,
-    letterSpacing: 1.8,
-    textTransform: 'uppercase',
-    marginBottom: verticalScale(3),
-  },
-  headerTitle: {
-    fontSize: moderateScale(24),
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: -0.4,
-  },
-  underlineContainer: {
-    width: '100%',
-    marginBottom: verticalScale(10),
-  },
-  underline: {
-    height: 3,
-    backgroundColor: colors.accent,
-    width: '100%',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: scale(22),
-    paddingTop: verticalScale(22),
-  },
-  welcomeSection: {
-    marginBottom: verticalScale(26),
-  },
-  welcomeText: {
-    fontSize: moderateScale(26),
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: -0.5,
-    lineHeight: moderateScale(34),
-    marginBottom: verticalScale(8),
-  },
-  subtitle: {
-    fontSize: moderateScale(13),
-    lineHeight: moderateScale(19),
-    fontWeight: '400',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderRadius: scale(13),
-    paddingHorizontal: scale(16),
-    marginBottom: verticalScale(14),
-    backgroundColor: colors.inputBackground,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  inputIcon: {
-    marginRight: scale(11),
-  },
-  input: {
-    flex: 1,
-    paddingVertical: verticalScale(14),
-    fontSize: moderateScale(15),
-    fontWeight: '400',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: verticalScale(14),
-    paddingVertical: verticalScale(4),
-  },
-  checkbox: {
-    width: scale(22),
-    height: scale(22),
-    borderRadius: scale(6),
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scale(12),
-  },
-  checkboxText: {
-    fontSize: moderateScale(13),
-    fontWeight: '400',
-    flex: 1,
-  },
-  checkboxLink: {
-    fontWeight: '700',
-  },
-  signupButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: verticalScale(15),
-    borderRadius: scale(14),
-    gap: scale(9),
-    shadowColor: '#C8001A',
-    shadowOffset: { width: 0, height: scale(5) },
-    shadowOpacity: 0.28,
-    shadowRadius: scale(14),
-    elevation: 5,
-    marginTop: verticalScale(8),
-  },
-  signupButtonText: {
-    color: '#FFFFFF',
-    fontSize: moderateScale(16),
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  footerInScroll: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: verticalScale(30),
-    paddingVertical: verticalScale(12),
-  },
-  footerText: {
-    fontSize: moderateScale(13),
-  },
-  loginText: {
-    fontSize: moderateScale(13),
-    fontWeight: '700',
-  },
-  extraBottomPadding: {
-    height: verticalScale(60),
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    flex: 0.92,
-    borderTopLeftRadius: scale(24),
-    borderTopRightRadius: scale(24),
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(16),
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: moderateScale(18),
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  modalCloseBtn: {
-    width: scale(38),
-    height: scale(38),
-    borderRadius: scale(19),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalContent: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(20),
-    paddingBottom: verticalScale(30),
-  },
-  termsSectionTitle: {
-    fontSize: moderateScale(16),
-    fontWeight: '700',
-    marginTop: verticalScale(18),
-    marginBottom: verticalScale(8),
-    letterSpacing: -0.2,
-  },
-  termsText: {
-    fontSize: moderateScale(13.5),
-    lineHeight: moderateScale(22),
-    marginBottom: verticalScale(4),
-    fontWeight: '400',
-  },
-  termsFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: verticalScale(24),
-    paddingTop: verticalScale(16),
-    borderTopWidth: 1,
-  },
-  termsFooterText: {
-    fontSize: moderateScale(11),
-    fontWeight: '400',
-  },
-});
+const createStyles = (colors, S) => {
+  const { scale, verticalScale, moderateScale } = S;
+
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    topStripe: {
+      height: 3,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: verticalScale(20),
+    },
+    responsiveWrap: {
+      width: '100%',
+      maxWidth: MAX_CONTENT_WIDTH,
+      alignSelf: 'center',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: verticalScale(28),
+      paddingBottom: verticalScale(10),
+      paddingHorizontal: scale(20),
+    },
+    backBtn: {
+      width: scale(38),
+      height: scale(38),
+      borderRadius: scale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    headerTextBlock: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    headerRight: {
+      width: scale(38),
+    },
+    headerLabel: {
+      fontSize: moderateScale(9),
+      fontWeight: '700',
+      color: colors.muted,
+      letterSpacing: 1.8,
+      textTransform: 'uppercase',
+      marginBottom: verticalScale(3),
+    },
+    headerTitle: {
+      fontSize: moderateScale(24),
+      fontWeight: '800',
+      color: colors.primary,
+      letterSpacing: -0.4,
+    },
+
+    // ─── Full Width Red Underline ──────────────────────────────────────────
+    underlineWrapper: {
+      width: '100%',
+      paddingHorizontal: scale(20),
+      marginBottom: verticalScale(6),
+    },
+    underline: {
+      height: 2.5,
+      width: '100%',
+    },
+
+    content: {
+      flex: 1,
+      paddingHorizontal: scale(22),
+      paddingTop: verticalScale(22),
+    },
+    welcomeSection: {
+      marginBottom: verticalScale(26),
+      alignItems: 'center',
+    },
+    welcomeText: {
+      fontSize: moderateScale(26),
+      fontWeight: '800',
+      color: colors.primary,
+      letterSpacing: -0.5,
+      lineHeight: moderateScale(34),
+      marginBottom: verticalScale(8),
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: moderateScale(13),
+      lineHeight: moderateScale(19),
+      fontWeight: '400',
+      color: colors.secondary,
+      textAlign: 'center',
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderRadius: scale(13),
+      paddingHorizontal: scale(16),
+      marginBottom: verticalScale(14),
+      backgroundColor: colors.inputBackground,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      elevation: 1,
+    },
+    inputIcon: {
+      marginRight: scale(11),
+    },
+    input: {
+      flex: 1,
+      paddingVertical: verticalScale(14),
+      fontSize: moderateScale(15),
+      fontWeight: '400',
+    },
+    checkboxContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: verticalScale(14),
+      paddingVertical: verticalScale(4),
+    },
+    checkbox: {
+      width: scale(22),
+      height: scale(22),
+      borderRadius: scale(6),
+      borderWidth: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: scale(12),
+    },
+    checkboxText: {
+      fontSize: moderateScale(13),
+      fontWeight: '400',
+      flex: 1,
+      color: colors.secondary,
+    },
+    checkboxLink: {
+      fontWeight: '700',
+      color: colors.accent,
+    },
+    signupButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: verticalScale(15),
+      borderRadius: scale(14),
+      gap: scale(9),
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: scale(5) },
+      shadowOpacity: 0.28,
+      shadowRadius: scale(14),
+      elevation: 5,
+      marginTop: verticalScale(8),
+    },
+    signupButtonText: {
+      color: '#FFFFFF',
+      fontSize: moderateScale(16),
+      fontWeight: '700',
+      letterSpacing: 0.2,
+    },
+    footerInScroll: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: verticalScale(30),
+      paddingVertical: verticalScale(12),
+    },
+    footerText: {
+      fontSize: moderateScale(13),
+      color: colors.muted,
+    },
+    loginText: {
+      fontSize: moderateScale(13),
+      fontWeight: '700',
+      color: colors.accent,
+    },
+    extraBottomPadding: {
+      height: verticalScale(60),
+    },
+
+    // Modal Styles
+    modalOverlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    modalContainer: {
+      flex: 0.92,
+      borderTopLeftRadius: scale(24),
+      borderTopRightRadius: scale(24),
+      overflow: 'hidden',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: scale(20),
+      paddingVertical: verticalScale(16),
+      borderBottomWidth: 1,
+    },
+    modalTitle: {
+      fontSize: moderateScale(18),
+      fontWeight: '700',
+      letterSpacing: -0.3,
+      color: colors.primary,
+    },
+    modalCloseBtn: {
+      width: scale(38),
+      height: scale(38),
+      borderRadius: scale(19),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalScrollView: {
+      flex: 1,
+    },
+    modalContent: {
+      paddingHorizontal: scale(20),
+      paddingTop: verticalScale(20),
+      paddingBottom: verticalScale(30),
+    },
+
+    // Terms
+    termsSectionTitle: {
+      fontSize: moderateScale(16),
+      fontWeight: '700',
+      marginTop: verticalScale(18),
+      marginBottom: verticalScale(8),
+      letterSpacing: -0.2,
+      color: colors.primary,
+    },
+    termsText: {
+      fontSize: moderateScale(13.5),
+      lineHeight: moderateScale(22),
+      marginBottom: verticalScale(4),
+      fontWeight: '400',
+      color: colors.secondary,
+    },
+    termsFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: verticalScale(24),
+      paddingTop: verticalScale(16),
+      borderTopWidth: 1,
+    },
+    termsFooterText: {
+      fontSize: moderateScale(11),
+      fontWeight: '400',
+      color: colors.muted,
+    },
+  });
+};
