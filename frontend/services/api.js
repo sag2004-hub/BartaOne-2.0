@@ -158,6 +158,9 @@ export const userAPI = {
 };
 
 // Channel APIs
+// services/api.js - Channel APIs section
+
+// Channel APIs
 export const channelAPI = {
   getAll: (params) => api.get('/channels', { params }),
   getById: (id) => api.get(`/channels/${id}`),
@@ -169,6 +172,7 @@ export const channelAPI = {
   unsubscribe: (id) => api.delete(`/channels/${id}/subscribe`),
   getSubscribers: () => api.get('/channels/subscribers'),
   getStats: (id) => api.get(`/channels/${id}/stats`),
+  search: (query) => api.get(`/channels/search?q=${query}`),
 };
 
 // Article APIs

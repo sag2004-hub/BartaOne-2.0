@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// app/(viewer)/ChannelDetails.jsx
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,398 +8,744 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-  FlatList,
+  Alert,
+  Share,
+  Animated,
+  Easing,
+  useColorScheme,
+  PixelRatio,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute } from '@react-navigation/native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import NewsCard from '../../components/NewsCard';
 import VideoCard from '../../components/VideoCard';
 import Loader from '../../components/Loader';
-import { getChannelById } from '../../services/channelService';
+import { channelService } from '../../services/channelService';
 import { getChannelArticles } from '../../services/articleService';
 import { getChannelVideos } from '../../services/videoService';
 
-const { width } = Dimensions.get('window');
+// ─── Responsive helpers ────────────────────────────────────────────────────
+const { width: SW, height: SH } = Dimensions.get('window');
+const BASE_W = 390;
+const scale  = (n) => Math.round((SW / BASE_W) * n);
+const vs     = (n) => Math.round((SH / 844) * n);
+const sp     = (n) => n / PixelRatio.getFontScale();
 
-export default function ChannelDetails({ navigation }) {
-  const route = useRoute();
-  const { channelId } = route.params;
-  const [channel, setChannel] = useState(null);
-  const [articles, setArticles] = useState([]);
-  const [videos, setVideos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('articles');
+// ─── Theme tokens ──────────────────────────────────────────────────────────
+const LIGHT = {
+  bg:                '#F2F0EB',
+  surface:           '#FFFFFF',
+  surfaceAlt:        '#FAFAF8',
+  border:            '#E4E0D8',
+  accent:            '#C8001A',
+  accentBg:          '#FFF0F2',
+  primary:           '#1A2733',
+  secondary:         '#4A5A6B',
+  muted:             '#8A97A5',
+  faint:             '#B8C0B8',
+  white:             '#FFFFFF',
+  statusBar:         'dark-content',
+  teal:              '#4ECDC4',
+  cardShadowOpacity: 0.06,
+};
+
+const DARK = {
+  bg:                '#0D1117',
+  surface:           '#161B22',
+  surfaceAlt:        '#1C2330',
+  border:            '#2A3340',
+  accent:            '#E8192C',
+  accentBg:          'rgba(232,25,44,0.12)',
+  primary:           '#EDF2F7',
+  secondary:         '#8B9BAB',
+  muted:             '#5C6E80',
+  faint:             '#3A4A58',
+  white:             '#FFFFFF',
+  statusBar:         'light-content',
+  teal:              '#4ECDC4',
+  cardShadowOpacity: 0.35,
+};
+
+// ─── Share helper ──────────────────────────────────────────────────────────
+const handleShare = async (channel) => {
+  try {
+    const channelName = channel?.channelName ?? 'this channel';
+    const description = channel?.description
+      ? channel.description.slice(0, 120) + (channel.description.length > 120 ? '…' : '')
+      : 'Check out the latest news on BartaOne.';
+
+    await Share.share({
+      title:   `${channelName} on BartaOne`,
+      message: `📰 Follow *${channelName}* on BartaOne!\n\n${description}\n\nDownload BartaOne for hyper-local news: https://bartaone.app`,
+      url:     `https://bartaone.app/channel/${channel?._id ?? ''}`,
+    });
+  } catch (error) {
+    if (error?.message && !error.message.includes('cancel')) {
+      Alert.alert('Share failed', error.message);
+    }
+  }
+};
+
+// ─── Main component ────────────────────────────────────────────────────────
+export default function ChannelDetails() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const { id }  = params;
+  const scheme  = useColorScheme();
+  const C       = scheme === 'dark' ? DARK : LIGHT;
+
+  const [channel,      setChannel]      = useState(null);
+  const [articles,     setArticles]     = useState([]);
+  const [videos,       setVideos]       = useState([]);
+  const [isLoading,    setIsLoading]    = useState(true);
+  const [activeTab,    setActiveTab]    = useState('articles');
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subscribing,  setSubscribing]  = useState(false);
+
+  // ── Animation refs ──
+  const headerAnim    = useRef(new Animated.Value(0)).current;
+  const bannerAnim    = useRef(new Animated.Value(0)).current;
+  const bannerScale   = useRef(new Animated.Value(1.06)).current;
+  const infoAnim      = useRef(new Animated.Value(0)).current;
+  const infoY         = useRef(new Animated.Value(vs(24))).current;
+  const statsAnim     = useRef(new Animated.Value(0)).current;
+  const btnAnim       = useRef(new Animated.Value(0)).current;
+  const btnPulse      = useRef(new Animated.Value(1)).current;
+  const tabAnim       = useRef(new Animated.Value(0)).current;
+  const contentAnim   = useRef(new Animated.Value(0)).current;
+  const shareIconAnim = useRef(new Animated.Value(1)).current;
+
+  // ── Entry animation ──
+  const runEntryAnim = () => {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(headerAnim, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(bannerAnim, { toValue: 1, duration: 420, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(bannerScale, { toValue: 1, friction: 8, tension: 45, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(infoAnim, { toValue: 1, duration: 300, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(infoY, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+      ]),
+      Animated.timing(statsAnim, { toValue: 1, duration: 260, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.parallel([
+        Animated.timing(btnAnim, { toValue: 1, duration: 280, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(tabAnim, { toValue: 1, duration: 260, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      ]),
+      Animated.timing(contentAnim, { toValue: 1, duration: 260, useNativeDriver: true }),
+    ]).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(btnPulse, { toValue: 1.022, duration: 850, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(btnPulse, { toValue: 1,     duration: 850, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    ).start();
+  };
+
+  // ── Share button bounce ──
+  const animateSharePress = () => {
+    Animated.sequence([
+      Animated.timing(shareIconAnim, { toValue: 0.75, duration: 100, useNativeDriver: true }),
+      Animated.spring(shareIconAnim, { toValue: 1, friction: 4, tension: 80, useNativeDriver: true }),
+    ]).start();
+  };
 
   useEffect(() => {
-    loadChannelData();
-  }, [channelId]);
+    if (id) {
+      loadChannelData();
+    } else {
+      Alert.alert('Error', 'Channel ID is missing');
+      router.back();
+    }
+  }, [id]);
 
   const loadChannelData = async () => {
     setIsLoading(true);
     try {
-      const [channelData, articlesData, videosData] = await Promise.all([
-        getChannelById(channelId),
-        getChannelArticles(channelId),
-        getChannelVideos(channelId),
+      const channelData = await channelService.getById(id);
+      const channelObj  = channelData?.data?.data || channelData?.data || channelData;
+      setChannel(channelObj);
+
+      const [articlesData, videosData] = await Promise.all([
+        getChannelArticles(id),
+        getChannelVideos(id),
       ]);
-      setChannel(channelData);
-      setArticles(articlesData);
-      setVideos(videosData);
+
+      const articleList = articlesData?.data?.articles || articlesData?.data || articlesData || [];
+      const videoList   = videosData?.data?.videos     || videosData?.data  || videosData   || [];
+
+      setArticles(Array.isArray(articleList) ? articleList : []);
+      setVideos(Array.isArray(videoList)   ? videoList   : []);
+      
+      // Check if user is already subscribed
+      // You might want to fetch this from user data or a separate API
+      // setIsSubscribed(channelObj?.isSubscribed || false);
+      
     } catch (error) {
-      console.error('Error loading channel data:', error);
+      console.error('Load error:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to load channel data. Please try again.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
     } finally {
       setIsLoading(false);
+      runEntryAnim();
     }
   };
 
-  const handleSubscribe = () => {
-    setIsSubscribed(!isSubscribed);
-    // API call to subscribe/unsubscribe
+  // ─── Subscribe Handler with better error handling ──────────────────────
+  const handleSubscribe = async () => {
+    if (subscribing) return;
+    
+    setSubscribing(true);
+    try {
+      if (isSubscribed) {
+        await channelService.unsubscribe(id);
+        setIsSubscribed(false);
+        Alert.alert('Success', 'Unsubscribed from channel');
+      } else {
+        await channelService.subscribe(id);
+        setIsSubscribed(true);
+        Alert.alert('Success', 'Subscribed to channel');
+      }
+    } catch (error) {
+      console.error('Subscribe error:', error);
+      
+      // Show a more user-friendly error message
+      let errorMessage = 'Failed to update subscription. Please try again.';
+      
+      if (error.message?.includes('next is not a function')) {
+        errorMessage = 'The server is currently experiencing issues. Please try again later.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert(
+        'Subscription Error',
+        errorMessage,
+        [
+          { text: 'Try Again', onPress: () => handleSubscribe() },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
+  const handleArticlePress = (articleId) => {
+    router.push(`/(viewer)/ArticleDetails?id=${articleId}`);
+  };
+
+  const handleVideoPress = (videoId) => {
+    router.push(`/(viewer)/VideoPlayer?id=${videoId}`);
   };
 
   if (isLoading) {
-    return <Loader message="Loading channel..." />;
+    return <Loader message="Loading channel…" />;
   }
 
   if (!channel) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.root, { backgroundColor: C.bg }]}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Channel not found</Text>
+          <View style={[styles.errorIconWrap, { backgroundColor: C.accentBg }]}>
+            <Ionicons name="alert-circle-outline" size={scale(40)} color={C.accent} />
+          </View>
+          <Text style={[styles.errorTitle, { color: C.primary }]}>Channel not found</Text>
+          <Text style={[styles.errorSub,   { color: C.muted   }]}>
+            This channel may have been removed or the link is invalid.
+          </Text>
+          <TouchableOpacity
+            style={[styles.errorBtn, { backgroundColor: C.accent }]}
+            onPress={() => router.back()}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="arrow-back" size={scale(16)} color="#FFF" />
+            <Text style={styles.errorBtnText}>Go Back</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
+  const styles = makeStyles(C);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
+    <SafeAreaView style={styles.root} edges={['top']}>
+      <StatusBar barStyle={C.statusBar} backgroundColor="transparent" translucent />
+
+      <View style={styles.topStripe} />
+
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+
+        {/* ── Floating header ── */}
+        <Animated.View style={[
+          styles.floatingHeader,
+          {
+            opacity:   headerAnim,
+            transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-vs(20), 0] }) }],
+          },
+        ]}>
           <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            style={[styles.circleBtn, { backgroundColor: 'rgba(15,25,35,0.55)' }]}
+            onPress={() => router.back()}
+            activeOpacity={0.8}
           >
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
+            <Ionicons name="arrow-back" size={scale(20)} color="#FFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.shareButton}>
-            <Ionicons name="share-outline" size={24} color="#FFF" />
-          </TouchableOpacity>
-        </View>
 
-        {/* Channel Banner */}
-        <Image
-          source={{ uri: channel.banner || 'https://via.placeholder.com/800x200' }}
-          style={styles.banner}
-        />
+          <Animated.View style={{ transform: [{ scale: shareIconAnim }] }}>
+            <TouchableOpacity
+              style={[styles.circleBtn, { backgroundColor: 'rgba(15,25,35,0.55)' }]}
+              onPress={() => {
+                animateSharePress();
+                handleShare(channel);
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="share-social-outline" size={scale(20)} color="#FFF" />
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
 
-        {/* Channel Info */}
-        <View style={styles.infoSection}>
+        {/* ── Banner ── */}
+        <Animated.View style={{ opacity: bannerAnim, transform: [{ scale: bannerScale }] }}>
+          <Image
+            source={{ uri: channel.banner || 'https://via.placeholder.com/800x200/0F1923/FFFFFF?text=BartaOne' }}
+            style={styles.banner}
+          />
+          <View style={styles.bannerOverlay} />
+        </Animated.View>
+
+        {/* ── Info card ── */}
+        <Animated.View style={[
+          styles.infoCard,
+          {
+            backgroundColor: C.surface,
+            borderColor:     C.border,
+            opacity:   infoAnim,
+            transform: [{ translateY: infoY }],
+          },
+        ]}>
+          {/* Logo + name */}
           <View style={styles.infoRow}>
-            <Image
-              source={{ uri: channel.logo || 'https://via.placeholder.com/100' }}
-              style={styles.logo}
-            />
-            <View style={styles.nameContainer}>
-              <Text style={styles.channelName}>{channel.channelName}</Text>
-              <View style={styles.verifiedContainer}>
-                {channel.isVerified && (
-                  <>
-                    <Ionicons name="checkmark-circle" size={16} color="#4ECDC4" />
-                    <Text style={styles.verifiedText}>Verified</Text>
-                  </>
-                )}
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{channel.followers || 0}</Text>
-              <Text style={styles.statLabel}>Followers</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{articles.length + videos.length}</Text>
-              <Text style={styles.statLabel}>Posts</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{channel.location?.city || 'N/A'}</Text>
-              <Text style={styles.statLabel}>Location</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.subscribeButton,
-              isSubscribed && styles.subscribedButton,
-            ]}
-            onPress={handleSubscribe}
-          >
-            <Ionicons
-              name={isSubscribed ? 'checkmark' : 'add'}
-              size={20}
-              color={isSubscribed ? '#FF6B6B' : '#FFF'}
-            />
-            <Text
-              style={[
-                styles.subscribeText,
-                isSubscribed && styles.subscribedText,
-              ]}
-            >
-              {isSubscribed ? 'Subscribed' : 'Subscribe'}
-            </Text>
-          </TouchableOpacity>
-
-          <Text style={styles.description}>{channel.description}</Text>
-          <Text style={styles.language}>
-            <Ionicons name="language-outline" size={16} color="#888" />{' '}
-            {channel.language || 'English'}
-          </Text>
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'articles' && styles.tabActive]}
-            onPress={() => setActiveTab('articles')}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'articles' && styles.tabTextActive,
-              ]}
-            >
-              Articles ({articles.length})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'videos' && styles.tabActive]}
-            onPress={() => setActiveTab('videos')}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'videos' && styles.tabTextActive,
-              ]}
-            >
-              Videos ({videos.length})
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Content */}
-        {activeTab === 'articles' ? (
-          articles.length > 0 ? (
-            articles.map((article) => (
-              <NewsCard
-                key={article._id}
-                article={article}
-                onPress={() =>
-                  navigation.navigate('ArticleDetails', { articleId: article._id })
-                }
+            <View style={[styles.logoRing, { borderColor: C.accent }]}>
+              <Image
+                source={{ uri: channel.logo || 'https://via.placeholder.com/100/0F1923/FFFFFF?text=B' }}
+                style={styles.logo}
               />
-            ))
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No articles yet</Text>
             </View>
-          )
-        ) : videos.length > 0 ? (
-          videos.map((video) => (
-            <VideoCard
-              key={video._id}
-              video={video}
-              onPress={() =>
-                navigation.navigate('VideoPlayer', { videoId: video._id })
-              }
-            />
-          ))
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No videos yet</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.channelName, { color: C.primary }]} numberOfLines={2}>
+                {channel.channelName}
+              </Text>
+              {channel.isVerified && (
+                <View style={styles.verifiedRow}>
+                  <Ionicons name="checkmark-circle" size={scale(14)} color={C.teal} />
+                  <Text style={[styles.verifiedText, { color: C.teal }]}>Verified</Text>
+                </View>
+              )}
+              {channel.language && (
+                <View style={styles.langRow}>
+                  <Ionicons name="language-outline" size={scale(13)} color={C.muted} />
+                  <Text style={[styles.langText, { color: C.muted }]}>{channel.language}</Text>
+                </View>
+              )}
+            </View>
           </View>
-        )}
+
+          {/* Description */}
+          {channel.description ? (
+            <Text style={[styles.description, { color: C.secondary }]} numberOfLines={3}>
+              {channel.description}
+            </Text>
+          ) : null}
+
+          <View style={[styles.rule, { backgroundColor: C.accent }]} />
+
+          {/* Stats */}
+          <Animated.View style={[styles.statsRow, { opacity: statsAnim }]}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statNumber, { color: C.primary }]}>
+                {channel.followers?.toLocaleString('en-IN') || '0'}
+              </Text>
+              <Text style={[styles.statLabel, { color: C.muted }]}>Followers</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: C.border }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statNumber, { color: C.primary }]}>
+                {(articles.length + videos.length).toLocaleString('en-IN')}
+              </Text>
+              <Text style={[styles.statLabel, { color: C.muted }]}>Posts</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: C.border }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statNumber, { color: C.primary }]} numberOfLines={1}>
+                {channel.location?.city || 'N/A'}
+              </Text>
+              <Text style={[styles.statLabel, { color: C.muted }]}>Location</Text>
+            </View>
+          </Animated.View>
+
+          {/* Subscribe button */}
+          <Animated.View style={{ transform: [{ scale: btnPulse }], marginTop: vs(14) }}>
+            <TouchableOpacity
+              style={[
+                styles.subscribeBtn,
+                isSubscribed
+                  ? [styles.subscribedBtn, { borderColor: C.accent }]
+                  : { backgroundColor: C.accent, shadowColor: C.accent },
+                subscribing && { opacity: 0.6 },
+              ]}
+              onPress={handleSubscribe}
+              disabled={subscribing}
+              activeOpacity={0.86}
+            >
+              {subscribing ? (
+                <Text style={[styles.subscribeBtnText, { color: isSubscribed ? C.accent : '#FFF' }]}>
+                  Please wait...
+                </Text>
+              ) : (
+                <>
+                  <Ionicons
+                    name={isSubscribed ? 'checkmark-circle' : 'add-circle-outline'}
+                    size={scale(18)}
+                    color={isSubscribed ? C.accent : '#FFF'}
+                  />
+                  <Text
+                    style={[
+                      styles.subscribeBtnText,
+                      { color: isSubscribed ? C.accent : '#FFF' },
+                    ]}
+                  >
+                    {isSubscribed ? 'Subscribed' : 'Subscribe'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
+
+        {/* ── Tab bar ── */}
+        <Animated.View style={[
+          styles.tabBar,
+          {
+            backgroundColor: C.surface,
+            borderBottomColor: C.border,
+            opacity: tabAnim,
+          },
+        ]}>
+          {['articles', 'videos'].map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                styles.tab,
+                activeTab === tab && { borderBottomColor: C.accent, borderBottomWidth: 3 },
+              ]}
+              onPress={() => setActiveTab(tab)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={tab === 'articles' ? 'newspaper-outline' : 'videocam-outline'}
+                size={scale(15)}
+                color={activeTab === tab ? C.accent : C.muted}
+                style={{ marginRight: scale(5) }}
+              />
+              <Text style={[
+                styles.tabText,
+                { color: activeTab === tab ? C.accent : C.muted },
+                activeTab === tab && { fontWeight: '700' },
+              ]}>
+                {tab === 'articles'
+                  ? `Articles (${articles.length})`
+                  : `Videos (${videos.length})`}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </Animated.View>
+
+        {/* ── Content ── */}
+        <Animated.View style={{ opacity: contentAnim }}>
+          {activeTab === 'articles'
+            ? articles.length > 0
+              ? articles.map((article) => (
+                  <NewsCard
+                    key={article._id || article.id}
+                    article={article}
+                    onPress={() => handleArticlePress(article._id || article.id)}
+                  />
+                ))
+              : <EmptyState icon="newspaper-outline" label="No articles yet" C={C} />
+            : videos.length > 0
+              ? videos.map((video) => (
+                  <VideoCard
+                    key={video._id || video.id}
+                    video={video}
+                    onPress={() => handleVideoPress(video._id || video.id)}
+                  />
+                ))
+              : <EmptyState icon="videocam-outline" label="No videos yet" C={C} />
+          }
+        </Animated.View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
+// ─── Empty state ──────────────────────────────────────────────────────────
+function EmptyState({ icon, label, C }) {
+  return (
+    <View style={[emptyStyles.wrap, { backgroundColor: C.surfaceAlt, borderColor: C.border }]}>
+      <View style={[emptyStyles.iconWrap, { backgroundColor: C.accentBg }]}>
+        <Ionicons name={icon} size={scale(28)} color={C.accent} />
+      </View>
+      <Text style={[emptyStyles.label, { color: C.muted }]}>{label}</Text>
+    </View>
+  );
+}
+
+const emptyStyles = StyleSheet.create({
+  wrap: {
+    margin: scale(20),
+    padding: scale(32),
+    borderRadius: scale(18),
+    alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  header: {
+  iconWrap: {
+    width: scale(56),
+    height: scale(56),
+    borderRadius: scale(14),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: vs(12),
+  },
+  label: {
+    fontSize: sp(14),
+    fontWeight: '500',
+    letterSpacing: 0.1,
+  },
+});
+
+// ─── Static styles ────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: scale(32),
+  },
+  errorIconWrap: {
+    width: scale(80),
+    height: scale(80),
+    borderRadius: scale(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: vs(16),
+  },
+  errorTitle: {
+    fontSize: sp(20),
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    marginBottom: vs(8),
+  },
+  errorSub: {
+    fontSize: sp(14),
+    textAlign: 'center',
+    lineHeight: sp(22),
+    marginBottom: vs(24),
+  },
+  errorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+    paddingVertical: vs(13),
+    paddingHorizontal: scale(28),
+    borderRadius: scale(12),
+  },
+  errorBtnText: {
+    color: '#FFF',
+    fontSize: sp(15),
+    fontWeight: '700',
+  },
+});
+
+// ─── Dynamic styles ────────────────────────────────────────────────────────
+const makeStyles = (C) => StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: C.bg,
+  },
+  topStripe: {
+    height: 3,
+    backgroundColor: C.accent,
+  },
+  floatingHeader: {
     position: 'absolute',
-    top: 10,
+    top: vs(14),
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: scale(16),
     zIndex: 10,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  shareButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  circleBtn: {
+    width: scale(42),
+    height: scale(42),
+    borderRadius: scale(21),
     justifyContent: 'center',
     alignItems: 'center',
   },
   banner: {
     width: '100%',
-    height: 200,
+    height: vs(220),
     resizeMode: 'cover',
   },
-  infoSection: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    marginTop: -30,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+  bannerOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: vs(60),
+    backgroundColor: 'rgba(15,25,35,0.35)',
+  },
+  infoCard: {
+    marginTop: -vs(32),
+    marginHorizontal: scale(12),
+    borderRadius: scale(20),
+    padding: scale(18),
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scale(6) },
+    shadowOpacity: C.cardShadowOpacity,
+    shadowRadius: scale(18),
+    elevation: 6,
+    marginBottom: vs(10),
   },
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    gap: scale(14),
+    marginBottom: vs(12),
+  },
+  logoRing: {
+    borderRadius: scale(30),
+    borderWidth: 2.5,
+    padding: 2,
   },
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: '#FFF',
-    marginRight: 16,
-  },
-  nameContainer: {
-    flex: 1,
+    width: scale(62),
+    height: scale(62),
+    borderRadius: scale(28),
   },
   channelName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: sp(20),
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    lineHeight: sp(26),
+    marginBottom: vs(4),
   },
-  verifiedContainer: {
+  verifiedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
-    gap: 4,
+    gap: scale(4),
+    marginBottom: vs(2),
   },
   verifiedText: {
-    color: '#4ECDC4',
-    fontSize: 14,
+    fontSize: sp(12),
+    fontWeight: '600',
   },
-  statsContainer: {
+  langRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(4),
+  },
+  langText: {
+    fontSize: sp(12),
+  },
+  description: {
+    fontSize: sp(13.5),
+    lineHeight: sp(21),
+    marginBottom: vs(14),
+    letterSpacing: 0.1,
+  },
+  rule: {
+    height: 1.5,
+    opacity: 0.7,
+    marginBottom: vs(14),
+    borderRadius: 1,
+  },
+  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#F0F0F0',
-    marginBottom: 16,
+    paddingVertical: vs(4),
   },
   statItem: {
     alignItems: 'center',
+    flex: 1,
   },
   statNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: sp(17),
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
+    fontSize: sp(11),
+    marginTop: vs(2),
+    fontWeight: '500',
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E0E0E0',
+    height: vs(36),
+    alignSelf: 'center',
+    borderRadius: 1,
   },
-  subscribeButton: {
+  subscribeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF6B6B',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 8,
-    marginBottom: 16,
+    borderRadius: scale(13),
+    paddingVertical: vs(14),
+    gap: scale(8),
+    shadowOffset: { width: 0, height: scale(5) },
+    shadowOpacity: 0.32,
+    shadowRadius: scale(12),
+    elevation: 6,
   },
-  subscribedButton: {
-    backgroundColor: '#FFF',
+  subscribedBtn: {
+    backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#FF6B6B',
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  subscribeText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+  subscribeBtnText: {
+    fontSize: sp(15),
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
-  subscribedText: {
-    color: '#FF6B6B',
-  },
-  description: {
-    fontSize: 15,
-    color: '#666',
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  language: {
-    fontSize: 14,
-    color: '#888',
-  },
-  tabContainer: {
+  tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
-    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    marginBottom: vs(6),
   },
   tab: {
     flex: 1,
-    paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  tabActive: {
-    borderBottomWidth: 3,
-    borderBottomColor: '#FF6B6B',
+    justifyContent: 'center',
+    paddingVertical: vs(13),
   },
   tabText: {
-    fontSize: 16,
-    color: '#888',
+    fontSize: sp(14),
     fontWeight: '500',
-  },
-  tabTextActive: {
-    color: '#FF6B6B',
-  },
-  emptyContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#888',
-    fontSize: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#888',
+    letterSpacing: 0.1,
   },
 });

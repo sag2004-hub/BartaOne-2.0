@@ -5,11 +5,10 @@ import { channelAPI } from './api';
 export const getChannelByOwner = async () => {
   try {
     console.log('📡 Fetching channel by owner...');
-    const response = await channelAPI.getByOwner(); // must call GET /channels/owner/my-channel
+    const response = await channelAPI.getByOwner();
     console.log('📡 Channel response status:', response.status);
     console.log('📡 Channel response data:', response.data);
     
-    // Handle different response structures
     if (response.data?.data) {
       return response.data.data;
     }
@@ -33,7 +32,6 @@ export const getChannelStats = async (channelId) => {
     const response = await channelAPI.getStats(channelId);
     console.log('📡 Stats response:', response.data);
     
-    // Handle different response structures
     if (response.data?.data) {
       return response.data.data;
     }
@@ -83,24 +81,43 @@ export const channelService = {
 
   getByOwner: getChannelByOwner,
 
+  // ─── FIXED: Create channel with location ──────────────────────────────
   create: async (data) => {
     try {
-      // Always plain JSON — multipart corrupts JWT in Authorization header
-      const response = await channelAPI.create(data);
+      console.log('📤 Creating channel with data:', JSON.stringify(data, null, 2));
+      
+      // Ensure location is properly structured
+      const payload = {
+        channelName: data.channelName,
+        description: data.description,
+        language: data.language || 'en',
+        category: data.category || 'news',
+        location: {
+          state: data.location?.state || data.state || '',
+          district: data.location?.district || data.district || '',
+          city: data.location?.city || data.city || '',
+          area: data.location?.area || data.area || '',
+        },
+      };
+      
+      console.log('📤 Final payload:', JSON.stringify(payload, null, 2));
+      
+      const response = await channelAPI.create(payload);
+      console.log('✅ Channel created:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error creating channel:', error);
+      console.error('❌ Error creating channel:', error);
       throw error;
     }
   },
 
-  update: async (id, data) => {
+  update: async (id, data, config = {}) => {
     try {
       const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
       const response = await channelAPI.update(
         id,
         data,
-        isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}
+        isFormData ? { headers: { 'Content-Type': 'multipart/form-data' }, ...config } : config
       );
       return response.data;
     } catch (error) {

@@ -55,7 +55,8 @@ exports.getArticleById = async (req, res) => {
       return sendError(res, 404, 'Article not found');
     }
 
-    article.views += 1;
+    // Increment views
+    article.views = (article.views || 0) + 1;
     await article.save();
 
     let isLiked = false;
@@ -70,8 +71,15 @@ exports.getArticleById = async (req, res) => {
       }
     }
 
+    // Get comment count
+    const commentCount = await Comment.countDocuments({
+      articleId: article._id,
+      isActive: true,
+    });
+
     const articleData = article.toObject();
     articleData.isLiked = isLiked;
+    articleData.comments = commentCount;
 
     return sendResponse(res, 200, true, 'Article fetched successfully', articleData);
   } catch (error) {
@@ -230,6 +238,9 @@ exports.createArticle = async (req, res) => {
       language: language || 'en',
       isPublished: true,
       publishedAt: new Date(),
+      likes: 0,
+      views: 0,
+      comments: 0,
     };
 
     // Handle image upload from memory buffer
@@ -406,6 +417,12 @@ exports.deleteArticle = async (req, res) => {
       }
     }
 
+    // Delete all likes for this article
+    await Like.deleteMany({ articleId: article._id });
+    
+    // Delete all comments for this article
+    await Comment.deleteMany({ articleId: article._id });
+
     await article.deleteOne();
 
     return sendResponse(res, 200, true, 'Article deleted successfully');
@@ -415,7 +432,7 @@ exports.deleteArticle = async (req, res) => {
   }
 };
 
-// Like article
+// ─── LIKE ARTICLE (FIXED) ──────────────────────────────────────────────────
 exports.likeArticle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -435,32 +452,46 @@ exports.likeArticle = async (req, res) => {
       return sendError(res, 404, 'Article not found');
     }
 
+    // Check if already liked
     const existingLike = await Like.findOne({
       userId: user._id,
       articleId: article._id,
     });
 
     if (existingLike) {
-      return sendError(res, 400, 'Already liked');
+      // Unlike - remove the like
+      await existingLike.deleteOne();
+      // Ensure likes doesn't go below 0
+      article.likes = Math.max((article.likes || 0) - 1, 0);
+      await article.save();
+      
+      return sendResponse(res, 200, true, 'Article unliked successfully', {
+        liked: false,
+        likes: article.likes,
+      });
     }
 
+    // Like - create new like
     const like = new Like({
       userId: user._id,
       articleId: article._id,
     });
     await like.save();
 
-    article.likes += 1;
+    article.likes = (article.likes || 0) + 1;
     await article.save();
 
-    return sendResponse(res, 200, true, 'Article liked successfully');
+    return sendResponse(res, 200, true, 'Article liked successfully', {
+      liked: true,
+      likes: article.likes,
+    });
   } catch (error) {
     console.error('Like article error:', error);
     return sendError(res, 500, error.message);
   }
 };
 
-// Unlike article
+// ─── UNLIKE ARTICLE (FIXED) ────────────────────────────────────────────────
 exports.unlikeArticle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -490,18 +521,21 @@ exports.unlikeArticle = async (req, res) => {
     }
 
     await like.deleteOne();
-
-    article.likes = Math.max(article.likes - 1, 0);
+    // Ensure likes doesn't go below 0
+    article.likes = Math.max((article.likes || 0) - 1, 0);
     await article.save();
 
-    return sendResponse(res, 200, true, 'Article unliked successfully');
+    return sendResponse(res, 200, true, 'Article unliked successfully', {
+      liked: false,
+      likes: article.likes,
+    });
   } catch (error) {
     console.error('Unlike article error:', error);
     return sendError(res, 500, error.message);
   }
 };
 
-// Add comment
+// ─── ADD COMMENT ────────────────────────────────────────────────────────────
 exports.addComment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -510,6 +544,10 @@ exports.addComment = async (req, res) => {
 
     if (!firebaseUid) {
       return sendError(res, 401, 'Unauthorized');
+    }
+
+    if (!content || !content.trim()) {
+      return sendError(res, 400, 'Comment content is required');
     }
 
     const user = await User.findOne({ firebaseUid });
@@ -525,13 +563,18 @@ exports.addComment = async (req, res) => {
     const comment = new Comment({
       userId: user._id,
       articleId: article._id,
-      content,
+      content: content.trim(),
       parentCommentId: parentCommentId || null,
+      isActive: true,
     });
     await comment.save();
 
-    article.comments += 1;
+    // Increment comment count on article
+    article.comments = (article.comments || 0) + 1;
     await article.save();
+
+    // Populate user info for response
+    await comment.populate('userId', 'name email photoURL');
 
     return sendResponse(res, 201, true, 'Comment added successfully', comment);
   } catch (error) {
@@ -540,7 +583,7 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// Get comments
+// ─── GET COMMENTS ──────────────────────────────────────────────────────────
 exports.getComments = async (req, res) => {
   try {
     const { id } = req.params;
@@ -549,8 +592,9 @@ exports.getComments = async (req, res) => {
     const comments = await Comment.find({
       articleId: id,
       parentCommentId: null,
+      isActive: true,
     })
-      .populate('userId', 'name profilePicture')
+      .populate('userId', 'name email photoURL')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
@@ -558,13 +602,19 @@ exports.getComments = async (req, res) => {
     const total = await Comment.countDocuments({
       articleId: id,
       parentCommentId: null,
+      isActive: true,
     });
 
+    // Get replies for each comment
     const commentsWithReplies = await Promise.all(
       comments.map(async (comment) => {
         const replies = await Comment.find({
           parentCommentId: comment._id,
-        }).populate('userId', 'name profilePicture');
+          isActive: true,
+        })
+          .populate('userId', 'name email photoURL')
+          .sort({ createdAt: 1 });
+        
         return {
           ...comment.toObject(),
           replies,

@@ -1,46 +1,48 @@
-// backend/models/Article.js - SIMPLIFIED VERSION
+// backend/models/Article.js
 const mongoose = require('mongoose');
 
 const ArticleSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  summary: {
+    type: String,
+    trim: true,
+  },
+  body: {
+    type: String,
+    required: true,
+  },
+  category: {
+    type: String,
+    required: true,
+    index: true,
+  },
+  language: {
+    type: String,
+    default: 'en',
+    index: true,
+  },
   channelId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Channel',
     required: true,
     index: true,
   },
-  title: {
-    type: String,
-    required: true,
-    trim: true,
-    index: true,
-  },
-  body: {
-    type: String,
-    required: true,
-  },
-  summary: {
-    type: String,
-    trim: true,
-  },
   image: {
     type: String,
-    default: null,
   },
-  category: {
+  tags: [{
     type: String,
-    enum: ['news', 'entertainment', 'sports', 'business', 'technology', 'lifestyle', 'other'],
-    default: 'news',
     index: true,
-  },
-  language: {
-    type: String,
-    default: 'en',
-  },
-  views: {
+  }],
+  likes: {
     type: Number,
     default: 0,
   },
-  likes: {
+  views: {
     type: Number,
     default: 0,
   },
@@ -56,10 +58,12 @@ const ArticleSchema = new mongoose.Schema({
   isFeatured: {
     type: Boolean,
     default: false,
+    index: true,
   },
   publishedAt: {
     type: Date,
     default: Date.now,
+    index: true,
   },
   createdAt: {
     type: Date,
@@ -70,50 +74,37 @@ const ArticleSchema = new mongoose.Schema({
     default: Date.now,
   },
 }, {
-  // Enable timestamps with custom names
-  timestamps: {
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
-  },
-  // Ensure virtuals are included
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true },
+  timestamps: true,
 });
 
-// ─── REMOVED the problematic pre('save') hook ─────────────────────────────
-// The timestamps option will handle updatedAt automatically
-
-// ─── Virtual for reading time ─────────────────────────────────────────────
-ArticleSchema.virtual('readingTime').get(function() {
-  if (!this.body) return 0;
-  const wordCount = this.body.split(/\s+/).length;
-  const minutes = Math.ceil(wordCount / 200);
-  return minutes || 1;
+// ─── FIX: Remove next() from pre-save middleware ─────────────────────────
+ArticleSchema.pre('save', function() {
+  this.updatedAt = new Date();
 });
 
 // ─── Methods ──────────────────────────────────────────────────────────────
-ArticleSchema.methods.incrementViews = function() {
-  this.views += 1;
+ArticleSchema.methods.incrementLikes = async function() {
+  this.likes = (this.likes || 0) + 1;
   return this.save();
 };
 
-ArticleSchema.methods.incrementLikes = function() {
-  this.likes += 1;
+ArticleSchema.methods.decrementLikes = async function() {
+  this.likes = Math.max((this.likes || 0) - 1, 0);
   return this.save();
 };
 
-ArticleSchema.methods.decrementLikes = function() {
-  this.likes = Math.max(this.likes - 1, 0);
+ArticleSchema.methods.incrementViews = async function() {
+  this.views = (this.views || 0) + 1;
   return this.save();
 };
 
-ArticleSchema.methods.incrementComments = function() {
-  this.comments += 1;
+ArticleSchema.methods.incrementComments = async function() {
+  this.comments = (this.comments || 0) + 1;
   return this.save();
 };
 
-ArticleSchema.methods.decrementComments = function() {
-  this.comments = Math.max(this.comments - 1, 0);
+ArticleSchema.methods.decrementComments = async function() {
+  this.comments = Math.max((this.comments || 0) - 1, 0);
   return this.save();
 };
 

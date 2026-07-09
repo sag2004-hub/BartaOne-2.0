@@ -1,3 +1,4 @@
+// backend/models/Channel.js - SIMPLIFIED VERSION
 const mongoose = require('mongoose');
 
 const ChannelSchema = new mongoose.Schema({
@@ -10,8 +11,8 @@ const ChannelSchema = new mongoose.Schema({
   channelName: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
+    unique: true,
     index: true,
   },
   description: {
@@ -21,8 +22,7 @@ const ChannelSchema = new mongoose.Schema({
   },
   logo: {
     type: String,
-    required: true,
-    default: 'https://via.placeholder.com/100',
+    default: null,
   },
   banner: {
     type: String,
@@ -33,27 +33,16 @@ const ChannelSchema = new mongoose.Schema({
     default: 'en',
   },
   location: {
-    state: {
-      type: String,
-      trim: true,
-    },
-    district: {
-      type: String,
-      trim: true,
-    },
-    city: {
-      type: String,
-      trim: true,
-    },
-    area: {
-      type: String,
-      trim: true,
-    },
+    state: { type: String, default: '' },
+    district: { type: String, default: '' },
+    city: { type: String, default: '' },
+    area: { type: String, default: '' },
   },
   category: {
     type: String,
     enum: ['news', 'entertainment', 'sports', 'business', 'technology', 'lifestyle', 'other'],
     default: 'news',
+    index: true,
   },
   followers: {
     type: Number,
@@ -67,41 +56,39 @@ const ChannelSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+}, {
+  // ─── Use Mongoose timestamps instead of pre('save') ──────────────────────
+  timestamps: {
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+  // Ensure virtuals are included
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
 });
 
-// Update timestamp on save
-ChannelSchema.pre('save', async function() {
-  this.updatedAt = new Date();
-});
+// ─── REMOVED the problematic pre('save') hook ──────────────────────────────
+// The timestamps option will handle createdAt and updatedAt automatically
 
-// Virtual for full location
-ChannelSchema.virtual('fullLocation').get(function() {
-  const parts = [];
-  if (this.location.city) parts.push(this.location.city);
-  if (this.location.district) parts.push(this.location.district);
-  if (this.location.state) parts.push(this.location.state);
-  if (this.location.area) parts.push(this.location.area);
-  return parts.join(', ');
-});
-
-// Method to increment followers
+// Methods
 ChannelSchema.methods.incrementFollowers = function() {
   this.followers += 1;
   return this.save();
 };
 
-// Method to decrement followers
 ChannelSchema.methods.decrementFollowers = function() {
   this.followers = Math.max(this.followers - 1, 0);
   return this.save();
 };
+
+// Virtual for full location
+ChannelSchema.virtual('fullLocation').get(function() {
+  const parts = [];
+  if (this.location?.city) parts.push(this.location.city);
+  if (this.location?.district) parts.push(this.location.district);
+  if (this.location?.state) parts.push(this.location.state);
+  if (this.location?.area) parts.push(this.location.area);
+  return parts.join(', ');
+});
 
 module.exports = mongoose.model('Channel', ChannelSchema);

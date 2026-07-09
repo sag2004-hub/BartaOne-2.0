@@ -222,6 +222,31 @@ export const articleService = {
     }
   },
 
+  // ─── COMMENT LIKES ──────────────────────────────────────────────────────────
+  // Like a comment
+  likeComment: async (commentId) => {
+    try {
+      console.log('📤 Liking comment:', commentId);
+      const response = await api.post(`/comments/${commentId}/like`);
+      return response.data;
+    } catch (error) {
+      console.error('Error liking comment:', error);
+      throw error;
+    }
+  },
+
+  // Unlike a comment
+  unlikeComment: async (commentId) => {
+    try {
+      console.log('📤 Unliking comment:', commentId);
+      const response = await api.delete(`/comments/${commentId}/like`);
+      return response.data;
+    } catch (error) {
+      console.error('Error unliking comment:', error);
+      throw error;
+    }
+  },
+
   // Add comment
   comment: async (id, commentData) => {
     try {
@@ -270,6 +295,8 @@ export const {
   delete: deleteArticle,
   like: likeArticle,
   unlike: unlikeArticle,
+  likeComment,
+  unlikeComment,
   comment: commentOnArticle,
   getComments: getArticleComments,
   search: searchArticles,

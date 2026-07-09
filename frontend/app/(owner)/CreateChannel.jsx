@@ -1,4 +1,4 @@
-// app/(owner)/CreateChannel.jsx - Fixed version
+// app/(owner)/CreateChannel.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -24,7 +24,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { channelService } from '../../services/channelService';
 import { auth } from '../../services/firebase';
 import Loader from '../../components/Loader';
-import { useRouter } from 'expo-router'; // Import useRouter
+import { useRouter } from 'expo-router';
 
 // ─── Responsive helpers ──────────────────────────────────────────────────────
 const { width: SW, height: SH } = Dimensions.get('window');
@@ -161,14 +161,14 @@ function AnimCard({ opacity, translateY, scale: scaleVal, children, style, C }) 
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
-export default function CreateChannel({ navigation }) {
-  const router = useRouter(); // Add this
+export default function CreateChannel() {
+  const router = useRouter();
   const scheme = useColorScheme();
-  const C      = scheme === 'dark' ? DARK : LIGHT;
+  const C = scheme === 'dark' ? DARK : LIGHT;
   const { user, loading: authLoading } = useAuth();
 
-  const [isLoading, setIsLoading]       = useState(false);
-  const [loadingMsg, setLoadingMsg]     = useState('Creating your channel…');
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState('Creating your channel…');
   const [formData, setFormData] = useState({
     channelName: '',
     description: '',
@@ -179,26 +179,26 @@ export default function CreateChannel({ navigation }) {
     area:        '',
     category:    'news',
   });
-  const [logo,   setLogo]   = useState(null);
+  const [logo, setLogo] = useState(null);
   const [banner, setBanner] = useState(null);
   const [errors, setErrors] = useState({});
 
   // ── Animated values ──
-  const headerAnim  = useRef(new Animated.Value(0)).current;
-  const mediaAnim   = useRef(new Animated.Value(0)).current;
-  const mediaY      = useRef(new Animated.Value(vs(24))).current;
-  const mediaScale  = useRef(new Animated.Value(0.96)).current;
-  const infoAnim    = useRef(new Animated.Value(0)).current;
-  const infoY       = useRef(new Animated.Value(vs(24))).current;
-  const langAnim    = useRef(new Animated.Value(0)).current;
-  const langY       = useRef(new Animated.Value(vs(24))).current;
-  const catAnim     = useRef(new Animated.Value(0)).current;
-  const catY        = useRef(new Animated.Value(vs(24))).current;
-  const locAnim     = useRef(new Animated.Value(0)).current;
-  const locY        = useRef(new Animated.Value(vs(24))).current;
-  const btnAnim     = useRef(new Animated.Value(0)).current;
-  const btnY        = useRef(new Animated.Value(vs(18))).current;
-  const btnPulse    = useRef(new Animated.Value(1)).current;
+  const headerAnim = useRef(new Animated.Value(0)).current;
+  const mediaAnim = useRef(new Animated.Value(0)).current;
+  const mediaY = useRef(new Animated.Value(vs(24))).current;
+  const mediaScale = useRef(new Animated.Value(0.96)).current;
+  const infoAnim = useRef(new Animated.Value(0)).current;
+  const infoY = useRef(new Animated.Value(vs(24))).current;
+  const langAnim = useRef(new Animated.Value(0)).current;
+  const langY = useRef(new Animated.Value(vs(24))).current;
+  const catAnim = useRef(new Animated.Value(0)).current;
+  const catY = useRef(new Animated.Value(vs(24))).current;
+  const locAnim = useRef(new Animated.Value(0)).current;
+  const locY = useRef(new Animated.Value(vs(24))).current;
+  const btnAnim = useRef(new Animated.Value(0)).current;
+  const btnY = useRef(new Animated.Value(vs(18))).current;
+  const btnPulse = useRef(new Animated.Value(1)).current;
   const logoPickerScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -207,36 +207,36 @@ export default function CreateChannel({ navigation }) {
         toValue: 1, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true,
       }),
       Animated.parallel([
-        Animated.timing(mediaAnim,  { toValue: 1, duration: 280, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.spring(mediaY,     { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+        Animated.timing(mediaAnim, { toValue: 1, duration: 280, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(mediaY, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
         Animated.spring(mediaScale, { toValue: 1, friction: 8, tension: 55, useNativeDriver: true }),
       ]),
       Animated.parallel([
         Animated.timing(infoAnim, { toValue: 1, duration: 260, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.spring(infoY,    { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
+        Animated.spring(infoY, { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
       ]),
       Animated.parallel([
         Animated.timing(langAnim, { toValue: 1, duration: 240, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.spring(langY,    { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
+        Animated.spring(langY, { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
       ]),
       Animated.parallel([
         Animated.timing(catAnim, { toValue: 1, duration: 240, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.spring(catY,    { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
+        Animated.spring(catY, { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
       ]),
       Animated.parallel([
         Animated.timing(locAnim, { toValue: 1, duration: 240, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.spring(locY,    { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
+        Animated.spring(locY, { toValue: 0, friction: 8, tension: 62, useNativeDriver: true }),
       ]),
       Animated.parallel([
         Animated.timing(btnAnim, { toValue: 1, duration: 300, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.timing(btnY,    { toValue: 0, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(btnY, { toValue: 0, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       ]),
     ]).start();
 
     Animated.loop(
       Animated.sequence([
         Animated.timing(btnPulse, { toValue: 1.022, duration: 850, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(btnPulse, { toValue: 1,     duration: 850, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(btnPulse, { toValue: 1, duration: 850, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
       ])
     ).start();
   }, []);
@@ -252,7 +252,7 @@ export default function CreateChannel({ navigation }) {
     if (type === 'logo') {
       Animated.sequence([
         Animated.spring(logoPickerScale, { toValue: 0.92, friction: 6, tension: 120, useNativeDriver: true }),
-        Animated.spring(logoPickerScale, { toValue: 1,    friction: 6, tension: 80,  useNativeDriver: true }),
+        Animated.spring(logoPickerScale, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
       ]).start();
     }
 
@@ -277,11 +277,11 @@ export default function CreateChannel({ navigation }) {
   const validateForm = () => {
     const e = {};
     if (!formData.channelName.trim()) e.channelName = 'Channel name is required';
-    if (!formData.description.trim()) e.description  = 'Description is required';
-    if (!formData.state.trim())       e.state        = 'State is required';
-    if (!formData.district.trim())    e.district     = 'District is required';
-    if (!formData.city.trim())        e.city         = 'City is required';
-    if (!logo)                        e.logo         = 'Channel logo is required';
+    if (!formData.description.trim()) e.description = 'Description is required';
+    if (!formData.state.trim()) e.state = 'State is required';
+    if (!formData.district.trim()) e.district = 'District is required';
+    if (!formData.city.trim()) e.city = 'City is required';
+    if (!logo) e.logo = 'Channel logo is required';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -289,25 +289,13 @@ export default function CreateChannel({ navigation }) {
   // ── Navigate to dashboard ──
   const goToDashboard = () => {
     try {
-      // Try different navigation methods
-      if (navigation && navigation.replace) {
-        // Try replace first
-        navigation.replace('OwnerDashboard');
-      } else if (router) {
-        // Use Expo Router
-        router.replace('/(owner)/OwnerDashboard');
-      } else {
-        // Fallback to push
-        navigation?.navigate('OwnerDashboard');
-      }
+      router.replace('/(owner)/Dashboard');
     } catch (error) {
       console.error('Navigation error:', error);
-      // Last resort - try to navigate to the index of owner group
       try {
         router?.replace('/(owner)');
       } catch (e) {
         console.error('Failed to navigate:', e);
-        // Show error but don't crash
         Alert.alert('Navigation Error', 'Could not navigate to dashboard. Please restart the app.');
       }
     }
@@ -315,10 +303,10 @@ export default function CreateChannel({ navigation }) {
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
     setLoadingMsg('Creating your channel…');
-    
+
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
@@ -329,28 +317,28 @@ export default function CreateChannel({ navigation }) {
 
       console.log('✅ Creating channel for user:', currentUser.uid);
 
-      // Step 1: Create channel with JSON payload
+      // ─── Build payload with location ──────────────────────────────────────
       const jsonPayload = {
         channelName: formData.channelName.trim(),
         description: formData.description.trim(),
-        language:    formData.language,
-        category:    formData.category,
+        language: formData.language,
+        category: formData.category,
         location: {
-          state:    formData.state.trim(),
+          state: formData.state.trim(),
           district: formData.district.trim(),
-          city:     formData.city.trim(),
-          area:     formData.area.trim(),
+          city: formData.city.trim(),
+          area: formData.area.trim() || '',
         },
       };
 
-      console.log('📤 Sending channel payload:', jsonPayload);
-      
-      const response = await channelService.create(jsonPayload);
-      console.log('📝 Raw response:', JSON.stringify(response, null, 2));
+      console.log('📤 Sending channel payload:', JSON.stringify(jsonPayload, null, 2));
 
-      // ── IMPORTANT: Safely extract channel ID ──
+      const response = await channelService.create(jsonPayload);
+      console.log('📝 Response:', JSON.stringify(response, null, 2));
+
+      // ── Extract channel ID ──
       let channelId = null;
-      
+
       if (response) {
         if (response.data) {
           channelId = response.data._id || response.data.id || response.data.channelId;
@@ -373,46 +361,48 @@ export default function CreateChannel({ navigation }) {
         throw new Error('Channel created but no ID was returned. Please contact support.');
       }
 
-      // Step 2: Upload images if we have any
+      // ── Upload images ──
       if (logo || banner) {
         setLoadingMsg('Uploading images…');
-        
+
         try {
-          const imgPayload = new FormData();
-          
+          const formData = new FormData();
+
           if (logo) {
             const logoFile = {
               uri: logo.uri,
               name: logo.fileName || `logo-${Date.now()}.jpg`,
               type: logo.mimeType || 'image/jpeg',
             };
-            imgPayload.append('logo', logoFile);
+            formData.append('logo', logoFile);
             console.log('📤 Logo file:', logoFile.name);
           }
-          
+
           if (banner) {
             const bannerFile = {
               uri: banner.uri,
               name: banner.fileName || `banner-${Date.now()}.jpg`,
               type: banner.mimeType || 'image/jpeg',
             };
-            imgPayload.append('banner', bannerFile);
+            formData.append('banner', bannerFile);
             console.log('📤 Banner file:', bannerFile.name);
           }
 
           console.log('📤 Uploading images for channel:', channelId);
-          await channelService.update(channelId, imgPayload);
+          await channelService.update(channelId, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
           console.log('✅ Images uploaded successfully');
-          
+
         } catch (imgErr) {
           console.warn('⚠️ Image upload failed but channel was created:', imgErr.message);
           Alert.alert(
             'Channel Created',
             'Your channel was created but there was an issue uploading images. You can add them later from the dashboard.',
             [
-              { 
-                text: 'Go to Dashboard', 
-                onPress: () => goToDashboard() // Use the new function
+              {
+                text: 'Go to Dashboard',
+                onPress: () => goToDashboard()
               }
             ]
           );
@@ -427,9 +417,9 @@ export default function CreateChannel({ navigation }) {
         '🎉 Channel Created!',
         'Your channel has been created successfully and is ready to publish.',
         [
-          { 
-            text: 'Go to Dashboard', 
-            onPress: () => goToDashboard() // Use the new function
+          {
+            text: 'Go to Dashboard',
+            onPress: () => goToDashboard()
           }
         ]
       );
@@ -438,15 +428,15 @@ export default function CreateChannel({ navigation }) {
       console.error('❌ CreateChannel Error:');
       console.error('Message:', err.message);
       console.error('Stack:', err.stack);
-      
+
       let errorMessage = 'Failed to create channel. Please try again.';
-      
+
       if (err.response) {
         const status = err.response.status;
         const data = err.response.data;
         console.error('Status:', status);
         console.error('Data:', data);
-        
+
         if (status === 400) {
           if (data.message?.includes('already exists')) {
             errorMessage = 'A channel with this name already exists. Please choose a different name.';
@@ -472,7 +462,7 @@ export default function CreateChannel({ navigation }) {
 
       setIsLoading(false);
       Alert.alert('Creation Failed', errorMessage);
-      
+
     } finally {
       setIsLoading(false);
       setLoadingMsg('Creating your channel…');
@@ -489,18 +479,17 @@ export default function CreateChannel({ navigation }) {
 
   const s = makeStyles(C);
 
-  const headerTranslateY = headerAnim.interpolate({ 
-    inputRange: [0, 1], 
-    outputRange: [-vs(60), 0] 
+  const headerTranslateY = headerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-vs(60), 0]
   });
 
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
       <StatusBar barStyle={C.statusBar} backgroundColor={C.bg} />
 
-      {/* ── Header ── */}
       <Animated.View style={[s.header, {
-        opacity:   headerAnim,
+        opacity: headerAnim,
         transform: [{ translateY: headerTranslateY }],
       }]}>
         <View style={s.headerCenter}>
@@ -529,12 +518,11 @@ export default function CreateChannel({ navigation }) {
           <View style={s.cardPad}>
             <SectionLabel label="Channel Identity" C={C} />
 
-            {/* Logo picker */}
             <View style={s.logoRow}>
               <TouchableOpacity onPress={() => pickImage('logo')} activeOpacity={0.8}>
                 <Animated.View style={[s.logoCircle, {
                   borderColor: errors.logo ? C.accent : C.border,
-                  transform:   [{ scale: logoPickerScale }],
+                  transform: [{ scale: logoPickerScale }],
                 }]}>
                   {logo ? (
                     <Image source={{ uri: logo.uri }} style={s.logoImg} />
@@ -566,7 +554,6 @@ export default function CreateChannel({ navigation }) {
 
             <View style={[s.divider, { backgroundColor: C.border }]} />
 
-            {/* Banner picker */}
             <View style={s.bannerLabel}>
               <Text style={s.fieldLabel}>Channel Banner <Text style={s.optionalTag}>(optional)</Text></Text>
             </View>
@@ -594,7 +581,6 @@ export default function CreateChannel({ navigation }) {
           <View style={s.cardPad}>
             <SectionLabel label="Channel Info" C={C} />
 
-            {/* Channel Name */}
             <View style={s.fieldGroup}>
               <Text style={s.fieldLabel}>Channel Name <Text style={s.required}>*</Text></Text>
               <View style={[s.inputWrap, {
@@ -614,7 +600,6 @@ export default function CreateChannel({ navigation }) {
               {errors.channelName && <FieldError msg={errors.channelName} C={C} />}
             </View>
 
-            {/* Description */}
             <View style={s.fieldGroup}>
               <Text style={s.fieldLabel}>Description <Text style={s.required}>*</Text></Text>
               <View style={[s.inputWrap, s.textAreaWrap, {
@@ -649,7 +634,7 @@ export default function CreateChannel({ navigation }) {
                     key={lang.value}
                     style={[s.chip, {
                       backgroundColor: active ? C.accent : C.chipBg,
-                      borderColor:     active ? C.accent : C.border,
+                      borderColor: active ? C.accent : C.border,
                     }]}
                     onPress={() => update('language', lang.value)}
                     activeOpacity={0.75}
@@ -676,7 +661,7 @@ export default function CreateChannel({ navigation }) {
                     key={cat.value}
                     style={[s.catCard, {
                       backgroundColor: active ? C.accentBg : C.surfaceAlt,
-                      borderColor:     active ? C.accent   : C.border,
+                      borderColor: active ? C.accent : C.border,
                     }]}
                     onPress={() => update('category', cat.value)}
                     activeOpacity={0.75}
@@ -705,17 +690,17 @@ export default function CreateChannel({ navigation }) {
             </Text>
 
             {[
-              { key: 'state',    label: 'State',    icon: 'map-outline',         placeholder: 'e.g. West Bengal', required: true },
-              { key: 'district', label: 'District', icon: 'location-outline',    placeholder: 'e.g. Kolkata',     required: true },
-              { key: 'city',     label: 'City',     icon: 'business-outline',    placeholder: 'e.g. Kolkata',     required: true },
-              { key: 'area',     label: 'Area',     icon: 'navigate-circle-outline', placeholder: 'e.g. Park Street (optional)', required: false },
+              { key: 'state', label: 'State', icon: 'map-outline', placeholder: 'e.g. West Bengal', required: true },
+              { key: 'district', label: 'District', icon: 'location-outline', placeholder: 'e.g. Kolkata', required: true },
+              { key: 'city', label: 'City', icon: 'business-outline', placeholder: 'e.g. Kolkata', required: true },
+              { key: 'area', label: 'Area', icon: 'navigate-circle-outline', placeholder: 'e.g. Park Street (optional)', required: false },
             ].map(({ key, label, icon, placeholder, required }) => (
               <View key={key} style={s.fieldGroup}>
                 <Text style={s.fieldLabel}>
                   {label}{required && <Text style={s.required}> *</Text>}
                 </Text>
                 <View style={[s.inputWrap, {
-                  borderColor:     errors[key] ? C.accent : C.border,
+                  borderColor: errors[key] ? C.accent : C.border,
                   backgroundColor: C.inputBg,
                 }]}>
                   <Ionicons name={icon} size={scale(16)} color={errors[key] ? C.accent : C.muted} style={s.inputIcon} />
@@ -736,7 +721,7 @@ export default function CreateChannel({ navigation }) {
 
         {/* ══ Submit CTA ═══════════════════════════════════════════════════ */}
         <Animated.View style={{
-          opacity:   btnAnim,
+          opacity: btnAnim,
           transform: [{ translateY: btnY }, { scale: btnPulse }],
           marginBottom: vs(10),
         }}>
@@ -773,16 +758,16 @@ function FieldError({ msg, C }) {
 function makeStyles(C) {
   return StyleSheet.create({
     root: {
-      flex:            1,
+      flex: 1,
       backgroundColor: C.bg,
     },
     header: {
-      alignItems:        'center',
-      justifyContent:    'center',
+      alignItems: 'center',
+      justifyContent: 'center',
       paddingHorizontal: scale(20),
-      paddingTop:        vs(18),
-      paddingBottom:     vs(16),
-      backgroundColor:   C.surface,
+      paddingTop: vs(18),
+      paddingBottom: vs(16),
+      backgroundColor: C.surface,
       borderBottomWidth: scale(3),
       borderBottomColor: C.accent,
     },
@@ -790,231 +775,231 @@ function makeStyles(C) {
       alignItems: 'center',
     },
     headerTitle: {
-      fontSize:      sp(26),
-      fontWeight:    '800',
-      color:         C.primary,
+      fontSize: sp(26),
+      fontWeight: '800',
+      color: C.primary,
       letterSpacing: -0.8,
-      fontStyle:     'italic',
+      fontStyle: 'italic',
     },
     scroll: { flex: 1, backgroundColor: "transparent" },
     scrollContent: {
-      flexGrow:          1,
+      flexGrow: 1,
       paddingHorizontal: scale(16),
-      paddingTop:        vs(6),
-      paddingBottom:     vs(40),
+      paddingTop: vs(6),
+      paddingBottom: vs(40),
     },
     pageSubtitle: {
-      fontSize:     sp(13),
-      color:        C.muted,
-      lineHeight:   sp(19),
+      fontSize: sp(13),
+      color: C.muted,
+      lineHeight: sp(19),
       marginBottom: vs(8),
     },
     cardPad: {
       paddingHorizontal: scale(18),
-      paddingTop:        vs(14),
-      paddingBottom:     vs(12),
+      paddingTop: vs(14),
+      paddingBottom: vs(12),
     },
     divider: {
-      height:       StyleSheet.hairlineWidth,
+      height: StyleSheet.hairlineWidth,
       marginVertical: vs(14),
     },
     logoRow: {
       flexDirection: 'row',
-      alignItems:    'center',
-      gap:           scale(16),
-      marginBottom:  vs(4),
+      alignItems: 'center',
+      gap: scale(16),
+      marginBottom: vs(4),
     },
     logoCircle: {
-      width:        scale(78),
-      height:       scale(78),
+      width: scale(78),
+      height: scale(78),
       borderRadius: scale(39),
-      borderWidth:  2,
-      borderStyle:  'dashed',
-      overflow:     'visible',
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      overflow: 'visible',
     },
     logoImg: {
-      width:        scale(78),
-      height:       scale(78),
+      width: scale(78),
+      height: scale(78),
       borderRadius: scale(39),
-      resizeMode:   'cover',
+      resizeMode: 'cover',
     },
     logoPlaceholder: {
-      width:          scale(78),
-      height:         scale(78),
-      borderRadius:   scale(39),
+      width: scale(78),
+      height: scale(78),
+      borderRadius: scale(39),
       justifyContent: 'center',
-      alignItems:     'center',
+      alignItems: 'center',
       backgroundColor: C.surfaceAlt,
     },
     logoIconBg: {
-      width:          scale(44),
-      height:         scale(44),
-      borderRadius:   scale(22),
+      width: scale(44),
+      height: scale(44),
+      borderRadius: scale(22),
       justifyContent: 'center',
-      alignItems:     'center',
+      alignItems: 'center',
     },
     logoBadge: {
-      position:       'absolute',
-      bottom:         0,
-      right:          0,
-      width:          scale(22),
-      height:         scale(22),
-      borderRadius:   scale(11),
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      width: scale(22),
+      height: scale(22),
+      borderRadius: scale(11),
       justifyContent: 'center',
-      alignItems:     'center',
-      borderWidth:    2,
-      borderColor:    C.surface,
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: C.surface,
     },
     logoInfo: { flex: 1 },
     logoInfoTitle: {
-      fontSize:   sp(14),
+      fontSize: sp(14),
       fontWeight: '600',
-      color:      C.primary,
+      color: C.primary,
     },
     logoInfoSub: {
-      fontSize:   sp(11.5),
-      color:      C.muted,
-      marginTop:  vs(4),
+      fontSize: sp(11.5),
+      color: C.muted,
+      marginTop: vs(4),
       lineHeight: sp(17),
     },
     inlineError: {
-      flexDirection:  'row',
-      alignItems:     'center',
-      gap:            scale(4),
-      marginTop:      vs(6),
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(4),
+      marginTop: vs(6),
       paddingHorizontal: scale(8),
-      paddingVertical:   vs(4),
-      borderRadius:   scale(6),
+      paddingVertical: vs(4),
+      borderRadius: scale(6),
     },
     inlineErrorText: {
-      fontSize:   sp(11),
+      fontSize: sp(11),
       fontWeight: '600',
     },
     bannerLabel: { marginBottom: vs(8) },
     bannerArea: {
-      width:         '100%',
-      height:        vs(120),
-      borderRadius:  scale(12),
-      borderWidth:   1.5,
-      borderStyle:   'dashed',
-      overflow:      'hidden',
+      width: '100%',
+      height: vs(120),
+      borderRadius: scale(12),
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      overflow: 'hidden',
     },
     bannerImg: {
-      width:      '100%',
-      height:     '100%',
+      width: '100%',
+      height: '100%',
       resizeMode: 'cover',
     },
     bannerPlaceholder: {
-      flex:           1,
+      flex: 1,
       justifyContent: 'center',
-      alignItems:     'center',
-      gap:            vs(8),
+      alignItems: 'center',
+      gap: vs(8),
     },
     bannerIconBg: {
-      width:          scale(48),
-      height:         scale(48),
-      borderRadius:   scale(14),
+      width: scale(48),
+      height: scale(48),
+      borderRadius: scale(14),
       justifyContent: 'center',
-      alignItems:     'center',
+      alignItems: 'center',
     },
     bannerHint: {
-      fontSize:  sp(12),
+      fontSize: sp(12),
       textAlign: 'center',
     },
     fieldGroup: { marginBottom: vs(14) },
     fieldLabel: {
-      fontSize:     sp(13),
-      fontWeight:   '600',
-      color:        C.secondary,
+      fontSize: sp(13),
+      fontWeight: '600',
+      color: C.secondary,
       marginBottom: vs(7),
       letterSpacing: 0.1,
     },
     required: { color: C.accent },
     optionalTag: {
-      fontSize:   sp(11),
+      fontSize: sp(11),
       fontWeight: '400',
-      color:      C.muted,
+      color: C.muted,
     },
     inputWrap: {
       flexDirection: 'row',
-      alignItems:    'center',
-      borderWidth:   1,
-      borderRadius:  scale(10),
+      alignItems: 'center',
+      borderWidth: 1,
+      borderRadius: scale(10),
       paddingHorizontal: scale(12),
     },
     inputIcon: { marginRight: scale(8) },
     input: {
-      flex:        1,
-      fontSize:    sp(15),
+      flex: 1,
+      fontSize: sp(15),
       paddingVertical: vs(13),
-      fontWeight:  '400',
+      fontWeight: '400',
     },
     textAreaWrap: { alignItems: 'flex-start', paddingTop: vs(4) },
     textArea: {
-      height:    vs(96),
+      height: vs(96),
       paddingTop: vs(9),
     },
     chipRow: {
       flexDirection: 'row',
-      flexWrap:      'wrap',
-      gap:           scale(8),
+      flexWrap: 'wrap',
+      gap: scale(8),
     },
     chip: {
       paddingHorizontal: scale(16),
-      paddingVertical:   vs(9),
-      borderRadius:      scale(20),
-      borderWidth:       1,
+      paddingVertical: vs(9),
+      borderRadius: scale(20),
+      borderWidth: 1,
     },
     chipText: {
-      fontSize:   sp(13.5),
+      fontSize: sp(13.5),
       fontWeight: '600',
     },
     catGrid: {
       flexDirection: 'row',
-      flexWrap:      'wrap',
-      gap:           scale(8),
+      flexWrap: 'wrap',
+      gap: scale(8),
     },
     catCard: {
-      flexDirection:  'row',
-      alignItems:     'center',
-      gap:            scale(6),
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(6),
       paddingHorizontal: scale(12),
-      paddingVertical:   vs(9),
-      borderRadius:   scale(10),
-      borderWidth:    1,
-      minWidth:       '30%',
+      paddingVertical: vs(9),
+      borderRadius: scale(10),
+      borderWidth: 1,
+      minWidth: '30%',
     },
     catLabel: {
-      fontSize:   sp(12.5),
+      fontSize: sp(12.5),
     },
     locationHint: {
-      fontSize:     sp(12),
-      lineHeight:   sp(17),
+      fontSize: sp(12),
+      lineHeight: sp(17),
       marginBottom: vs(14),
     },
     submitBtn: {
-      flexDirection:  'row',
-      alignItems:     'center',
+      flexDirection: 'row',
+      alignItems: 'center',
       justifyContent: 'center',
-      gap:            scale(9),
+      gap: scale(9),
       paddingVertical: vs(16),
-      borderRadius:   scale(14),
-      shadowOffset:   { width: 0, height: scale(6) },
-      shadowOpacity:  0.3,
-      shadowRadius:   scale(14),
-      elevation:      6,
+      borderRadius: scale(14),
+      shadowOffset: { width: 0, height: scale(6) },
+      shadowOpacity: 0.3,
+      shadowRadius: scale(14),
+      elevation: 6,
     },
     submitBtnText: {
-      fontSize:      sp(17),
-      fontWeight:    '700',
-      color:         '#FFFFFF',
+      fontSize: sp(17),
+      fontWeight: '700',
+      color: '#FFFFFF',
       letterSpacing: 0.2,
     },
     footerNote: {
-      fontSize:   sp(11),
-      textAlign:  'center',
+      fontSize: sp(11),
+      textAlign: 'center',
       lineHeight: sp(16),
-      marginTop:  vs(12),
+      marginTop: vs(12),
     },
   });
 }

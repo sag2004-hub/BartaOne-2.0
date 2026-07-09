@@ -1156,3 +1156,365 @@
 2026-07-09 16:41:58 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
 2026-07-09 16:41:58 [INFO]: ✅ GET /api/articles?category=all - 200 (98ms) {"status":200,"duration":98,"ip":"::ffff:192.168.29.173"}
 2026-07-09 16:41:58 [INFO]: ✅ GET /api/channels - 200 (128ms) {"status":200,"duration":128,"ip":"::ffff:192.168.29.173"}
+2026-07-09 16:47:08 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 16:47:08 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 16:47:08 [INFO]: ✅ GET /api/articles?category=all - 200 (77ms) {"status":200,"duration":77,"ip":"::ffff:192.168.29.173"}
+2026-07-09 16:47:08 [INFO]: ✅ GET /api/channels - 200 (130ms) {"status":200,"duration":130,"ip":"::ffff:192.168.29.173"}
+2026-07-09 16:47:17 [INFO]: 📥 GET /api/live {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 16:47:17 [INFO]: ✅ GET /api/live - 200 (108ms) {"status":200,"duration":108,"ip":"::ffff:192.168.29.173"}
+2026-07-09 16:49:36 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 16:49:36 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 16:49:36 [INFO]: ✅ GET /api/articles?category=all - 200 (83ms) {"status":200,"duration":83,"ip":"::ffff:192.168.29.173"}
+2026-07-09 16:49:36 [INFO]: ✅ GET /api/channels - 200 (142ms) {"status":200,"duration":142,"ip":"::ffff:192.168.29.173"}
+2026-07-09 16:50:36 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 16:50:36 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 16:50:36 [INFO]: ✅ GET /api/articles?category=all - 200 (93ms) {"status":200,"duration":93,"ip":"::ffff:192.168.29.173"}
+2026-07-09 16:50:36 [INFO]: ✅ GET /api/channels - 200 (122ms) {"status":200,"duration":122,"ip":"::ffff:192.168.29.173"}
+2026-07-09 16:50:40 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 16:50:40 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 16:50:40 [INFO]: ✅ GET /api/articles?category=all - 200 (79ms) {"status":200,"duration":79,"ip":"::ffff:192.168.29.173"}
+2026-07-09 16:50:40 [INFO]: ✅ GET /api/channels - 200 (108ms) {"status":200,"duration":108,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:02:38 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"Sagnik Dutta","email":"skvanish509@gmail.com","role":"viewer"}}
+2026-07-09 20:02:38 [INFO]: ✅ POST /api/auth/register - 201 (576ms) {"status":201,"duration":576,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:02:40 [INFO]: 📥 GET /api/articles?category=all {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:02:40 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:02:40 [INFO]: ✅ GET /api/articles?category=all - 200 (81ms) {"status":200,"duration":81,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:02:40 [INFO]: ✅ GET /api/channels - 200 (385ms) {"status":200,"duration":385,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:07:12 [INFO]: 📥 GET /api/channels?category=all&city=Kolkata&state=West+Bengal&district=Beniatola {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:07:12 [INFO]: 📥 GET /api/articles?category=all&city=Kolkata&state=West+Bengal&district=Beniatola {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:07:12 [INFO]: ✅ GET /api/articles?category=all&city=Kolkata&state=West+Bengal&district=Beniatola - 200 (79ms) {"status":200,"duration":79,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:07:12 [INFO]: ✅ GET /api/channels?category=all&city=Kolkata&state=West+Bengal&district=Beniatola - 200 (89ms) {"status":200,"duration":89,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:07:32 [INFO]: 📥 GET /api/channels?category=all&city=Kolkata&state=West+Bengal&district=Beniatola {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:07:32 [INFO]: 📥 GET /api/articles?category=all&city=Kolkata&state=West+Bengal&district=Beniatola {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:07:32 [INFO]: 📥 GET /api/articles?category=all&city=Kolkata&state=West+Bengal&district=Beniatola {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:07:32 [INFO]: 📥 GET /api/channels?category=all&city=Kolkata&state=West+Bengal&district=Beniatola {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:07:32 [INFO]: ✅ GET /api/articles?category=all&city=Kolkata&state=West+Bengal&district=Beniatola - 200 (77ms) {"status":200,"duration":77,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:07:32 [INFO]: ✅ GET /api/channels?category=all&city=Kolkata&state=West+Bengal&district=Beniatola - 200 (100ms) {"status":200,"duration":100,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:07:32 [INFO]: ✅ GET /api/channels?category=all&city=Kolkata&state=West+Bengal&district=Beniatola - 200 (339ms) {"status":200,"duration":339,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:07:32 [INFO]: ✅ GET /api/articles?category=all&city=Kolkata&state=West+Bengal&district=Beniatola - 200 (354ms) {"status":200,"duration":354,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:17:19 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"ABP Ananda","email":"abp@gmail.com","phone":"1234567890","role":"owner"}}
+2026-07-09 20:17:20 [INFO]: ✅ POST /api/auth/register - 201 (331ms) {"status":201,"duration":331,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:18:25 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"ABP news","description":"Abp all india news network","language":"en","category":"news","location":{"state":"West Bengal","district":"Kolkata","city":"Kolkata","area":""}}}
+2026-07-09 20:18:25 [INFO]: ❌ POST /api/channels - 500 (142ms) {"status":500,"duration":142,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:19:24 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"ABP news","description":"Abp all india news network","language":"en","category":"news","location":{"state":"West Bengal","district":"Kolkata","city":"Kolkata","area":""}}}
+2026-07-09 20:19:25 [INFO]: ❌ POST /api/channels - 500 (295ms) {"status":500,"duration":295,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:19:42 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"ABP news","description":"Abp all india news network","language":"en","category":"news","location":{"state":"West Bengal","district":"Kolkata","city":"Kolkata","area":""}}}
+2026-07-09 20:19:43 [INFO]: ✅ POST /api/channels - 201 (560ms) {"status":201,"duration":560,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:19:43 [INFO]: 📥 PUT /api/channels/6a4fb506d061b43a8898007e {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:19:47 [INFO]: ✅ PUT /api/channels/6a4fb506d061b43a8898007e - 200 (3812ms) {"status":200,"duration":3812,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:22:41 [INFO]: 📥 POST /api/auth/register {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"name":"abp news","email":"abp@gmail.com","phone":"1234567890","role":"owner"}}
+2026-07-09 20:22:41 [INFO]: ✅ POST /api/auth/register - 201 (148ms) {"status":201,"duration":148,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:23:16 [INFO]: 📥 POST /api/channels {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"channelName":"Abp Ananda","description":"Abp news live","language":"bn","category":"news","location":{"state":"West Bengal","district":"Kolkata","city":"Kolkata","area":""}}}
+2026-07-09 20:23:16 [INFO]: ✅ POST /api/channels - 201 (402ms) {"status":201,"duration":402,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:23:16 [INFO]: 📥 PUT /api/channels/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:23:20 [INFO]: ✅ PUT /api/channels/6a4fb5dcd061b43a88980080 - 200 (4016ms) {"status":200,"duration":4016,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:23:22 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:23:22 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:23:22 [INFO]: ✅ GET /api/channels/owner - 200 (86ms) {"status":200,"duration":86,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:23:22 [INFO]: ✅ GET /api/channels/owner - 200 (98ms) {"status":200,"duration":98,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:23:22 [INFO]: 📥 GET /api/channels/6a4fb5dcd061b43a88980080/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:23:22 [INFO]: 📥 GET /api/channels/6a4fb5dcd061b43a88980080/stats {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:23:22 [INFO]: ✅ GET /api/channels/6a4fb5dcd061b43a88980080/stats - 200 (205ms) {"status":200,"duration":205,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:23:22 [INFO]: ✅ GET /api/channels/6a4fb5dcd061b43a88980080/stats - 200 (234ms) {"status":200,"duration":234,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:23:22 [INFO]: 📥 GET /api/articles/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:23:22 [INFO]: 📥 GET /api/videos/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:23:22 [INFO]: 📥 GET /api/articles/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:23:22 [INFO]: 📥 GET /api/videos/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:23:23 [INFO]: ✅ GET /api/videos/channel/6a4fb5dcd061b43a88980080 - 200 (81ms) {"status":200,"duration":81,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:23:23 [INFO]: ✅ GET /api/articles/channel/6a4fb5dcd061b43a88980080 - 200 (81ms) {"status":200,"duration":81,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:23:23 [INFO]: ✅ GET /api/articles/channel/6a4fb5dcd061b43a88980080 - 200 (105ms) {"status":200,"duration":105,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:23:23 [INFO]: ✅ GET /api/videos/channel/6a4fb5dcd061b43a88980080 - 200 (85ms) {"status":200,"duration":85,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:24:37 [INFO]: 📥 GET /api/channels/owner {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:24:37 [INFO]: ✅ GET /api/channels/owner - 200 (87ms) {"status":200,"duration":87,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:27:18 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:27:18 [INFO]: ✅ GET /api/users/profile - 200 (79ms) {"status":200,"duration":79,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:27:19 [INFO]: 📥 GET /api/articles?category=all&city=Kolkata&state=West+Bengal&district=Beniatola {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:27:19 [INFO]: 📥 GET /api/channels?category=all&city=Kolkata&state=West+Bengal&district=Beniatola {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:27:19 [INFO]: ✅ GET /api/articles?category=all&city=Kolkata&state=West+Bengal&district=Beniatola - 200 (74ms) {"status":200,"duration":74,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:27:19 [INFO]: ✅ GET /api/channels?category=all&city=Kolkata&state=West+Bengal&district=Beniatola - 200 (99ms) {"status":200,"duration":99,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:29:05 [INFO]: 📥 GET /api/articles?category=all&limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:29:05 [INFO]: 📥 GET /api/channels?category=all&limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:29:05 [INFO]: ✅ GET /api/channels?category=all&limit=50&sort=-createdAt - 200 (81ms) {"status":200,"duration":81,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:29:05 [INFO]: ✅ GET /api/articles?category=all&limit=50&sort=-createdAt - 200 (95ms) {"status":200,"duration":95,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:34:38 [INFO]: 📥 GET /api/channels {"ip":"::ffff:192.168.29.16","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"}
+2026-07-09 20:34:38 [INFO]: ✅ GET /api/channels - 200 (154ms) {"status":200,"duration":154,"ip":"::ffff:192.168.29.16"}
+2026-07-09 20:37:10 [INFO]: 📥 GET /api/articles?category=all&limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:37:10 [INFO]: 📥 GET /api/channels?category=all&limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:37:10 [INFO]: ✅ GET /api/channels?category=all&limit=50&sort=-createdAt - 200 (81ms) {"status":200,"duration":81,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:37:10 [INFO]: ✅ GET /api/articles?category=all&limit=50&sort=-createdAt - 200 (93ms) {"status":200,"duration":93,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:37:24 [INFO]: 📥 GET /api/channels?category=all&limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:37:24 [INFO]: 📥 GET /api/articles?category=all&limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:37:24 [INFO]: ✅ GET /api/articles?category=all&limit=50&sort=-createdAt - 200 (73ms) {"status":200,"duration":73,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:37:24 [INFO]: ✅ GET /api/channels?category=all&limit=50&sort=-createdAt - 200 (88ms) {"status":200,"duration":88,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:37:41 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:37:41 [INFO]: 📥 GET /api/channels?limit=50 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:37:41 [INFO]: ✅ GET /api/channels?limit=50 - 200 (121ms) {"status":200,"duration":121,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:37:41 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt - 200 (133ms) {"status":200,"duration":133,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:38:48 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:38:48 [INFO]: ✅ GET /api/users/profile - 200 (53ms) {"status":200,"duration":53,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:39:08 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:39:08 [INFO]: 📥 GET /api/channels?limit=50 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:39:08 [INFO]: ✅ GET /api/channels?limit=50 - 200 (118ms) {"status":200,"duration":118,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:39:08 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt - 200 (144ms) {"status":200,"duration":144,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:39:12 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:39:12 [INFO]: 📥 GET /api/channels?limit=50 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:39:12 [INFO]: ✅ GET /api/channels?limit=50 - 200 (157ms) {"status":200,"duration":157,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:39:12 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt - 200 (177ms) {"status":200,"duration":177,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:39:13 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:39:13 [INFO]: 📥 GET /api/channels?limit=50 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:39:13 [INFO]: ✅ GET /api/channels?limit=50 - 200 (153ms) {"status":200,"duration":153,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:39:13 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt - 200 (161ms) {"status":200,"duration":161,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:39:14 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:39:14 [INFO]: 📥 GET /api/channels?limit=50 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:39:15 [INFO]: ✅ GET /api/channels?limit=50 - 200 (117ms) {"status":200,"duration":117,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:39:15 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt - 200 (134ms) {"status":200,"duration":134,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:40:59 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:40:59 [INFO]: ✅ GET /api/users/profile - 200 (44ms) {"status":200,"duration":44,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:41:45 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:41:45 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:41:45 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:41:45 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (123ms) {"status":200,"duration":123,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:41:45 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (141ms) {"status":200,"duration":141,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:41:45 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (139ms) {"status":200,"duration":139,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:42:05 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:42:05 [INFO]: ✅ GET /api/users/profile - 200 (43ms) {"status":200,"duration":43,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:42:21 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:42:21 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:42:21 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:42:21 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (117ms) {"status":200,"duration":117,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:42:21 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (115ms) {"status":200,"duration":115,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:42:21 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (135ms) {"status":200,"duration":135,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:42:32 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:42:32 [INFO]: ✅ GET /api/users/profile - 200 (45ms) {"status":200,"duration":45,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:42:52 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:42:52 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:42:52 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:42:52 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (117ms) {"status":200,"duration":117,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:42:52 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (119ms) {"status":200,"duration":119,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:42:52 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (131ms) {"status":200,"duration":131,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:44:26 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:44:26 [INFO]: ✅ GET /api/users/profile - 200 (53ms) {"status":200,"duration":53,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:44:40 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:44:40 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:44:40 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:44:41 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (128ms) {"status":200,"duration":128,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:44:41 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (125ms) {"status":200,"duration":125,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:44:41 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (148ms) {"status":200,"duration":148,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:45:02 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:45:02 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:45:02 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:45:02 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (144ms) {"status":200,"duration":144,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:45:02 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (167ms) {"status":200,"duration":167,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:45:02 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (175ms) {"status":200,"duration":175,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:46:59 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:46:59 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:46:59 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:46:59 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (118ms) {"status":200,"duration":118,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:46:59 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (118ms) {"status":200,"duration":118,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:46:59 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (137ms) {"status":200,"duration":137,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:50:47 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:50:47 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:50:47 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:50:47 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (140ms) {"status":200,"duration":140,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:50:47 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (141ms) {"status":200,"duration":141,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:50:47 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (156ms) {"status":200,"duration":156,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:52:22 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:52:22 [INFO]: ✅ GET /api/users/profile - 200 (45ms) {"status":200,"duration":45,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:52:35 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:52:35 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:52:35 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:52:35 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (119ms) {"status":200,"duration":119,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:52:35 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (131ms) {"status":200,"duration":131,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:52:35 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (140ms) {"status":200,"duration":140,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:56:09 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:56:09 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:56:09 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:56:09 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (115ms) {"status":200,"duration":115,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:56:09 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (120ms) {"status":200,"duration":120,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:56:09 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (131ms) {"status":200,"duration":131,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:58:23 [INFO]: 📥 GET /api/channels/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:58:24 [INFO]: ✅ GET /api/channels/6a4fb5dcd061b43a88980080 - 200 (172ms) {"status":200,"duration":172,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:58:24 [INFO]: 📥 GET /api/articles/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:58:24 [INFO]: 📥 GET /api/videos/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:58:24 [INFO]: ✅ GET /api/videos/channel/6a4fb5dcd061b43a88980080 - 200 (79ms) {"status":200,"duration":79,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:58:24 [INFO]: ✅ GET /api/articles/channel/6a4fb5dcd061b43a88980080 - 200 (87ms) {"status":200,"duration":87,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:58:38 [INFO]: 📥 GET /api/channels/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:58:38 [INFO]: ✅ GET /api/channels/6a4ba8353908bec1466043d1 - 200 (179ms) {"status":200,"duration":179,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:58:38 [INFO]: 📥 GET /api/articles/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:58:38 [INFO]: 📥 GET /api/videos/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 20:58:38 [INFO]: ✅ GET /api/videos/channel/6a4ba8353908bec1466043d1 - 200 (120ms) {"status":200,"duration":120,"ip":"::ffff:192.168.29.173"}
+2026-07-09 20:58:38 [INFO]: ✅ GET /api/articles/channel/6a4ba8353908bec1466043d1 - 200 (131ms) {"status":200,"duration":131,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:00:27 [INFO]: 📥 GET /api/channels/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:00:27 [INFO]: ✅ GET /api/channels/6a4ba8353908bec1466043d1 - 200 (170ms) {"status":200,"duration":170,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:00:27 [INFO]: 📥 GET /api/articles/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:00:27 [INFO]: 📥 GET /api/videos/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:00:27 [INFO]: ✅ GET /api/videos/channel/6a4ba8353908bec1466043d1 - 200 (119ms) {"status":200,"duration":119,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:00:27 [INFO]: ✅ GET /api/articles/channel/6a4ba8353908bec1466043d1 - 200 (138ms) {"status":200,"duration":138,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:00:34 [INFO]: 📥 GET /api/channels/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:00:34 [INFO]: ✅ GET /api/channels/6a4fb5dcd061b43a88980080 - 200 (171ms) {"status":200,"duration":171,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:00:34 [INFO]: 📥 GET /api/articles/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:00:34 [INFO]: 📥 GET /api/videos/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:00:34 [INFO]: ✅ GET /api/articles/channel/6a4fb5dcd061b43a88980080 - 200 (90ms) {"status":200,"duration":90,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:00:34 [INFO]: ✅ GET /api/videos/channel/6a4fb5dcd061b43a88980080 - 200 (83ms) {"status":200,"duration":83,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:02:04 [INFO]: 📥 GET /api/channels/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:02:04 [INFO]: ✅ GET /api/channels/6a4fb5dcd061b43a88980080 - 200 (147ms) {"status":200,"duration":147,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:02:04 [INFO]: 📥 GET /api/articles/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:02:04 [INFO]: 📥 GET /api/videos/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:02:04 [INFO]: ✅ GET /api/articles/channel/6a4fb5dcd061b43a88980080 - 200 (79ms) {"status":200,"duration":79,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:02:04 [INFO]: ✅ GET /api/videos/channel/6a4fb5dcd061b43a88980080 - 200 (86ms) {"status":200,"duration":86,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:02:07 [INFO]: 📥 GET /api/channels/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:02:07 [INFO]: ✅ GET /api/channels/6a4ba8353908bec1466043d1 - 200 (173ms) {"status":200,"duration":173,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:02:07 [INFO]: 📥 GET /api/articles/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:02:07 [INFO]: 📥 GET /api/videos/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:02:07 [INFO]: ✅ GET /api/videos/channel/6a4ba8353908bec1466043d1 - 200 (108ms) {"status":200,"duration":108,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:02:07 [INFO]: ✅ GET /api/articles/channel/6a4ba8353908bec1466043d1 - 200 (133ms) {"status":200,"duration":133,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:02:17 [INFO]: 📥 GET /api/channels/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:02:18 [INFO]: ✅ GET /api/channels/6a4ba8353908bec1466043d1 - 200 (169ms) {"status":200,"duration":169,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:02:18 [INFO]: 📥 GET /api/articles/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:02:18 [INFO]: 📥 GET /api/videos/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:02:18 [INFO]: ✅ GET /api/videos/channel/6a4ba8353908bec1466043d1 - 200 (108ms) {"status":200,"duration":108,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:02:18 [INFO]: ✅ GET /api/articles/channel/6a4ba8353908bec1466043d1 - 200 (128ms) {"status":200,"duration":128,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:05:29 [INFO]: 📥 GET /api/channels/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:05:29 [INFO]: ✅ GET /api/channels/6a4ba8353908bec1466043d1 - 200 (178ms) {"status":200,"duration":178,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:05:29 [INFO]: 📥 GET /api/articles/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:05:29 [INFO]: 📥 GET /api/videos/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:05:29 [INFO]: ✅ GET /api/articles/channel/6a4ba8353908bec1466043d1 - 200 (142ms) {"status":200,"duration":142,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:05:29 [INFO]: ✅ GET /api/videos/channel/6a4ba8353908bec1466043d1 - 200 (125ms) {"status":200,"duration":125,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:05:42 [INFO]: 📥 GET /api/channels/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:05:42 [INFO]: ✅ GET /api/channels/6a4fb5dcd061b43a88980080 - 200 (152ms) {"status":200,"duration":152,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:05:42 [INFO]: 📥 GET /api/articles/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:05:42 [INFO]: 📥 GET /api/videos/channel/6a4fb5dcd061b43a88980080 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:05:42 [INFO]: ✅ GET /api/articles/channel/6a4fb5dcd061b43a88980080 - 200 (73ms) {"status":200,"duration":73,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:05:42 [INFO]: ✅ GET /api/videos/channel/6a4fb5dcd061b43a88980080 - 200 (95ms) {"status":200,"duration":95,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:06:20 [INFO]: 📥 GET /api/channels/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:06:20 [INFO]: ✅ GET /api/channels/6a4ba8353908bec1466043d1 - 200 (184ms) {"status":200,"duration":184,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:06:20 [INFO]: 📥 GET /api/articles/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:06:20 [INFO]: 📥 GET /api/videos/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:06:20 [INFO]: ✅ GET /api/videos/channel/6a4ba8353908bec1466043d1 - 200 (125ms) {"status":200,"duration":125,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:06:20 [INFO]: ✅ GET /api/articles/channel/6a4ba8353908bec1466043d1 - 200 (135ms) {"status":200,"duration":135,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:08:37 [INFO]: 📥 POST /api/channels/6a4ba8353908bec1466043d1/subscribe {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:08:37 [INFO]: ❌ POST /api/channels/6a4ba8353908bec1466043d1/subscribe - 500 (138ms) {"status":500,"duration":138,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:12:18 [INFO]: 📥 GET /api/channels/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:12:18 [INFO]: ✅ GET /api/channels/6a4ba8353908bec1466043d1 - 200 (180ms) {"status":200,"duration":180,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:12:18 [INFO]: 📥 GET /api/articles/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:12:18 [INFO]: 📥 GET /api/videos/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:12:18 [INFO]: ✅ GET /api/videos/channel/6a4ba8353908bec1466043d1 - 200 (119ms) {"status":200,"duration":119,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:12:18 [INFO]: ✅ GET /api/articles/channel/6a4ba8353908bec1466043d1 - 200 (136ms) {"status":200,"duration":136,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:12:26 [INFO]: 📥 POST /api/channels/6a4ba8353908bec1466043d1/subscribe {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:12:26 [INFO]: ❌ POST /api/channels/6a4ba8353908bec1466043d1/subscribe - 500 (152ms) {"status":500,"duration":152,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:18:09 [INFO]: 📥 POST /api/channels/6a4ba8353908bec1466043d1/subscribe {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:18:09 [INFO]: ✅ POST /api/channels/6a4ba8353908bec1466043d1/subscribe - 200 (471ms) {"status":200,"duration":471,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:18:31 [INFO]: 📥 DELETE /api/channels/6a4ba8353908bec1466043d1/subscribe {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:18:31 [INFO]: ✅ DELETE /api/channels/6a4ba8353908bec1466043d1/subscribe - 200 (281ms) {"status":200,"duration":281,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:32:15 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:32:15 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98 - 200 (154ms) {"status":200,"duration":154,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:33:31 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:33:31 [INFO]: ✅ GET /api/users/profile - 200 (50ms) {"status":200,"duration":50,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:35:31 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:35:31 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:35:31 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:35:31 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (142ms) {"status":200,"duration":142,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:35:31 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (138ms) {"status":200,"duration":138,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:35:31 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (152ms) {"status":200,"duration":152,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:35:34 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:35:34 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98 - 200 (157ms) {"status":200,"duration":157,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:37:14 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:37:14 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98 - 200 (139ms) {"status":200,"duration":139,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:42:39 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:42:39 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98 - 200 (163ms) {"status":200,"duration":163,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:42:39 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98/comments {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:42:39 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98/comments - 200 (89ms) {"status":200,"duration":89,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:42:54 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/comments {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"text":"Hala madrid","userId":"2IPzBU8GQDbzLUzHBFSnZYkEWIf2","userName":"Sagnik Dutta","userAvatar":null,"parentId":null}}
+2026-07-09 21:42:54 [INFO]: ❌ POST /api/articles/6a4e056268216ae03a866d98/comments - 500 (177ms) {"status":500,"duration":177,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:45:47 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:45:47 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98 - 200 (147ms) {"status":200,"duration":147,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:45:47 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98/comments {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:45:47 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98/comments - 200 (89ms) {"status":200,"duration":89,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:47:16 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:47:16 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98 - 200 (132ms) {"status":200,"duration":132,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:47:16 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98/comments {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:47:16 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98/comments - 200 (96ms) {"status":200,"duration":96,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:47:21 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/comments {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"content":"Hala madrid","userId":"2IPzBU8GQDbzLUzHBFSnZYkEWIf2","userName":"Sagnik Dutta","userAvatar":null,"parentId":null}}
+2026-07-09 21:47:21 [INFO]: ❌ POST /api/articles/6a4e056268216ae03a866d98/comments - 500 (91ms) {"status":500,"duration":91,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:48:38 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:48:38 [INFO]: ❌ POST /api/articles/6a4e056268216ae03a866d98/like - 500 (312ms) {"status":500,"duration":312,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:48:41 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:48:41 [INFO]: ❌ POST /api/articles/6a4e056268216ae03a866d98/like - 500 (307ms) {"status":500,"duration":307,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:51:02 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:51:02 [INFO]: ✅ POST /api/articles/6a4e056268216ae03a866d98/like - 200 (457ms) {"status":200,"duration":457,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:51:04 [INFO]: 📥 DELETE /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:51:04 [INFO]: ✅ DELETE /api/articles/6a4e056268216ae03a866d98/like - 200 (259ms) {"status":200,"duration":259,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:51:04 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:51:05 [INFO]: ✅ POST /api/articles/6a4e056268216ae03a866d98/like - 200 (268ms) {"status":200,"duration":268,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:51:12 [INFO]: 📥 DELETE /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:51:12 [INFO]: ✅ DELETE /api/articles/6a4e056268216ae03a866d98/like - 200 (309ms) {"status":200,"duration":309,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:51:18 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/comments {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0","body":{"content":"Hala madrid","userId":"2IPzBU8GQDbzLUzHBFSnZYkEWIf2","userName":"Sagnik Dutta","userAvatar":null,"parentId":null}}
+2026-07-09 21:51:18 [INFO]: ✅ POST /api/articles/6a4e056268216ae03a866d98/comments - 201 (322ms) {"status":201,"duration":322,"ip":"::ffff:192.168.29.173"}
+2026-07-09 21:51:21 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 21:51:22 [INFO]: ✅ POST /api/articles/6a4e056268216ae03a866d98/like - 200 (347ms) {"status":200,"duration":347,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:00:45 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:00:45 [INFO]: ✅ GET /api/users/profile - 200 (211ms) {"status":200,"duration":211,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:00:46 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:00:46 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:00:46 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:00:46 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true - 200 (151ms) {"status":200,"duration":151,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:00:46 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (148ms) {"status":200,"duration":148,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:00:46 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true - 200 (142ms) {"status":200,"duration":142,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:00:48 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:00:48 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98 - 200 (210ms) {"status":200,"duration":210,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:00:48 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98/comments {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:00:48 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98/comments - 200 (196ms) {"status":200,"duration":196,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:00:51 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:00:51 [INFO]: ✅ POST /api/articles/6a4e056268216ae03a866d98/like - 200 (228ms) {"status":200,"duration":228,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:00:54 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:00:54 [INFO]: ✅ POST /api/articles/6a4e056268216ae03a866d98/like - 200 (248ms) {"status":200,"duration":248,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:02:39 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:02:39 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98 - 200 (192ms) {"status":200,"duration":192,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:02:39 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98/comments {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:02:39 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98/comments - 200 (180ms) {"status":200,"duration":180,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:03:54 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:03:54 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98 - 200 (190ms) {"status":200,"duration":190,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:03:54 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98/comments {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:03:54 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98/comments - 200 (174ms) {"status":200,"duration":174,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:03:57 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:03:57 [INFO]: ✅ POST /api/articles/6a4e056268216ae03a866d98/like - 200 (227ms) {"status":200,"duration":227,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:03:58 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:03:58 [INFO]: ✅ POST /api/articles/6a4e056268216ae03a866d98/like - 200 (220ms) {"status":200,"duration":220,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:04:01 [INFO]: 📥 POST /api/comments/6a4fca7e6cebd50f040b6f6c/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:04:01 [INFO]: ❌ POST /api/comments/6a4fca7e6cebd50f040b6f6c/like - 404 (4ms) {"status":404,"duration":4,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:08:47 [INFO]: 📥 POST /api/comments/6a4fca7e6cebd50f040b6f6c/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:08:47 [INFO]: ❌ POST /api/comments/6a4fca7e6cebd50f040b6f6c/like - 404 (16ms) {"status":404,"duration":16,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:08:50 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:08:51 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98 - 200 (250ms) {"status":200,"duration":250,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:08:51 [INFO]: 📥 GET /api/articles/6a4e056268216ae03a866d98/comments {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:08:51 [INFO]: ✅ GET /api/articles/6a4e056268216ae03a866d98/comments - 200 (194ms) {"status":200,"duration":194,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:09:11 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:09:11 [INFO]: ✅ POST /api/articles/6a4e056268216ae03a866d98/like - 200 (408ms) {"status":200,"duration":408,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:09:12 [INFO]: 📥 POST /api/articles/6a4e056268216ae03a866d98/like {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:09:12 [INFO]: ✅ POST /api/articles/6a4e056268216ae03a866d98/like - 200 (249ms) {"status":200,"duration":249,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:09:53 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:09:53 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true&category=news {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:09:53 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true&category=news {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:09:53 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true&category=news - 200 (94ms) {"status":200,"duration":94,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:09:53 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true&category=news - 200 (134ms) {"status":200,"duration":134,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:09:53 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (157ms) {"status":200,"duration":157,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:10:01 [INFO]: 📥 GET /api/channels/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:10:01 [INFO]: ✅ GET /api/channels/6a4ba8353908bec1466043d1 - 200 (212ms) {"status":200,"duration":212,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:10:01 [INFO]: 📥 GET /api/articles/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:10:01 [INFO]: 📥 GET /api/videos/channel/6a4ba8353908bec1466043d1 {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:10:01 [INFO]: ✅ GET /api/videos/channel/6a4ba8353908bec1466043d1 - 200 (135ms) {"status":200,"duration":135,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:10:01 [INFO]: ✅ GET /api/articles/channel/6a4ba8353908bec1466043d1 - 200 (154ms) {"status":200,"duration":154,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:10:09 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:10:09 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true&category=news {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:10:09 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true&category=news {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:10:09 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true&category=news - 200 (82ms) {"status":200,"duration":82,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:10:09 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (146ms) {"status":200,"duration":146,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:10:09 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true&category=news - 200 (139ms) {"status":200,"duration":139,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:10:32 [INFO]: 📥 POST /api/channels/6a4ba8353908bec1466043d1/subscribe {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:10:33 [INFO]: ✅ POST /api/channels/6a4ba8353908bec1466043d1/subscribe - 200 (225ms) {"status":200,"duration":225,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:10:50 [INFO]: 📥 GET /api/videos?limit=50&sort=-createdAt&isPublished=true&category=news {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:10:50 [INFO]: 📥 GET /api/channels?limit=50&isActive=true {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:10:50 [INFO]: 📥 GET /api/articles?limit=50&sort=-createdAt&isPublished=true&category=news {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-09 22:10:50 [INFO]: ✅ GET /api/videos?limit=50&sort=-createdAt&isPublished=true&category=news - 200 (86ms) {"status":200,"duration":86,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:10:50 [INFO]: ✅ GET /api/articles?limit=50&sort=-createdAt&isPublished=true&category=news - 200 (122ms) {"status":200,"duration":122,"ip":"::ffff:192.168.29.173"}
+2026-07-09 22:10:50 [INFO]: ✅ GET /api/channels?limit=50&isActive=true - 200 (164ms) {"status":200,"duration":164,"ip":"::ffff:192.168.29.173"}

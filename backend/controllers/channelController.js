@@ -4,19 +4,21 @@ const Subscription = require('../models/Subscription');
 const { sendResponse, sendError } = require('../utils/response');
 const { uploadToCloudinary } = require('../services/cloudinaryService');
 
-// Get all channels
+// Get all channels with location filtering
 exports.getAllChannels = async (req, res) => {
   try {
     const { page = 1, limit = 10, category, state, city, search } = req.query;
     
     const query = {};
     if (category) query.category = category;
-    if (state) query['location.state'] = state;
-    if (city) query['location.city'] = city;
+    if (state) query['location.state'] = { $regex: state, $options: 'i' };
+    if (city) query['location.city'] = { $regex: city, $options: 'i' };
     if (search) {
       query.$or = [
         { channelName: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
+        { 'location.city': { $regex: search, $options: 'i' } },
+        { 'location.state': { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -52,7 +54,6 @@ exports.getChannelById = async (req, res) => {
       return sendError(res, 404, 'Channel not found');
     }
 
-    // Check if current user is subscribed
     let isSubscribed = false;
     if (req.user?.uid) {
       const user = await User.findOne({ firebaseUid: req.user.uid });
@@ -101,9 +102,13 @@ exports.getChannelByOwner = async (req, res) => {
   }
 };
 
-// Create channel
+// ─── FIXED: Create channel ────────────────────────────────────────────────────
 exports.createChannel = async (req, res) => {
   try {
+    console.log('📥 Create channel request received');
+    console.log('📥 Request body:', req.body);
+    console.log('📥 Request files:', req.files ? Object.keys(req.files) : 'none');
+    
     const firebaseUid = req.user?.uid;
     if (!firebaseUid) {
       return sendError(res, 401, 'Unauthorized');
@@ -117,8 +122,36 @@ exports.createChannel = async (req, res) => {
     // Check if user already has a channel
     const existingChannel = await Channel.findOne({ ownerId: user._id });
     if (existingChannel) {
-      return sendError(res, 400, 'User already has a channel');
+      return sendError(res, 400, 'You already have a channel. Only one channel per owner is allowed.');
     }
+
+    // ─── FIXED: Extract location from req.body ──────────────────────────────
+    // The location is sent as an object from the frontend
+    let location = {};
+    
+    // Check if location is in req.body
+    if (req.body.location) {
+      try {
+        // If location is a string, parse it
+        if (typeof req.body.location === 'string') {
+          location = JSON.parse(req.body.location);
+        } else {
+          location = req.body.location;
+        }
+        console.log('📍 Location extracted:', location);
+      } catch (e) {
+        console.warn('⚠️ Could not parse location field:', e.message);
+        location = {};
+      }
+    }
+    
+    // Also check for individual location fields (fallback)
+    if (!location.state && req.body.state) location.state = req.body.state;
+    if (!location.district && req.body.district) location.district = req.body.district;
+    if (!location.city && req.body.city) location.city = req.body.city;
+    if (!location.area && req.body.area) location.area = req.body.area;
+
+    console.log('📍 Final location:', location);
 
     const {
       channelName,
@@ -127,30 +160,29 @@ exports.createChannel = async (req, res) => {
       category,
     } = req.body;
 
-    // location may arrive as a JSON string (from React Native FormData)
-    let location = {};
-    if (req.body.location) {
-      try {
-        location = typeof req.body.location === 'string'
-          ? JSON.parse(req.body.location)
-          : req.body.location;
-      } catch (e) {
-        console.warn('Could not parse location field:', e.message);
-      }
+    // Validate required fields
+    if (!channelName || !channelName.trim()) {
+      return sendError(res, 400, 'Channel name is required');
+    }
+    if (!description || !description.trim()) {
+      return sendError(res, 400, 'Description is required');
     }
 
-    console.log('📍 Location parsed:', location);
-    console.log('📁 Files received:', req.files ? Object.keys(req.files) : 'none');
+    // Check if channel name already exists
+    const channelExists = await Channel.findOne({ channelName: channelName.trim() });
+    if (channelExists) {
+      return sendError(res, 400, 'Channel name already exists');
+    }
 
-    // Upload logo if provided
-    let logoUrl = 'https://via.placeholder.com/100';
+    // Upload logo if provided (for FormData uploads)
+    let logoUrl = null;
     if (req.files && req.files.logo) {
       try {
         const result = await uploadToCloudinary(req.files.logo[0].buffer, 'channels/logos');
         logoUrl = result.secure_url;
         console.log('✅ Logo uploaded:', logoUrl);
       } catch (uploadErr) {
-        console.error('⚠️ Logo upload failed, using placeholder:', uploadErr.message);
+        console.error('⚠️ Logo upload failed:', uploadErr.message);
       }
     }
 
@@ -166,27 +198,41 @@ exports.createChannel = async (req, res) => {
       }
     }
 
-    const channel = new Channel({
+    // ─── Create channel ──────────────────────────────────────────────────────
+    const channelData = {
       ownerId: user._id,
-      channelName,
-      description,
-      logo:     logoUrl,
-      banner:   bannerUrl,
+      channelName: channelName.trim(),
+      description: description.trim(),
       language: language || 'en',
-      location,
       category: category || 'news',
-    });
+      location: {
+        state: location.state || '',
+        district: location.district || '',
+        city: location.city || '',
+        area: location.area || '',
+      },
+      isActive: true,
+      isVerified: false,
+      followers: 0,
+    };
 
+    // Add logo if uploaded
+    if (logoUrl) channelData.logo = logoUrl;
+    if (bannerUrl) channelData.banner = bannerUrl;
+
+    const channel = new Channel(channelData);
     await channel.save();
 
     // Update user role to owner
     user.role = 'owner';
     await user.save();
 
+    console.log('✅ Channel created successfully:', channel._id);
+
     return sendResponse(res, 201, true, 'Channel created successfully', channel);
   } catch (error) {
-    console.error('Create channel error:', error);
-    return sendError(res, 500, error.message);
+    console.error('❌ Create channel error:', error);
+    return sendError(res, 500, error.message || 'Error creating channel');
   }
 };
 
@@ -220,10 +266,22 @@ exports.updateChannel = async (req, res) => {
     } = req.body;
 
     // Update fields
-    if (channelName) channel.channelName = channelName;
-    if (description) channel.description = description;
+    if (channelName) channel.channelName = channelName.trim();
+    if (description) channel.description = description.trim();
     if (language) channel.language = language;
-    if (location) channel.location = location;
+    if (location) {
+      // Handle location update
+      if (typeof location === 'string') {
+        try {
+          const parsedLocation = JSON.parse(location);
+          channel.location = parsedLocation;
+        } catch (e) {
+          channel.location = location;
+        }
+      } else {
+        channel.location = location;
+      }
+    }
     if (category) channel.category = category;
     if (isActive !== undefined) channel.isActive = isActive;
 
@@ -271,7 +329,6 @@ exports.deleteChannel = async (req, res) => {
 
     await channel.deleteOne();
 
-    // Update user role back to viewer
     user.role = 'viewer';
     await user.save();
 
@@ -302,7 +359,6 @@ exports.subscribeChannel = async (req, res) => {
       return sendError(res, 404, 'Channel not found');
     }
 
-    // Check if already subscribed
     const existingSubscription = await Subscription.findOne({
       viewerId: user._id,
       channelId: channel._id,
@@ -312,11 +368,9 @@ exports.subscribeChannel = async (req, res) => {
       if (existingSubscription.isActive) {
         return sendError(res, 400, 'Already subscribed');
       }
-      // Reactivate subscription
       existingSubscription.isActive = true;
       await existingSubscription.save();
     } else {
-      // Create new subscription
       const subscription = new Subscription({
         viewerId: user._id,
         channelId: channel._id,
@@ -324,7 +378,6 @@ exports.subscribeChannel = async (req, res) => {
       await subscription.save();
     }
 
-    // Increment followers count
     channel.followers += 1;
     await channel.save();
 
@@ -367,7 +420,6 @@ exports.unsubscribeChannel = async (req, res) => {
     subscription.isActive = false;
     await subscription.save();
 
-    // Decrement followers count
     channel.followers = Math.max(channel.followers - 1, 0);
     await channel.save();
 
@@ -424,15 +476,12 @@ exports.getChannelStats = async (req, res) => {
       isActive: true,
     });
 
-    // Get article count
     const Article = require('../models/Article');
     const articleCount = await Article.countDocuments({ channelId: channel._id });
 
-    // Get video count
     const Video = require('../models/Video');
     const videoCount = await Video.countDocuments({ channelId: channel._id });
 
-    // Get live count
     const Live = require('../models/Live');
     const liveCount = await Live.countDocuments({ channelId: channel._id });
 

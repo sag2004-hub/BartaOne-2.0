@@ -1,3 +1,4 @@
+// backend/models/Comment.js - Minimal fixed version
 const mongoose = require('mongoose');
 
 const CommentSchema = new mongoose.Schema({
@@ -50,10 +51,18 @@ const CommentSchema = new mongoose.Schema({
   },
 });
 
-// Update timestamp on save
-CommentSchema.pre('save', function(next) {
+// ─── SIMPLIFIED FIX: Remove pre-save middleware and use a function ──────
+CommentSchema.pre('save', function() {
   this.updatedAt = new Date();
-  next();
+});
+
+// ─── SIMPLIFIED FIX: Validate content type without next() ──────────────
+CommentSchema.pre('save', function() {
+  const types = [this.articleId, this.videoId, this.liveId];
+  const hasTypes = types.filter(type => type !== undefined && type !== null);
+  if (hasTypes.length !== 1) {
+    throw new Error('Comment must belong to exactly one content type (article, video, or live)');
+  }
 });
 
 // Virtual for replies
@@ -64,13 +73,13 @@ CommentSchema.virtual('replies', {
 });
 
 // Method to increment likes
-CommentSchema.methods.incrementLikes = function() {
+CommentSchema.methods.incrementLikes = async function() {
   this.likes += 1;
   return this.save();
 };
 
 // Method to decrement likes
-CommentSchema.methods.decrementLikes = function() {
+CommentSchema.methods.decrementLikes = async function() {
   this.likes = Math.max(this.likes - 1, 0);
   return this.save();
 };
@@ -79,17 +88,5 @@ CommentSchema.methods.decrementLikes = function() {
 CommentSchema.methods.isReply = function() {
   return !!this.parentCommentId;
 };
-
-// Ensure only one content type is set (article, video, or live)
-CommentSchema.pre('save', function(next) {
-  const types = [this.articleId, this.videoId, this.liveId];
-  const hasTypes = types.filter(type => type !== undefined && type !== null);
-  if (hasTypes.length !== 1) {
-    const error = new Error('Comment must belong to exactly one content type (article, video, or live)');
-    next(error);
-  } else {
-    next();
-  }
-});
 
 module.exports = mongoose.model('Comment', CommentSchema);

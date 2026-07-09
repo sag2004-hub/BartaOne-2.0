@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// app/(viewer)/Home.jsx
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,25 +10,77 @@ import {
   RefreshControl,
   FlatList,
   Dimensions,
+  Alert,
+  AppState,
+  Platform,
+  AppStateStatus,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { useArticles } from '../../hooks/useArticles';
 import { useChannels } from '../../hooks/useChannels';
+import { useVideos } from '../../hooks/useVideos';
 import NewsCard from '../../components/NewsCard';
 import ChannelCard from '../../components/ChannelCard';
+import VideoCard from '../../components/VideoCard';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
+import { useRouter } from 'expo-router';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-export default function Home({ navigation }) {
+// ─── Theme Colors ──────────────────────────────────────────────────────────
+const COLORS = {
+  light: {
+    background: '#F8F9FA',
+    surface: '#FFFFFF',
+    border: '#F0F0F0',
+    text: '#333333',
+    textSecondary: '#888888',
+    textLight: '#666666',
+    accent: '#C8001A',
+    accentLight: '#FFF0F2',
+    shadow: 'rgba(0,0,0,0.1)',
+    categoryBg: '#F0F0F0',
+    categoryActive: '#C8001A',
+    categoryText: '#666666',
+    categoryTextActive: '#FFFFFF',
+    notificationDot: '#FF4444',
+  },
+  dark: {
+    background: '#0D1117',
+    surface: '#161B22',
+    border: '#2A3340',
+    text: '#EDF2F7',
+    textSecondary: '#8B9BAB',
+    textLight: '#5C6E80',
+    accent: '#E8192C',
+    accentLight: 'rgba(232,25,44,0.12)',
+    shadow: 'rgba(0,0,0,0.3)',
+    categoryBg: '#1C2330',
+    categoryActive: '#E8192C',
+    categoryText: '#8B9BAB',
+    categoryTextActive: '#FFFFFF',
+    notificationDot: '#FF4444',
+  },
+};
+
+export default function Home() {
+  const router = useRouter();
   const { user } = useAuth();
   const { articles = [], loading: articlesLoading, fetchArticles } = useArticles();
   const { channels = [], loading: channelsLoading, fetchChannels } = useChannels();
+  const { videos = [], loading: videosLoading, fetchVideos } = useVideos();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [lastFetchTime, setLastFetchTime] = useState(new Date());
+  const appState = useRef(AppState.currentState);
+  const intervalRef = useRef(null);
 
   const categories = [
     { id: 'all', label: 'All', icon: 'apps-outline' },
@@ -39,19 +92,193 @@ export default function Home({ navigation }) {
     { id: 'lifestyle', label: 'Lifestyle', icon: 'leaf-outline' },
   ];
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const COL = COLORS.light;
 
+  // ─── Navigation Handlers for Flat Files ────────────────────────────────
+  const handleArticlePress = (articleId) => {
+    if (!articleId) {
+      console.error('Article ID is required');
+      return;
+    }
+    console.log('Navigating to article:', articleId);
+    // For flat files - simply navigate to the file with the ID as parameter
+    router.push(`/(viewer)/ArticleDetails?id=${articleId}`);
+  };
+
+  const handleChannelPress = (channelId) => {
+    if (!channelId) {
+      console.error('Channel ID is required');
+      return;
+    }
+    console.log('Navigating to channel:', channelId);
+    router.push(`/(viewer)/ChannelDetails?id=${channelId}`);
+  };
+
+  const handleVideoPress = (videoId) => {
+    if (!videoId) {
+      console.error('Video ID is required');
+      return;
+    }
+    console.log('Navigating to video:', videoId);
+    router.push(`/(viewer)/VideoPlayer?id=${videoId}`);
+  };
+
+  // ─── Check for new content from followed channels ──────────────────────
+  const checkForNewContent = useCallback(async () => {
+    try {
+      if (!user?.uid) return;
+
+      const followedChannels = user?.followedChannels || [];
+      if (followedChannels.length === 0) return;
+
+      const [latestArticles, latestVideos] = await Promise.all([
+        fetchArticles({ 
+          limit: 20, 
+          sort: '-createdAt',
+          isPublished: true,
+          channelIds: followedChannels,
+        }),
+        fetchVideos({ 
+          limit: 20, 
+          sort: '-createdAt',
+          isPublished: true,
+          channelIds: followedChannels,
+        }),
+      ]);
+
+      const newArticles = latestArticles.filter(article => {
+        const articleDate = new Date(article.createdAt || article.publishedAt);
+        return articleDate > new Date(lastFetchTime);
+      });
+
+      const newVideos = latestVideos.filter(video => {
+        const videoDate = new Date(video.createdAt || video.publishedAt);
+        return videoDate > new Date(lastFetchTime);
+      });
+
+      const newContent = [...newArticles, ...newVideos];
+      
+      if (newContent.length > 0) {
+        const newNotifications = newContent.map(item => {
+          const isVideo = item.hasOwnProperty('videoUrl') || item.hasOwnProperty('thumbnail');
+          return {
+            id: `${item._id || item.id}-${Date.now()}`,
+            type: isVideo ? 'video' : 'article',
+            title: item.title,
+            channelName: item.channel?.channelName || item.channel?.name || 'Unknown Channel',
+            channelId: item.channelId || item.channel?._id,
+            itemId: item._id || item.id,
+            timestamp: new Date(),
+            read: false,
+            image: item.image || item.thumbnail,
+          };
+        });
+
+        setNotifications(prev => [...newNotifications, ...prev]);
+        setNotificationCount(prev => prev + newNotifications.length);
+
+        if (newNotifications.length === 1) {
+          Alert.alert(
+            'New Content!',
+            `${newNotifications[0].channelName} uploaded: ${newNotifications[0].title}`,
+            [
+              { text: 'View', onPress: () => handleNotificationPress(newNotifications[0]) },
+              { text: 'Dismiss', style: 'cancel' },
+            ]
+          );
+        } else {
+          Alert.alert(
+            'New Content!',
+            `${newNotifications.length} new items from channels you follow`,
+            [
+              { text: 'View All', onPress: () => router.push('/(viewer)/Notifications') },
+              { text: 'Dismiss', style: 'cancel' },
+            ]
+          );
+        }
+      }
+
+      setLastFetchTime(new Date());
+
+    } catch (error) {
+      console.error('Error checking for new content:', error);
+    }
+  }, [user, fetchArticles, fetchVideos, lastFetchTime]);
+
+  // ─── Handle notification press ──────────────────────────────────────────
+  const handleNotificationPress = (notification) => {
+    setNotifications(prev => 
+      prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+    );
+    setNotificationCount(prev => Math.max(0, prev - 1));
+
+    if (notification.type === 'article') {
+      handleArticlePress(notification.itemId);
+    } else {
+      handleVideoPress(notification.itemId);
+    }
+  };
+
+  // ─── Load data ──────────────────────────────────────────────────────────
   const loadData = async () => {
+    setIsLoading(true);
     try {
       await Promise.all([
-        fetchArticles({ category: selectedCategory }),
-        fetchChannels(),
+        fetchArticles({ 
+          limit: 50, 
+          sort: '-createdAt',
+          isPublished: true,
+        }),
+        fetchChannels({ 
+          limit: 50,
+          isActive: true,
+        }),
+        fetchVideos({ 
+          limit: 50, 
+          sort: '-createdAt',
+          isPublished: true,
+        }),
       ]);
+      
+      console.log('✅ Articles loaded:', articles.length);
+      console.log('✅ Channels loaded:', channels.length);
+      console.log('✅ Videos loaded:', videos.length);
+
+      await checkForNewContent();
+
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('❌ Error loading data:', error);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  // ─── Setup real-time polling ────────────────────────────────────────────
+  useEffect(() => {
+    loadData();
+
+    intervalRef.current = setInterval(() => {
+      if (AppState.currentState === 'active') {
+        checkForNewContent();
+      }
+    }, 30000);
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      subscription.remove();
+    };
+  }, []);
+
+  // ─── Handle app state changes ──────────────────────────────────────────
+  const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+      checkForNewContent();
+    }
+    appState.current = nextAppState;
   };
 
   const onRefresh = async () => {
@@ -60,26 +287,27 @@ export default function Home({ navigation }) {
     setRefreshing(false);
   };
 
-  // ✅ FIX: Safe filter with null check
-  const filteredArticles = selectedCategory === 'all'
-    ? (articles || [])
-    : (articles || []).filter(article => article?.category === selectedCategory);
-
   const renderHeader = () => (
-    <View style={styles.header}>
+    <View style={[styles.header, { backgroundColor: COL.surface, borderBottomColor: COL.border }]}>
       <View style={styles.headerTop}>
-        <View>
-          <Text style={styles.greeting}>Hello, {user?.displayName || 'User'}! 👋</Text>
-          <Text style={styles.subGreeting}>Stay updated with local news</Text>
+        <View style={styles.greetingContainer}>
+          <Text style={[styles.greeting, { color: COL.text }]}>
+            Hello, {user?.displayName || 'User'}! 👋
+          </Text>
+          <Text style={[styles.subGreeting, { color: COL.textSecondary }]}>
+            Discover news from across the world
+          </Text>
         </View>
         <TouchableOpacity
           style={styles.notificationButton}
-          onPress={() => navigation.navigate('Settings')}
+          onPress={() => router.push('/(viewer)/Notifications')}
         >
-          <Ionicons name="notifications-outline" size={24} color="#333" />
-          <View style={styles.notificationBadge}>
-            <Text style={styles.badgeText}>3</Text>
-          </View>
+          <Ionicons name="notifications-outline" size={24} color={COL.text} />
+          {notificationCount > 0 && (
+            <View style={[styles.notificationBadge, { backgroundColor: COL.notificationDot }]}>
+              <Text style={styles.badgeText}>{notificationCount > 9 ? '9+' : notificationCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -94,19 +322,23 @@ export default function Home({ navigation }) {
             key={category.id}
             style={[
               styles.categoryButton,
-              selectedCategory === category.id && styles.categoryButtonActive,
+              { backgroundColor: COL.categoryBg },
+              selectedCategory === category.id && { backgroundColor: COL.categoryActive },
             ]}
-            onPress={() => setSelectedCategory(category.id)}
+            onPress={() => {
+              setSelectedCategory(category.id);
+              loadDataWithCategory(category.id);
+            }}
           >
             <Ionicons
               name={category.icon}
-              size={20}
-              color={selectedCategory === category.id ? '#FFF' : '#666'}
+              size={18}
+              color={selectedCategory === category.id ? COL.categoryTextActive : COL.categoryText}
             />
             <Text
               style={[
                 styles.categoryText,
-                selectedCategory === category.id && styles.categoryTextActive,
+                { color: selectedCategory === category.id ? COL.categoryTextActive : COL.categoryText },
               ]}
             >
               {category.label}
@@ -117,36 +349,60 @@ export default function Home({ navigation }) {
     </View>
   );
 
+  const loadDataWithCategory = async (category) => {
+    setIsLoading(true);
+    try {
+      const params = {
+        limit: 50,
+        sort: '-createdAt',
+        isPublished: true,
+      };
+      if (category !== 'all') {
+        params.category = category;
+      }
+      
+      await Promise.all([
+        fetchArticles(params),
+        fetchChannels({ limit: 50, isActive: true }),
+        fetchVideos(params),
+      ]);
+    } catch (error) {
+      console.error('Error loading filtered data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const renderFeatured = () => {
-    // ✅ FIX: Safe filter with null check
     const featuredArticles = (articles || []).filter(a => a?.isFeatured).slice(0, 3);
     if (featuredArticles.length === 0) return null;
 
     return (
       <View style={styles.featuredSection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Featured News</Text>
+          <Text style={[styles.sectionTitle, { color: COL.text }]}>Featured News</Text>
           <TouchableOpacity>
-            <Text style={styles.seeAllText}>See All</Text>
+            <Text style={[styles.seeAllText, { color: COL.accent }]}>See All</Text>
           </TouchableOpacity>
         </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.featuredContainer}
+          nestedScrollEnabled={true}
         >
           {featuredArticles.map((article) => (
             <TouchableOpacity
               key={article._id || article.id}
-              style={styles.featuredCard}
-              onPress={() => navigation.navigate('ArticleDetails', { articleId: article._id || article.id })}
+              style={[styles.featuredCard, { backgroundColor: COL.surface }]}
+              onPress={() => handleArticlePress(article._id || article.id)}
             >
               <Image
                 source={{ uri: article.image || 'https://via.placeholder.com/300x200' }}
                 style={styles.featuredImage}
               />
-              <View style={styles.featuredOverlay}>
-                <View style={styles.featuredBadge}>
+              <View style={[styles.featuredOverlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                <View style={[styles.featuredBadge, { backgroundColor: COL.accent }]}>
                   <Text style={styles.featuredBadgeText}>Featured</Text>
                 </View>
                 <Text style={styles.featuredTitle} numberOfLines={2}>
@@ -164,75 +420,125 @@ export default function Home({ navigation }) {
   };
 
   const renderChannels = () => {
-    // ✅ FIX: Safe check for channels
     if (!channels || channels.length === 0) return null;
     
     return (
       <View style={styles.channelsSection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Local Channels</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Search')}>
-            <Text style={styles.seeAllText}>View All</Text>
+          <Text style={[styles.sectionTitle, { color: COL.text }]}>Popular Channels</Text>
+          <TouchableOpacity onPress={() => router.push('/(viewer)/Search')}>
+            <Text style={[styles.seeAllText, { color: COL.accent }]}>View All</Text>
           </TouchableOpacity>
         </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.channelsContainer}
+          nestedScrollEnabled={true}
+          decelerationRate="fast"
+          snapToAlignment="start"
         >
-          {channels.slice(0, 5).map((channel) => (
-            <ChannelCard
-              key={channel._id || channel.id}
-              channel={channel}
-              onPress={() => navigation.navigate('ChannelDetails', { channelId: channel._id || channel.id })}
-            />
+          {channels.slice(0, 10).map((channel) => (
+            <View key={channel._id || channel.id} style={styles.channelItemWrapper}>
+              <ChannelCard
+                channel={channel}
+                onPress={() => handleChannelPress(channel._id || channel.id)}
+              />
+            </View>
           ))}
         </ScrollView>
       </View>
     );
   };
 
+  // ─── Combine Articles and Videos for Feed ──────────────────────────────
+  const getCombinedFeed = () => {
+    const feed = [];
+    const articlesList = (articles || []).filter(article => 
+      selectedCategory === 'all' || article?.category === selectedCategory
+    );
+    const videosList = (videos || []).filter(video => 
+      selectedCategory === 'all' || video?.category === selectedCategory
+    );
+    
+    articlesList.forEach(article => {
+      feed.push({
+        type: 'article',
+        data: article,
+        id: article._id || article.id,
+        createdAt: article.createdAt || article.publishedAt,
+      });
+    });
+    
+    videosList.forEach(video => {
+      feed.push({
+        type: 'video',
+        data: video,
+        id: video._id || video.id,
+        createdAt: video.createdAt || video.publishedAt,
+      });
+    });
+    
+    feed.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    return feed;
+  };
+
+  const renderFeedItem = ({ item }) => {
+    if (item.type === 'article') {
+      return (
+        <NewsCard
+          article={item.data}
+          onPress={() => handleArticlePress(item.data._id || item.data.id)}
+        />
+      );
+    } else {
+      return (
+        <VideoCard
+          video={item.data}
+          onPress={() => handleVideoPress(item.data._id || item.data.id)}
+        />
+      );
+    }
+  };
+
+  const feedData = getCombinedFeed();
+
   // Loading state
-  if (articlesLoading && (!articles || articles.length === 0)) {
+  if (isLoading) {
     return <Loader message="Loading news..." />;
   }
 
-  // Ensure filteredArticles is always an array
-  const safeFilteredArticles = filteredArticles || [];
-
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COL.background }]} edges={['top']}>
       <FlatList
-        data={safeFilteredArticles}
-        keyExtractor={(item, index) => item?._id || item?.id || `article-${index}`}
-        renderItem={({ item }) => (
-          <NewsCard
-            article={item}
-            onPress={() => navigation.navigate('ArticleDetails', { articleId: item?._id || item?.id })}
-          />
-        )}
+        data={feedData}
+        keyExtractor={(item) => item.id || `${item.type}-${Math.random()}`}
+        renderItem={renderFeedItem}
         ListHeaderComponent={
           <>
             {renderHeader()}
             {renderFeatured()}
             {renderChannels()}
             <View style={styles.latestSection}>
-              <Text style={styles.sectionTitle}>Latest News</Text>
+              <Text style={[styles.sectionTitle, { color: COL.text }]}>Latest News</Text>
             </View>
           </>
         }
         ListEmptyComponent={
           <EmptyState
             icon="newspaper-outline"
-            title="No News Found"
-            message="There are no articles in this category yet. Check back later!"
+            title="No Content Found"
+            message="No articles or videos available. Check back later!"
           />
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COL.accent} />
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        nestedScrollEnabled={true}
+        scrollEnabled={true}
       />
     </SafeAreaView>
   );
@@ -241,33 +547,33 @@ export default function Home({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 30,
+    paddingTop: Platform.OS === 'android' ? 0 : 0,
   },
   header: {
-    backgroundColor: '#FFF',
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingHorizontal: width * 0.05,
+    paddingTop: Platform.OS === 'ios' ? 10 : 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  greetingContainer: {
+    flex: 1,
+    marginRight: 10,
   },
   greeting: {
-    fontSize: 22,
+    fontSize: width * 0.055,
     fontWeight: 'bold',
-    color: '#333',
   },
   subGreeting: {
-    fontSize: 14,
-    color: '#888',
+    fontSize: width * 0.035,
     marginTop: 2,
   },
   notificationButton: {
@@ -278,7 +584,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: '#FF6B6B',
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -286,6 +591,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#FFF',
+    paddingHorizontal: 4,
   },
   badgeText: {
     color: '#FFF',
@@ -298,58 +604,48 @@ const styles = StyleSheet.create({
   categoryContainer: {
     paddingVertical: 4,
     gap: 10,
+    paddingRight: width * 0.05,
   },
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: '#F0F0F0',
     gap: 6,
   },
-  categoryButtonActive: {
-    backgroundColor: '#FF6B6B',
-  },
   categoryText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
     fontWeight: '500',
-  },
-  categoryTextActive: {
-    color: '#FFF',
   },
   featuredSection: {
     marginTop: 20,
-    paddingLeft: 20,
+    paddingLeft: width * 0.05,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingRight: 20,
+    paddingRight: width * 0.05,
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: width * 0.045,
     fontWeight: 'bold',
-    color: '#333',
   },
   seeAllText: {
-    color: '#FF6B6B',
-    fontSize: 14,
+    fontSize: width * 0.035,
     fontWeight: '500',
   },
   featuredContainer: {
-    paddingRight: 20,
+    paddingRight: width * 0.05,
     gap: 12,
   },
   featuredCard: {
     width: width * 0.7,
-    height: 200,
+    height: width * 0.5,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#FFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -367,10 +663,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   featuredBadge: {
-    backgroundColor: '#FF6B6B',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -384,24 +678,29 @@ const styles = StyleSheet.create({
   },
   featuredTitle: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: width * 0.04,
     fontWeight: 'bold',
   },
   featuredSource: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
+    fontSize: width * 0.03,
     marginTop: 4,
   },
   channelsSection: {
     marginTop: 24,
-    paddingLeft: 20,
+    paddingLeft: width * 0.05,
   },
   channelsContainer: {
-    paddingRight: 20,
+    paddingRight: width * 0.05,
     gap: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  channelItemWrapper: {
+    marginRight: 12,
   },
   latestSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: width * 0.05,
     marginTop: 20,
     marginBottom: 12,
   },
