@@ -1,3 +1,4 @@
+// backend/middleware/verifyFirebaseToken.js
 const { getAuth } = require('../config/firebaseAdmin');
 const { sendError } = require('../utils/response');
 
@@ -5,13 +6,17 @@ const verifyFirebaseToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
+    console.log('🔑 [verifyFirebaseToken] Auth header:', authHeader ? 'Present ✅' : 'Missing ❌');
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ [verifyFirebaseToken] No token provided');
       return sendError(res, 401, 'No token provided. Please authenticate.');
     }
 
     const token = authHeader.split('Bearer ')[1];
 
     if (!token) {
+      console.log('❌ [verifyFirebaseToken] Empty token');
       return sendError(res, 401, 'No token provided. Please authenticate.');
     }
 
@@ -30,8 +35,7 @@ const verifyFirebaseToken = async (req, res, next) => {
 
       next();
     } catch (error) {
-      console.error('❌ [verifyFirebaseToken] code:', error.code);
-      console.error('❌ [verifyFirebaseToken] message:', error.message);
+      console.error('❌ [verifyFirebaseToken] Token verification failed:', error.code, error.message);
 
       if (error.code === 'auth/id-token-expired') {
         return sendError(res, 401, 'Token expired. Please refresh your session.');
@@ -46,7 +50,7 @@ const verifyFirebaseToken = async (req, res, next) => {
       return sendError(res, 401, 'Invalid token. Please authenticate again.');
     }
   } catch (error) {
-    console.error('❌ [verifyFirebaseToken] middleware error:', error);
+    console.error('❌ [verifyFirebaseToken] Middleware error:', error);
     return sendError(res, 500, 'Authentication error');
   }
 };
@@ -54,12 +58,14 @@ const verifyFirebaseToken = async (req, res, next) => {
 const optionalFirebaseToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
+    console.log('🔑 [optionalFirebaseToken] Auth header:', authHeader ? 'Present ✅' : 'Missing ❌');
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split('Bearer ')[1];
       if (token) {
         try {
           const decodedToken = await getAuth().verifyIdToken(token);
+          console.log('✅ [optionalFirebaseToken] verified uid:', decodedToken.uid);
           req.user = {
             uid: decodedToken.uid,
             email: decodedToken.email,
@@ -69,14 +75,16 @@ const optionalFirebaseToken = async (req, res, next) => {
             ...decodedToken,
           };
         } catch (error) {
-          console.warn('⚠️ [optionalFirebaseToken]:', error.code, error.message);
+          console.warn('⚠️ [optionalFirebaseToken] Token verification failed:', error.code, error.message);
         }
       }
+    } else {
+      console.log('ℹ️ [optionalFirebaseToken] No token provided, continuing as anonymous');
     }
 
     next();
   } catch (error) {
-    console.error('❌ [optionalFirebaseToken] middleware error:', error);
+    console.error('❌ [optionalFirebaseToken] Middleware error:', error);
     next();
   }
 };

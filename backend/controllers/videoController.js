@@ -37,7 +37,7 @@ exports.getAllVideos = async (req, res) => {
       pages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error('Get all videos error:', error);
+    console.error('❌ Get all videos error:', error);
     return sendError(res, 500, error.message);
   }
 };
@@ -47,10 +47,14 @@ exports.getVideoById = async (req, res) => {
   try {
     const { id } = req.params;
 
+    console.log('📡 [getVideoById] Fetching video:', id);
+    console.log('📡 [getVideoById] User:', req.user?.uid || 'Anonymous');
+
     const video = await Video.findById(id)
       .populate('channelId', 'channelName logo description location');
 
     if (!video) {
+      console.log('❌ [getVideoById] Video not found:', id);
       return sendError(res, 404, 'Video not found');
     }
 
@@ -58,25 +62,47 @@ exports.getVideoById = async (req, res) => {
     video.views += 1;
     await video.save();
 
-    // Check if user liked the video
+    // ─── Get actual likes count from database ──────────────────────────────
+    const actualLikesCount = await Like.countDocuments({ videoId: video._id });
+    console.log('📊 [getVideoById] Actual likes count from DB:', actualLikesCount);
+    
+    // Fix inconsistent likes count
+    if (video.likes !== actualLikesCount) {
+      console.log('🔄 [getVideoById] Fixing inconsistent likes count...');
+      video.likes = actualLikesCount;
+      await video.save();
+      console.log('✅ [getVideoById] Likes count fixed to:', video.likes);
+    }
+
+    // ─── Check if user liked the video ──────────────────────────────
     let isLiked = false;
-    if (req.user?.uid) {
-      const user = await User.findOne({ firebaseUid: req.user.uid });
-      if (user) {
-        const like = await Like.findOne({
-          userId: user._id,
-          videoId: video._id,
-        });
-        isLiked = !!like;
+    const firebaseUid = req.user?.uid;
+    
+    if (firebaseUid) {
+      try {
+        const user = await User.findOne({ firebaseUid });
+        if (user) {
+          const like = await Like.findOne({
+            userId: user._id,
+            videoId: video._id,
+          });
+          isLiked = !!like;
+          console.log('❤️ [getVideoById] Like found:', isLiked ? 'YES ✅' : 'NO ❌');
+        }
+      } catch (likeError) {
+        console.error('❌ [getVideoById] Error checking like:', likeError);
       }
     }
 
     const videoData = video.toObject();
     videoData.isLiked = isLiked;
+    videoData.likes = video.likes || 0;
+
+    console.log('📤 [getVideoById] Returning - isLiked:', isLiked, 'likes:', videoData.likes);
 
     return sendResponse(res, 200, true, 'Video fetched successfully', videoData);
   } catch (error) {
-    console.error('Get video by ID error:', error);
+    console.error('❌ Get video by ID error:', error);
     return sendError(res, 500, error.message);
   }
 };
@@ -102,7 +128,7 @@ exports.getVideosByChannel = async (req, res) => {
       pages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error('Get videos by channel error:', error);
+    console.error('❌ Get videos by channel error:', error);
     return sendError(res, 500, error.message);
   }
 };
@@ -128,11 +154,10 @@ exports.getVideosByCategory = async (req, res) => {
       pages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error('Get videos by category error:', error);
+    console.error('❌ Get videos by category error:', error);
     return sendError(res, 500, error.message);
   }
 };
-
 
 // ─── UPLOAD VIDEO ────────────────────────────────────────────────────────────
 exports.uploadVideo = async (req, res) => {
@@ -166,20 +191,16 @@ exports.uploadVideo = async (req, res) => {
 
     console.log('✅ Channel found:', channel.channelName, 'ID:', channel._id);
 
-    // Get data from req.body
     const { title, description, category, language, isChildFriendly } = req.body;
 
-    // Validate required fields
     if (!title || !title.trim()) {
       console.error('❌ Missing title');
       return sendError(res, 400, 'Title is required');
     }
 
-    // Upload video
     let videoUrl = null;
     let thumbnailUrl = null;
 
-    // Access files properly
     if (req.files && req.files.video && req.files.video.length > 0) {
       const videoFile = req.files.video[0];
       console.log('📤 Uploading video to Cloudinary...', videoFile.originalname);
@@ -193,7 +214,6 @@ exports.uploadVideo = async (req, res) => {
       console.log('✅ Video uploaded to Cloudinary:', videoUrl);
     }
 
-    // Upload thumbnail if provided
     if (req.files && req.files.thumbnail && req.files.thumbnail.length > 0) {
       const thumbnailFile = req.files.thumbnail[0];
       console.log('📤 Uploading thumbnail to Cloudinary...', thumbnailFile.originalname);
@@ -222,6 +242,9 @@ exports.uploadVideo = async (req, res) => {
       isPublished: true,
       isChildFriendly: isChildFriendly === 'true' || isChildFriendly === true,
       publishedAt: new Date(),
+      likes: 0,
+      views: 0,
+      comments: 0,
     });
 
     await video.save();
@@ -256,7 +279,6 @@ exports.updateVideo = async (req, res) => {
       return sendError(res, 404, 'Video not found');
     }
 
-    // Check if user owns the channel
     if (video.channelId.ownerId.toString() !== user._id.toString()) {
       return sendError(res, 403, 'Unauthorized to update this video');
     }
@@ -270,12 +292,10 @@ exports.updateVideo = async (req, res) => {
     if (isPublished !== undefined) video.isPublished = isPublished === 'true';
     if (isChildFriendly !== undefined) video.isChildFriendly = isChildFriendly === 'true';
 
-    // Handle thumbnail update
     if (req.files && req.files.thumbnail && req.files.thumbnail.length > 0) {
       const thumbnailFile = req.files.thumbnail[0];
       console.log('📤 Uploading new thumbnail...');
       
-      // Delete old thumbnail if exists
       if (video.thumbnail) {
         try {
           const urlParts = video.thumbnail.split('/');
@@ -305,7 +325,7 @@ exports.updateVideo = async (req, res) => {
 
     return sendResponse(res, 200, true, 'Video updated successfully', video);
   } catch (error) {
-    console.error('Update video error:', error);
+    console.error('❌ Update video error:', error);
     return sendError(res, 500, error.message);
   }
 };
@@ -334,7 +354,6 @@ exports.deleteVideo = async (req, res) => {
       return sendError(res, 403, 'Unauthorized to delete this video');
     }
 
-    // Delete video from Cloudinary
     if (video.videoUrl) {
       try {
         const urlParts = video.videoUrl.split('/');
@@ -349,7 +368,6 @@ exports.deleteVideo = async (req, res) => {
       }
     }
 
-    // Delete thumbnail from Cloudinary
     if (video.thumbnail) {
       try {
         const urlParts = video.thumbnail.split('/');
@@ -364,58 +382,127 @@ exports.deleteVideo = async (req, res) => {
       }
     }
 
+    await Like.deleteMany({ videoId: video._id });
+    await Comment.deleteMany({ videoId: video._id });
+
     await video.deleteOne();
 
     return sendResponse(res, 200, true, 'Video deleted successfully');
   } catch (error) {
-    console.error('Delete video error:', error);
+    console.error('❌ Delete video error:', error);
     return sendError(res, 500, error.message);
   }
 };
 
-// ─── LIKE VIDEO ──────────────────────────────────────────────────────────────
+// ─── LIKE VIDEO (COMPLETE FIX - Manually handles like/unlike) ──────────────
+
 exports.likeVideo = async (req, res) => {
   try {
     const { id } = req.params;
     const firebaseUid = req.user?.uid;
 
+    console.log('📤 [likeVideo] Request for video:', id);
+    console.log('📤 [likeVideo] User:', firebaseUid || 'No user');
+
     if (!firebaseUid) {
+      console.error('❌ [likeVideo] No Firebase UID');
       return sendError(res, 401, 'Unauthorized');
     }
 
     const user = await User.findOne({ firebaseUid });
     if (!user) {
+      console.error('❌ [likeVideo] User not found');
       return sendError(res, 404, 'User not found');
     }
 
+    console.log('👤 [likeVideo] User found:', user._id);
+
     const video = await Video.findById(id);
     if (!video) {
+      console.error('❌ [likeVideo] Video not found');
       return sendError(res, 404, 'Video not found');
     }
 
-    // Check if already liked
+    console.log('📹 [likeVideo] Video found:', video._id);
+    console.log('📹 [likeVideo] Current video.likes:', video.likes);
+
+    // ─── Check if already liked ─────────────────────────────────────────────
     const existingLike = await Like.findOne({
       userId: user._id,
       videoId: video._id,
     });
 
     if (existingLike) {
-      return sendError(res, 400, 'Already liked');
+      console.log('ℹ️ [likeVideo] User already liked this video');
+      
+      // Get actual likes count
+      const actualLikesCount = await Like.countDocuments({ videoId: video._id });
+      console.log('📊 [likeVideo] Actual likes count from DB:', actualLikesCount);
+      
+      // Fix inconsistent likes count
+      if (video.likes !== actualLikesCount) {
+        console.log('🔄 [likeVideo] Fixing inconsistent likes count...');
+        video.likes = actualLikesCount;
+        await video.save();
+        console.log('✅ [likeVideo] Likes count fixed to:', video.likes);
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Video already liked',
+        data: {
+          liked: true,
+          likes: video.likes || 0,
+        },
+      });
     }
 
+    // ─── Create new like ─────────────────────────────────────────────────────
+    console.log('📤 [likeVideo] Creating new like...');
     const like = new Like({
       userId: user._id,
       videoId: video._id,
     });
     await like.save();
+    console.log('✅ [likeVideo] Like saved:', like._id);
 
-    video.likes += 1;
+    // ─── Update video likes count ──────────────────────────────────────────
+    video.likes = (video.likes || 0) + 1;
     await video.save();
+    console.log('✅ [likeVideo] Video likes updated to:', video.likes);
 
-    return sendResponse(res, 200, true, 'Video liked successfully');
+    return res.status(200).json({
+      success: true,
+      message: 'Video liked successfully',
+      data: {
+        liked: true,
+        likes: video.likes,
+      },
+    });
   } catch (error) {
-    console.error('Like video error:', error);
-    return sendError(res, 500, error.message);
+    console.error('❌ [likeVideo] Error:', error);
+    
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      console.log('ℹ️ [likeVideo] Duplicate key error, fetching fresh data...');
+      try {
+        const freshVideo = await Video.findById(req.params.id);
+        const actualCount = await Like.countDocuments({ videoId: req.params.id });
+        return res.status(200).json({
+          success: true,
+          message: 'Video already liked',
+          data: {
+            liked: true,
+            likes: Math.max(actualCount, freshVideo?.likes || 0),
+          },
+        });
+      } catch (freshError) {
+        console.error('❌ [likeVideo] Error fetching fresh video:', freshError);
+        return sendError(res, 500, 'Failed to process like');
+      }
+    }
+    
+    return sendError(res, 500, error.message || 'Failed to like video');
   }
 };
 
@@ -425,38 +512,78 @@ exports.unlikeVideo = async (req, res) => {
     const { id } = req.params;
     const firebaseUid = req.user?.uid;
 
+    console.log('📤 [unlikeVideo] Request for video:', id);
+    console.log('📤 [unlikeVideo] User:', firebaseUid || 'No user');
+
     if (!firebaseUid) {
+      console.error('❌ [unlikeVideo] No Firebase UID');
       return sendError(res, 401, 'Unauthorized');
     }
 
     const user = await User.findOne({ firebaseUid });
     if (!user) {
+      console.error('❌ [unlikeVideo] User not found');
       return sendError(res, 404, 'User not found');
     }
 
+    console.log('👤 [unlikeVideo] User found:', user._id);
+
     const video = await Video.findById(id);
     if (!video) {
+      console.error('❌ [unlikeVideo] Video not found');
       return sendError(res, 404, 'Video not found');
     }
 
+    console.log('📹 [unlikeVideo] Video found:', video._id);
+    console.log('📹 [unlikeVideo] Current video.likes in DB:', video.likes);
+
+    // ─── Check if like exists ──────────────────────────────────────────────
     const like = await Like.findOne({
       userId: user._id,
       videoId: video._id,
     });
 
     if (!like) {
-      return sendError(res, 400, 'Not liked');
+      console.log('ℹ️ [unlikeVideo] User has not liked this video');
+      
+      // Get actual likes count
+      const actualLikesCount = await Like.countDocuments({ videoId: video._id });
+      console.log('📊 [unlikeVideo] Actual likes count from DB:', actualLikesCount);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Video not liked',
+        data: {
+          liked: false,
+          likes: actualLikesCount || 0,
+        },
+      });
     }
 
+    console.log('📤 [unlikeVideo] Removing like...');
     await like.deleteOne();
+    console.log('✅ [unlikeVideo] Like removed');
 
-    video.likes = Math.max(video.likes - 1, 0);
+    // ─── Get actual likes count from database ──────────────────────────────
+    const actualLikesCount = await Like.countDocuments({ videoId: video._id });
+    console.log('📊 [unlikeVideo] New likes count from DB:', actualLikesCount);
+    
+    // ─── Update video with correct count ───────────────────────────────────
+    video.likes = actualLikesCount;
     await video.save();
+    console.log('✅ [unlikeVideo] Video likes updated to:', video.likes);
 
-    return sendResponse(res, 200, true, 'Video unliked successfully');
+    return res.status(200).json({
+      success: true,
+      message: 'Video unliked successfully',
+      data: {
+        liked: false,
+        likes: video.likes,
+      },
+    });
   } catch (error) {
-    console.error('Unlike video error:', error);
-    return sendError(res, 500, error.message);
+    console.error('❌ [unlikeVideo] Error:', error);
+    return sendError(res, 500, error.message || 'Failed to unlike video');
   }
 };
 
@@ -467,8 +594,14 @@ exports.addComment = async (req, res) => {
     const { content, parentCommentId } = req.body;
     const firebaseUid = req.user?.uid;
 
+    console.log('📤 [addComment] Request for video:', id);
+
     if (!firebaseUid) {
       return sendError(res, 401, 'Unauthorized');
+    }
+
+    if (!content || !content.trim()) {
+      return sendError(res, 400, 'Comment content is required');
     }
 
     const user = await User.findOne({ firebaseUid });
@@ -484,18 +617,19 @@ exports.addComment = async (req, res) => {
     const comment = new Comment({
       userId: user._id,
       videoId: video._id,
-      content,
+      content: content.trim(),
       parentCommentId: parentCommentId || null,
     });
     await comment.save();
 
-    // Increment comment count
-    video.comments += 1;
+    video.comments = (video.comments || 0) + 1;
     await video.save();
+
+    await comment.populate('userId', 'name email photoURL');
 
     return sendResponse(res, 201, true, 'Comment added successfully', comment);
   } catch (error) {
-    console.error('Add comment error:', error);
+    console.error('❌ [addComment] Error:', error);
     return sendError(res, 500, error.message);
   }
 };
@@ -510,7 +644,7 @@ exports.getComments = async (req, res) => {
       videoId: id,
       parentCommentId: null,
     })
-      .populate('userId', 'name profilePicture')
+      .populate('userId', 'name email photoURL')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
@@ -520,12 +654,11 @@ exports.getComments = async (req, res) => {
       parentCommentId: null,
     });
 
-    // Get replies for each comment
     const commentsWithReplies = await Promise.all(
       comments.map(async (comment) => {
         const replies = await Comment.find({
           parentCommentId: comment._id,
-        }).populate('userId', 'name profilePicture');
+        }).populate('userId', 'name email photoURL');
         return {
           ...comment.toObject(),
           replies,
@@ -540,7 +673,7 @@ exports.getComments = async (req, res) => {
       pages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error('Get comments error:', error);
+    console.error('❌ [getComments] Error:', error);
     return sendError(res, 500, error.message);
   }
 };

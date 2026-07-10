@@ -3,7 +3,6 @@ import { api } from './api';
 
 // Video Service
 export const videoService = {
-  // Get all videos
   getAll: async (params = {}) => {
     try {
       const response = await api.get('/videos', { params });
@@ -14,7 +13,6 @@ export const videoService = {
     }
   },
 
-  // Get video by ID
   getById: async (id) => {
     try {
       console.log('📡 Fetching video by ID:', id);
@@ -26,7 +24,6 @@ export const videoService = {
     }
   },
 
-  // Get videos by channel
   getByChannel: async (channelId) => {
     try {
       console.log('📡 Fetching videos for channel:', channelId);
@@ -38,7 +35,6 @@ export const videoService = {
     }
   },
 
-  // Get videos by category
   getByCategory: async (category) => {
     try {
       const response = await api.get(`/videos/category/${category}`);
@@ -49,7 +45,6 @@ export const videoService = {
     }
   },
 
-  // ─── Get owner videos ──────────────────────────────────────────────────────
   getOwnerVideos: async (channelId) => {
     try {
       console.log('📡 [getOwnerVideos] Fetching videos for channel:', channelId);
@@ -85,15 +80,12 @@ export const videoService = {
     }
   },
 
-  // ─── CREATE VIDEO ──────────────────────────────────────────────────────────
   create: async (videoData) => {
     try {
       console.log('📤 Creating video with data:', videoData);
       
-      // If videoData is already FormData, use it directly
       let formData = videoData;
       
-      // If not FormData, create FormData from the object
       if (!(videoData instanceof FormData)) {
         formData = new FormData();
         Object.keys(videoData).forEach(key => {
@@ -115,7 +107,6 @@ export const videoService = {
     }
   },
 
-  // ─── UPDATE VIDEO ──────────────────────────────────────────────────────────
   update: async (id, videoData) => {
     try {
       console.log('📤 Updating video:', id);
@@ -143,7 +134,6 @@ export const videoService = {
     }
   },
 
-  // ─── DELETE VIDEO ──────────────────────────────────────────────────────────
   delete: async (id) => {
     try {
       console.log('📤 Deleting video:', id);
@@ -156,29 +146,33 @@ export const videoService = {
     }
   },
 
-  // Like video
-  like: async (id) => {
-    try {
-      const response = await api.post(`/videos/${id}/like`);
-      return response.data;
-    } catch (error) {
-      console.error('Error liking video:', error);
-      throw error;
-    }
-  },
+  // ─── LIKE VIDEO - No error handling, let it propagate ──────────────────
+  // services/videoService.js - like function
 
-  // Unlike video
+// ─── LIKE VIDEO ──────────────────────────────────────────────────────────
+like: async (id) => {
+  try {
+    console.log('📤 [videoService] Liking video:', id);
+    const response = await api.post(`/videos/${id}/like`);
+    console.log('✅ [videoService] Like response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ [videoService] Error liking video:', error);
+    throw error;
+  }
+},
+
+  // ─── UNLIKE VIDEO - No error handling, let it propagate ────────────────
   unlike: async (id) => {
     try {
       const response = await api.delete(`/videos/${id}/like`);
       return response.data;
     } catch (error) {
-      console.error('Error unliking video:', error);
+      console.error('❌ Error unliking video:', error);
       throw error;
     }
   },
 
-  // Add comment
   comment: async (id, commentData) => {
     try {
       const response = await api.post(`/videos/${id}/comments`, commentData);
@@ -189,7 +183,6 @@ export const videoService = {
     }
   },
 
-  // Get comments
   getComments: async (id) => {
     try {
       const response = await api.get(`/videos/${id}/comments`);
@@ -201,7 +194,6 @@ export const videoService = {
   },
 };
 
-// ─── Export individual functions ────────────────────────────────────────────
 export const {
   getAll: getVideos,
   getById: getVideoById,
