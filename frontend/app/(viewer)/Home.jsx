@@ -11,9 +11,7 @@ import {
   FlatList,
   Dimensions,
   Alert,
-  AppState,
   Platform,
-  AppStateStatus,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,7 +24,7 @@ import ChannelCard from '../../components/ChannelCard';
 import VideoCard from '../../components/VideoCard';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -78,9 +76,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
-  const [lastFetchTime, setLastFetchTime] = useState(new Date());
-  const appState = useRef(AppState.currentState);
-  const intervalRef = useRef(null);
 
   const categories = [
     { id: 'all', label: 'All', icon: 'apps-outline' },
@@ -94,14 +89,12 @@ export default function Home() {
 
   const COL = COLORS.light;
 
-  // ─── Navigation Handlers for Flat Files ────────────────────────────────
+  // ─── Navigation Handlers ────────────────────────────────────────────────
   const handleArticlePress = (articleId) => {
     if (!articleId) {
       console.error('Article ID is required');
       return;
     }
-    console.log('Navigating to article:', articleId);
-    // For flat files - simply navigate to the file with the ID as parameter
     router.push(`/(viewer)/ArticleDetails?id=${articleId}`);
   };
 
@@ -110,7 +103,6 @@ export default function Home() {
       console.error('Channel ID is required');
       return;
     }
-    console.log('Navigating to channel:', channelId);
     router.push(`/(viewer)/ChannelDetails?id=${channelId}`);
   };
 
@@ -119,107 +111,10 @@ export default function Home() {
       console.error('Video ID is required');
       return;
     }
-    console.log('Navigating to video:', videoId);
     router.push(`/(viewer)/VideoPlayer?id=${videoId}`);
   };
 
-  // ─── Check for new content from followed channels ──────────────────────
-  const checkForNewContent = useCallback(async () => {
-    try {
-      if (!user?.uid) return;
-
-      const followedChannels = user?.followedChannels || [];
-      if (followedChannels.length === 0) return;
-
-      const [latestArticles, latestVideos] = await Promise.all([
-        fetchArticles({ 
-          limit: 20, 
-          sort: '-createdAt',
-          isPublished: true,
-          channelIds: followedChannels,
-        }),
-        fetchVideos({ 
-          limit: 20, 
-          sort: '-createdAt',
-          isPublished: true,
-          channelIds: followedChannels,
-        }),
-      ]);
-
-      const newArticles = latestArticles.filter(article => {
-        const articleDate = new Date(article.createdAt || article.publishedAt);
-        return articleDate > new Date(lastFetchTime);
-      });
-
-      const newVideos = latestVideos.filter(video => {
-        const videoDate = new Date(video.createdAt || video.publishedAt);
-        return videoDate > new Date(lastFetchTime);
-      });
-
-      const newContent = [...newArticles, ...newVideos];
-      
-      if (newContent.length > 0) {
-        const newNotifications = newContent.map(item => {
-          const isVideo = item.hasOwnProperty('videoUrl') || item.hasOwnProperty('thumbnail');
-          return {
-            id: `${item._id || item.id}-${Date.now()}`,
-            type: isVideo ? 'video' : 'article',
-            title: item.title,
-            channelName: item.channel?.channelName || item.channel?.name || 'Unknown Channel',
-            channelId: item.channelId || item.channel?._id,
-            itemId: item._id || item.id,
-            timestamp: new Date(),
-            read: false,
-            image: item.image || item.thumbnail,
-          };
-        });
-
-        setNotifications(prev => [...newNotifications, ...prev]);
-        setNotificationCount(prev => prev + newNotifications.length);
-
-        if (newNotifications.length === 1) {
-          Alert.alert(
-            'New Content!',
-            `${newNotifications[0].channelName} uploaded: ${newNotifications[0].title}`,
-            [
-              { text: 'View', onPress: () => handleNotificationPress(newNotifications[0]) },
-              { text: 'Dismiss', style: 'cancel' },
-            ]
-          );
-        } else {
-          Alert.alert(
-            'New Content!',
-            `${newNotifications.length} new items from channels you follow`,
-            [
-              { text: 'View All', onPress: () => router.push('/(viewer)/Notifications') },
-              { text: 'Dismiss', style: 'cancel' },
-            ]
-          );
-        }
-      }
-
-      setLastFetchTime(new Date());
-
-    } catch (error) {
-      console.error('Error checking for new content:', error);
-    }
-  }, [user, fetchArticles, fetchVideos, lastFetchTime]);
-
-  // ─── Handle notification press ──────────────────────────────────────────
-  const handleNotificationPress = (notification) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
-    );
-    setNotificationCount(prev => Math.max(0, prev - 1));
-
-    if (notification.type === 'article') {
-      handleArticlePress(notification.itemId);
-    } else {
-      handleVideoPress(notification.itemId);
-    }
-  };
-
-  // ─── Load data ──────────────────────────────────────────────────────────
+  // ─── Load Data ──────────────────────────────────────────────────────────
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -244,8 +139,6 @@ export default function Home() {
       console.log('✅ Channels loaded:', channels.length);
       console.log('✅ Videos loaded:', videos.length);
 
-      await checkForNewContent();
-
     } catch (error) {
       console.error('❌ Error loading data:', error);
     } finally {
@@ -253,33 +146,19 @@ export default function Home() {
     }
   };
 
-  // ─── Setup real-time polling ────────────────────────────────────────────
+  // ─── Refresh on focus (only when user navigates back) ──────────────────
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔄 Home screen focused - refreshing data');
+      loadData();
+      return () => {};
+    }, [])
+  );
+
+  // ─── Load on mount ──────────────────────────────────────────────────────
   useEffect(() => {
     loadData();
-
-    intervalRef.current = setInterval(() => {
-      if (AppState.currentState === 'active') {
-        checkForNewContent();
-      }
-    }, 30000);
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      subscription.remove();
-    };
   }, []);
-
-  // ─── Handle app state changes ──────────────────────────────────────────
-  const handleAppStateChange = (nextAppState: AppStateStatus) => {
-    if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-      checkForNewContent();
-    }
-    appState.current = nextAppState;
-  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -422,6 +301,9 @@ export default function Home() {
   const renderChannels = () => {
     if (!channels || channels.length === 0) return null;
     
+    // Sort channels by followers count (most popular first)
+    const sortedChannels = [...channels].sort((a, b) => (b.followers || 0) - (a.followers || 0));
+    
     return (
       <View style={styles.channelsSection}>
         <View style={styles.sectionHeader}>
@@ -438,7 +320,7 @@ export default function Home() {
           decelerationRate="fast"
           snapToAlignment="start"
         >
-          {channels.slice(0, 10).map((channel) => (
+          {sortedChannels.slice(0, 10).map((channel) => (
             <View key={channel._id || channel.id} style={styles.channelItemWrapper}>
               <ChannelCard
                 channel={channel}

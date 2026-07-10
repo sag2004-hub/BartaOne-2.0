@@ -24,6 +24,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Loader from '../../components/Loader';
 import { 
   getArticleById, 
@@ -111,6 +112,53 @@ export default function ArticleDetails() {
     }
   }, [id]);
 
+  // ─── Load Bookmark Status ──────────────────────────────────────────────
+  const loadBookmarkStatus = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('savedArticles');
+      if (saved) {
+        const savedArticles = JSON.parse(saved);
+        const isSaved = savedArticles.some(item => item.id === id);
+        setIsBookmarked(isSaved);
+      }
+    } catch (error) {
+      console.error('Error loading bookmark status:', error);
+    }
+  };
+
+  // ─── Add to Reading History ────────────────────────────────────────────
+  const addToReadingHistory = async () => {
+    try {
+      if (!article) return;
+      
+      const existing = await AsyncStorage.getItem('readingHistory');
+      let history = existing ? JSON.parse(existing) : [];
+      
+      // Remove duplicate if exists
+      history = history.filter(item => item.id !== article._id);
+      
+      // Add new item at the beginning
+      history.unshift({
+        id: article._id,
+        title: article.title,
+        image: article.image,
+        channelName: article.channelId?.channelName || article.channelName || 'Unknown',
+        type: 'article',
+        timestamp: Date.now(),
+      });
+      
+      // Keep only latest 50 items
+      if (history.length > 50) {
+        history = history.slice(0, 50);
+      }
+      
+      await AsyncStorage.setItem('readingHistory', JSON.stringify(history));
+      console.log('✅ Added to reading history:', article.title);
+    } catch (error) {
+      console.error('Error adding to history:', error);
+    }
+  };
+
   const loadArticle = async () => {
     setIsLoading(true);
     setError(null);
@@ -138,7 +186,12 @@ export default function ArticleDetails() {
       setArticle(articleData);
       setLikesCount(Math.max(articleData.likes || articleData.likeCount || 0, 0));
       setIsLiked(articleData.isLiked || false);
-      setIsBookmarked(articleData.isBookmarked || false);
+      
+      // Load bookmark status from AsyncStorage
+      await loadBookmarkStatus();
+
+      // Add to reading history
+      await addToReadingHistory();
 
       // Load comments
       await loadComments();
@@ -336,12 +389,10 @@ ${article?.summary || article?.body?.slice(0, 150) || 'Read more on BartaOne'}
 
   // ─── Like Article ───────────────────────────────────────────────────────
   const handleLike = async () => {
-    // Optimistic update
     const newIsLiked = !isLiked;
     setIsLiked(newIsLiked);
     setLikesCount(prev => Math.max(newIsLiked ? prev + 1 : prev - 1, 0));
     
-    // Animate like button
     Animated.sequence([
       Animated.spring(likeAnim, { toValue: 0.7, friction: 3, tension: 40, useNativeDriver: true }),
       Animated.spring(likeAnim, { toValue: 1, friction: 3, tension: 40, useNativeDriver: true }),
@@ -355,7 +406,6 @@ ${article?.summary || article?.body?.slice(0, 150) || 'Read more on BartaOne'}
         response = await unlikeArticle(id);
       }
       
-      // Update with actual values from server
       if (response?.data) {
         const { liked, likes } = response.data;
         setIsLiked(liked);
@@ -363,20 +413,51 @@ ${article?.summary || article?.body?.slice(0, 150) || 'Read more on BartaOne'}
       }
     } catch (error) {
       console.error('Error toggling like:', error);
-      // Revert optimistic update on error
       setIsLiked(!newIsLiked);
       setLikesCount(prev => Math.max(newIsLiked ? prev - 1 : prev + 1, 0));
       Alert.alert('Error', 'Failed to update like status');
     }
   };
 
-  // ─── Bookmark ────────────────────────────────────────────────────────────
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-    Alert.alert(
-      isBookmarked ? 'Removed from Bookmarks' : 'Bookmarked',
-      isBookmarked ? 'Article removed from your saved list' : 'Article saved for later reading!'
-    );
+  // ─── Bookmark / Save Article ────────────────────────────────────────────
+  const handleBookmark = async () => {
+    try {
+      const newBookmarkState = !isBookmarked;
+      setIsBookmarked(newBookmarkState);
+      
+      // Get existing saved articles
+      const existing = await AsyncStorage.getItem('savedArticles');
+      let savedArticles = existing ? JSON.parse(existing) : [];
+      
+      if (newBookmarkState) {
+        // Save article
+        const articleToSave = {
+          id: article._id || article.id,
+          title: article.title,
+          image: article.image,
+          channelName: article.channelId?.channelName || article.channelName || 'Unknown',
+          timestamp: Date.now(),
+        };
+        
+        // Check if already saved
+        if (!savedArticles.some(item => item.id === articleToSave.id)) {
+          savedArticles.push(articleToSave);
+          await AsyncStorage.setItem('savedArticles', JSON.stringify(savedArticles));
+          Alert.alert('Success', 'Article saved to bookmarks!');
+        } else {
+          Alert.alert('Info', 'Article already saved');
+        }
+      } else {
+        // Remove article
+        savedArticles = savedArticles.filter(item => item.id !== (article._id || article.id));
+        await AsyncStorage.setItem('savedArticles', JSON.stringify(savedArticles));
+        Alert.alert('Removed', 'Article removed from bookmarks');
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      setIsBookmarked(!isBookmarked);
+      Alert.alert('Error', 'Failed to save article');
+    }
   };
 
   // ─── Open Channel ────────────────────────────────────────────────────────

@@ -25,6 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Video, ResizeMode } from 'expo-av';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Loader from '../../components/Loader';
 import { 
   getVideoById, 
@@ -136,6 +137,50 @@ export default function VideoPlayer() {
     };
   }, [id]);
 
+  // ─── Load Bookmark Status ──────────────────────────────────────────────
+  const loadBookmarkStatus = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('savedArticles');
+      if (saved) {
+        const savedItems = JSON.parse(saved);
+        const isSaved = savedItems.some(item => item.id === id);
+        setIsBookmarked(isSaved);
+      }
+    } catch (error) {
+      console.error('Error loading bookmark status:', error);
+    }
+  };
+
+  // ─── Add to Reading History ────────────────────────────────────────────
+  const addToReadingHistory = async () => {
+    try {
+      if (!video) return;
+      
+      const existing = await AsyncStorage.getItem('readingHistory');
+      let history = existing ? JSON.parse(existing) : [];
+      
+      history = history.filter(item => item.id !== video._id);
+      
+      history.unshift({
+        id: video._id,
+        title: video.title,
+        image: video.thumbnail || video.image,
+        channelName: video.channelId?.channelName || video.channelName || 'Unknown',
+        type: 'video',
+        timestamp: Date.now(),
+      });
+      
+      if (history.length > 50) {
+        history = history.slice(0, 50);
+      }
+      
+      await AsyncStorage.setItem('readingHistory', JSON.stringify(history));
+      console.log('✅ Added video to reading history:', video.title);
+    } catch (error) {
+      console.error('Error adding video to history:', error);
+    }
+  };
+
   const loadVideo = async () => {
     setIsLoading(true);
     try {
@@ -159,8 +204,9 @@ export default function VideoPlayer() {
       setVideo(videoData);
       setLikesCount(Math.max(videoData.likes || 0, 0));
       setIsLiked(videoData.isLiked === true);
-      setIsBookmarked(videoData.isBookmarked || false);
-
+      
+      await loadBookmarkStatus();
+      await addToReadingHistory();
       await loadComments();
 
       Animated.parallel([
@@ -224,10 +270,11 @@ export default function VideoPlayer() {
         commentsData = response.data;
       }
       
-      setComments(commentsData);
-      console.log('📡 [loadComments] Comments loaded:', commentsData.length);
+      setComments(commentsData || []);
+      console.log('📡 [loadComments] Comments loaded:', commentsData?.length || 0);
     } catch (error) {
       console.error('❌ [loadComments] Error loading comments:', error);
+      setComments([]);
     } finally {
       setIsLoadingComments(false);
     }
@@ -462,68 +509,76 @@ export default function VideoPlayer() {
     handleSeekEnd();
   };
 
-  // ─── Like Video (FIXED) ──────────────────────────────────────────────────
+  // ─── Like Video ──────────────────────────────────────────────────────────
   const handleLike = async () => {
-    if (isLikingRef.current) {
-      console.log('ℹ️ [handleLike] Already processing');
-      return;
-    }
+    if (isLikingRef.current) return;
 
     const shouldLike = !isLiked;
-    console.log('📤 [handleLike] User wants to:', shouldLike ? 'LIKE' : 'UNLIKE');
-    console.log('📤 [handleLike] Current - isLiked:', isLiked, 'likesCount:', likesCount);
-
     isLikingRef.current = true;
 
-    // ─── Optimistic update ───────────────────────────────────────────────────
     const newLikesCount = shouldLike ? likesCount + 1 : Math.max(likesCount - 1, 0);
     setIsLiked(shouldLike);
     setLikesCount(newLikesCount);
-    console.log('🔄 [handleLike] Optimistic - isLiked:', shouldLike, 'likesCount:', newLikesCount);
 
     try {
       let response;
       if (shouldLike) {
-        console.log('📤 [handleLike] Sending LIKE...');
         response = await likeVideo(id);
       } else {
-        console.log('📤 [handleLike] Sending UNLIKE...');
         response = await unlikeVideo(id);
       }
       
-      console.log('✅ [handleLike] Response:', JSON.stringify(response, null, 2));
-
-      // ─── Update with actual server values ─────────────────────────────────
       if (response?.data) {
         const { liked, likes } = response.data;
-        console.log('📊 [handleLike] Server - liked:', liked, 'likes:', likes);
-        
         setIsLiked(liked === true);
         setLikesCount(Math.max(likes || 0, 0));
       }
     } catch (error) {
       console.error('❌ [handleLike] Error:', error);
-      
-      // ─── Revert optimistic update on error ────────────────────────────────
       setIsLiked(!shouldLike);
       setLikesCount(prev => Math.max(shouldLike ? prev - 1 : prev + 1, 0));
-      
-      let errorMessage = 'Failed to update like';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-      Alert.alert('Error', errorMessage);
+      Alert.alert('Error', 'Failed to update like');
     } finally {
       isLikingRef.current = false;
     }
   };
 
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-    Alert.alert(
-      isBookmarked ? 'Removed from Bookmarks' : 'Bookmarked',
-      isBookmarked ? 'Video removed from your saved list' : 'Video saved for later!'
-    );
+  // ─── Bookmark / Save Video ─────────────────────────────────────────────
+  const handleBookmark = async () => {
+    try {
+      const newBookmarkState = !isBookmarked;
+      setIsBookmarked(newBookmarkState);
+      
+      const existing = await AsyncStorage.getItem('savedArticles');
+      let savedItems = existing ? JSON.parse(existing) : [];
+      
+      if (newBookmarkState) {
+        const videoToSave = {
+          id: video._id || video.id,
+          title: video.title,
+          image: video.thumbnail || video.image,
+          channelName: video.channelId?.channelName || video.channelName || 'Unknown',
+          type: 'video',
+          timestamp: Date.now(),
+        };
+        
+        if (!savedItems.some(item => item.id === videoToSave.id)) {
+          savedItems.push(videoToSave);
+          await AsyncStorage.setItem('savedArticles', JSON.stringify(savedItems));
+          Alert.alert('Success', 'Video saved to bookmarks!');
+        } else {
+          Alert.alert('Info', 'Video already saved');
+        }
+      } else {
+        savedItems = savedItems.filter(item => item.id !== (video._id || video.id));
+        await AsyncStorage.setItem('savedArticles', JSON.stringify(savedItems));
+        Alert.alert('Removed', 'Video removed from bookmarks');
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      setIsBookmarked(!isBookmarked);
+      Alert.alert('Error', 'Failed to save video');
+    }
   };
 
   const handleShare = async () => {
@@ -665,6 +720,21 @@ ${video?.description || 'Check out this video on BartaOne'}
                   activeOpacity={0.8}
                 >
                   <Ionicons name="arrow-back" size={scale(22)} color="#FFF" />
+                </TouchableOpacity>
+              )}
+
+              {/* Bookmark Button */}
+              {!isFullscreen && (
+                <TouchableOpacity
+                  style={[styles.bookmarkButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+                  onPress={handleBookmark}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+                    size={scale(22)}
+                    color={isBookmarked ? '#FFD93D' : '#FFF'}
+                  />
                 </TouchableOpacity>
               )}
 
@@ -932,7 +1002,7 @@ ${video?.description || 'Check out this video on BartaOne'}
                       </View>
                     </View>
 
-                    {/* Comments List - FIXED: Added proper key and check */}
+                    {/* Comments List */}
                     {isLoadingComments ? (
                       <View style={styles.loadingComments}>
                         <ActivityIndicator size="small" color={C.accent} />
@@ -943,11 +1013,11 @@ ${video?.description || 'Check out this video on BartaOne'}
                     ) : comments.length > 0 ? (
                       <FlatList
                         data={comments}
-                        keyExtractor={(item, index) => item?.id || item?._id || `comment-${index}`}
+                        keyExtractor={(item, index) => String(item?.id || item?._id || `comment-${index}`)}
                         renderItem={renderComment}
                         scrollEnabled={false}
                         style={styles.commentsList}
-                        ListEmptyComponent={() => null}
+                        ListEmptyComponent={null}
                       />
                     ) : (
                       <View style={styles.noComments}>
@@ -1006,6 +1076,17 @@ const makeStyles = (C) => StyleSheet.create({
     position: 'absolute',
     top: vs(16),
     left: scale(16),
+    zIndex: 20,
+    width: scale(42),
+    height: scale(42),
+    borderRadius: scale(21),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bookmarkButton: {
+    position: 'absolute',
+    top: vs(16),
+    right: scale(72),
     zIndex: 20,
     width: scale(42),
     height: scale(42),

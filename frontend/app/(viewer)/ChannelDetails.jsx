@@ -18,7 +18,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import NewsCard from '../../components/NewsCard';
 import VideoCard from '../../components/VideoCard';
 import Loader from '../../components/Loader';
@@ -153,6 +154,59 @@ export default function ChannelDetails() {
     ]).start();
   };
 
+  // ─── Load Subscriptions from AsyncStorage ──────────────────────────────
+  const loadSubscriptions = async () => {
+    try {
+      const subscribed = await AsyncStorage.getItem('subscribedChannels');
+      if (subscribed) {
+        const channels = JSON.parse(subscribed);
+        const isSubbed = channels.some(ch => ch.id === id);
+        setIsSubscribed(isSubbed);
+        return isSubbed;
+      }
+      setIsSubscribed(false);
+      return false;
+    } catch (error) {
+      console.error('Error loading subscriptions:', error);
+      setIsSubscribed(false);
+      return false;
+    }
+  };
+
+  // ─── Save Subscriptions to AsyncStorage ────────────────────────────────
+  const saveSubscription = async (channelData, subscribed) => {
+    try {
+      const existing = await AsyncStorage.getItem('subscribedChannels');
+      let channels = existing ? JSON.parse(existing) : [];
+      
+      if (subscribed) {
+        if (!channels.some(ch => ch.id === (channelData._id || channelData.id))) {
+          channels.push({
+            id: channelData._id || channelData.id,
+            name: channelData.channelName,
+            logo: channelData.logo,
+          });
+        }
+      } else {
+        channels = channels.filter(ch => ch.id !== (channelData._id || channelData.id));
+      }
+      
+      await AsyncStorage.setItem('subscribedChannels', JSON.stringify(channels));
+    } catch (error) {
+      console.error('Error saving subscription:', error);
+    }
+  };
+
+  // ─── Auto-refresh on focus ──────────────────────────────────────────────
+  useFocusEffect(
+    React.useCallback(() => {
+      if (id) {
+        console.log('🔄 ChannelDetails refreshed on focus');
+        loadSubscriptions();
+      }
+    }, [id])
+  );
+
   useEffect(() => {
     if (id) {
       loadChannelData();
@@ -180,9 +234,8 @@ export default function ChannelDetails() {
       setArticles(Array.isArray(articleList) ? articleList : []);
       setVideos(Array.isArray(videoList)   ? videoList   : []);
       
-      // Check if user is already subscribed
-      // You might want to fetch this from user data or a separate API
-      // setIsSubscribed(channelObj?.isSubscribed || false);
+      // ─── Load subscription state from AsyncStorage ──────────────────────
+      await loadSubscriptions();
       
     } catch (error) {
       console.error('Load error:', error);
@@ -197,30 +250,38 @@ export default function ChannelDetails() {
     }
   };
 
-  // ─── Subscribe Handler with better error handling ──────────────────────
+  // ─── Subscribe Handler ──────────────────────────────────────────────────
   const handleSubscribe = async () => {
     if (subscribing) return;
     
     setSubscribing(true);
     try {
       if (isSubscribed) {
+        // Unsubscribe
         await channelService.unsubscribe(id);
         setIsSubscribed(false);
+        await saveSubscription(channel, false);
         Alert.alert('Success', 'Unsubscribed from channel');
       } else {
+        // Subscribe
         await channelService.subscribe(id);
         setIsSubscribed(true);
+        await saveSubscription(channel, true);
         Alert.alert('Success', 'Subscribed to channel');
       }
     } catch (error) {
       console.error('Subscribe error:', error);
       
-      // Show a more user-friendly error message
-      let errorMessage = 'Failed to update subscription. Please try again.';
+      // Handle "Already subscribed" error
+      if (error.message?.includes('Already subscribed')) {
+        setIsSubscribed(true);
+        await saveSubscription(channel, true);
+        Alert.alert('Info', 'You are already subscribed to this channel');
+        return;
+      }
       
-      if (error.message?.includes('next is not a function')) {
-        errorMessage = 'The server is currently experiencing issues. Please try again later.';
-      } else if (error.message) {
+      let errorMessage = 'Failed to update subscription. Please try again.';
+      if (error.message) {
         errorMessage = error.message;
       }
       
