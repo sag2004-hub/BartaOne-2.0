@@ -154,6 +154,44 @@ export default function ChannelDetails() {
     ]).start();
   };
 
+  // ─── Save to recently viewed channels ───────────────────────────────────
+  const saveToRecentlyViewed = async (channelData) => {
+    try {
+      if (!channelData || !channelData._id) return;
+
+      // Create a clean channel object to save
+      const channelToSave = {
+        _id: channelData._id,
+        name: channelData.channelName || channelData.name || 'Unknown Channel',
+        logo: channelData.logo || null,
+        category: channelData.category || null,
+        city: channelData.location?.city || channelData.city || null,
+        district: channelData.location?.district || channelData.district || null,
+        state: channelData.location?.state || channelData.state || null,
+        followers: channelData.followers || 0,
+        isFollowed: isSubscribed || false,
+        channelName: channelData.channelName || channelData.name || 'Unknown Channel',
+      };
+
+      // Get existing recent channels
+      const stored = await AsyncStorage.getItem('recentlyViewedChannels');
+      let recent = stored ? JSON.parse(stored) : [];
+
+      // Remove duplicate if exists
+      recent = recent.filter(ch => ch._id !== channelData._id);
+
+      // Add to front
+      recent = [channelToSave, ...recent].slice(0, 10);
+
+      // Save back to storage
+      await AsyncStorage.setItem('recentlyViewedChannels', JSON.stringify(recent));
+
+      console.log('✅ Channel saved to recently viewed:', channelToSave.name);
+    } catch (e) {
+      console.error('Failed to save recent channel:', e);
+    }
+  };
+
   // ─── Load Subscriptions from AsyncStorage ──────────────────────────────
   const loadSubscriptions = async () => {
     try {
@@ -223,6 +261,13 @@ export default function ChannelDetails() {
       const channelObj  = channelData?.data?.data || channelData?.data || channelData;
       setChannel(channelObj);
 
+      // ─── SAVE TO RECENTLY VIEWED CHANNELS ────────────────────────────
+      // Load subscriptions first to get the correct isFollowed status
+      const isSubbed = await loadSubscriptions();
+      // Now save with the correct subscription status
+      await saveToRecentlyViewed({ ...channelObj, isFollowed: isSubbed });
+      // ─── END SAVE ──────────────────────────────────────────────────────
+
       const [articlesData, videosData] = await Promise.all([
         getChannelArticles(id),
         getChannelVideos(id),
@@ -233,9 +278,6 @@ export default function ChannelDetails() {
 
       setArticles(Array.isArray(articleList) ? articleList : []);
       setVideos(Array.isArray(videoList)   ? videoList   : []);
-      
-      // ─── Load subscription state from AsyncStorage ──────────────────────
-      await loadSubscriptions();
       
     } catch (error) {
       console.error('Load error:', error);
@@ -261,12 +303,16 @@ export default function ChannelDetails() {
         await channelService.unsubscribe(id);
         setIsSubscribed(false);
         await saveSubscription(channel, false);
+        // Update recently viewed with new subscription status
+        await saveToRecentlyViewed({ ...channel, isFollowed: false });
         Alert.alert('Success', 'Unsubscribed from channel');
       } else {
         // Subscribe
         await channelService.subscribe(id);
         setIsSubscribed(true);
         await saveSubscription(channel, true);
+        // Update recently viewed with new subscription status
+        await saveToRecentlyViewed({ ...channel, isFollowed: true });
         Alert.alert('Success', 'Subscribed to channel');
       }
     } catch (error) {
@@ -276,6 +322,7 @@ export default function ChannelDetails() {
       if (error.message?.includes('Already subscribed')) {
         setIsSubscribed(true);
         await saveSubscription(channel, true);
+        await saveToRecentlyViewed({ ...channel, isFollowed: true });
         Alert.alert('Info', 'You are already subscribed to this channel');
         return;
       }

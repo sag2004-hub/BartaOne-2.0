@@ -322,6 +322,112 @@ export const endLiveStream = async (streamId) => {
     throw error;
   }
 };
+// services/api.js - Add this after the existing code
+
+// ─── Search Content (Combined Search) ──────────────────────────────────────
+export const searchContent = async (query, type = 'all', category = 'all', location = {}) => {
+  try {
+    console.log('🔍 Searching for:', query, 'Type:', type, 'Category:', category);
+    
+    // If searching by location
+    if (type === 'location' || location.mode === 'location') {
+      const { state, district, city } = location;
+      
+      // Get all channels
+      const channelsResponse = await channelAPI.getAll({ limit: 100, isActive: true });
+      let allChannels = channelsResponse?.data?.data?.channels || channelsResponse?.data?.channels || [];
+      
+      // Filter by category if specified
+      if (category !== 'all') {
+        allChannels = allChannels.filter(ch => ch.category?.toLowerCase() === category.toLowerCase());
+      }
+
+      // Search by location
+      const searchLower = query.toLowerCase().trim();
+      
+      // Exact city match
+      const exactCity = allChannels.filter(ch => {
+        const cityName = ch.location?.city?.toLowerCase() || '';
+        return cityName === searchLower || cityName.includes(searchLower);
+      });
+
+      // District fallback (if no exact city match)
+      let districtFallback = [];
+      if (exactCity.length === 0 && district) {
+        const districtLower = district.toLowerCase().trim();
+        districtFallback = allChannels.filter(ch => {
+          const districtName = ch.location?.district?.toLowerCase() || '';
+          return districtName === districtLower || districtName.includes(districtLower);
+        });
+      }
+
+      // State fallback (if no district match)
+      let stateFallback = [];
+      if (exactCity.length === 0 && districtFallback.length === 0 && state) {
+        const stateLower = state.toLowerCase().trim();
+        stateFallback = allChannels.filter(ch => {
+          const stateName = ch.location?.state?.toLowerCase() || '';
+          return stateName === stateLower || stateName.includes(stateLower);
+        });
+      }
+
+      return {
+        exactCity,
+        districtFallback,
+        stateFallback,
+        searchedCity: city || query,
+        searchedDistrict: district || '',
+        searchedState: state || '',
+      };
+    }
+
+    // Regular search (articles, videos, channels)
+    let searchResults = [];
+
+    if (type === 'all' || type === 'articles') {
+      try {
+        const articleRes = await articleAPI.search(query);
+        const articles = articleRes?.data?.data?.articles || articleRes?.data?.articles || [];
+        searchResults = [...searchResults, ...articles.map(a => ({ ...a, type: 'article' }))];
+      } catch (e) {
+        console.log('Article search error:', e);
+      }
+    }
+
+    if (type === 'all' || type === 'videos') {
+      try {
+        const videoRes = await videoAPI.getAll({ search: query });
+        const videos = videoRes?.data?.data?.videos || videoRes?.data?.videos || [];
+        searchResults = [...searchResults, ...videos.map(v => ({ ...v, type: 'video' }))];
+      } catch (e) {
+        console.log('Video search error:', e);
+      }
+    }
+
+    if (type === 'all' || type === 'channels') {
+      try {
+        const channelRes = await channelAPI.search(query);
+        const channels = channelRes?.data?.data?.channels || channelRes?.data?.channels || [];
+        searchResults = [...searchResults, ...channels.map(c => ({ ...c, type: 'channel' }))];
+      } catch (e) {
+        console.log('Channel search error:', e);
+      }
+    }
+
+    // Filter by category
+    if (category !== 'all') {
+      searchResults = searchResults.filter(item => 
+        item.category?.toLowerCase() === category.toLowerCase()
+      );
+    }
+
+    return searchResults;
+
+  } catch (error) {
+    console.error('❌ Search error:', error);
+    throw error;
+  }
+};
 
 // ─── Default Export ──────────────────────────────────────────────────────────
 export default {
@@ -336,4 +442,5 @@ export default {
   notification: notificationAPI,
   search: searchAPI,
   upload: uploadAPI,
+  searchContent, // Add this line
 };
