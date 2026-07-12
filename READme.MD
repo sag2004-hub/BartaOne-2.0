@@ -1,126 +1,178 @@
-# BartaOne 2.0 🚀
+# BartaOne 2.0 — Modern Content Creator Platform 🚀
 
-BartaOne 2.0 is a modern full-stack mobile application designed for content creators and viewers to connect through news articles, videos, live streaming, and community engagement. The platform supports two user roles: channel owners and viewers, enabling creators to publish content and audiences to explore, subscribe, and interact. ✨
+BartaOne 2.0 is a full-stack mobile application that connects content creators (channel owners) and viewers through articles, videos, live streaming, and community features. It focuses on secure authentication, media management, multilingual support, and a streamlined publishing workflow.
 
-## Overview 🌐
-
-BartaOne brings together:
-- 📺 Channel creation and management
-- 📝 Article publishing and video uploads
-- 🎥 Live streaming capabilities
-- 👥 Viewer subscriptions and content discovery
-- 🌍 Translation support for multilingual content
-- 🔐 Secure authentication and role-based access
-
-## Key Features ⭐
-
-### For Channel Owners 👑
-- 🛠️ Create and manage a channel
-- 📤 Upload articles and videos
-- 📡 Start and end live broadcasts
-- 📊 View subscriber activity and channel insights
-- 🧾 Manage published content from a dedicated dashboard
-
-### For Viewers 👀
-- 🔎 Browse channels, articles, videos, and live streams
-- ❤️ Subscribe to favorite creators
-- ▶️ Watch content and follow live broadcasts
-- 🌐 Access translated content for better accessibility
+## Key Highlights ✨
+- **Dual roles:** Channel owners and viewers with role-based access
+- **Content types:** Articles, videos, comments, likes and subscriptions
+- **Live streaming:** Start/stop live broadcasts from the owner dashboard
+- **Media:** Cloudinary-backed uploads and management
+- **Internationalization:** Translation services for multilingual accessibility
+- **Notifications:** Push and in-app notifications for engagement
 
 ## Tech Stack 🧰
+- **Frontend:** React Native, Expo, React Navigation, Axios
+- **Backend:** Node.js, Express, MongoDB (Mongoose)
+- **Auth & Infra:** Firebase Admin SDK, JWT
+- **Media:** Cloudinary
+- **Other services:** Translation API, Notification service
 
-### Frontend 📱
-- React Native
-- Expo
-- React Navigation
-- Axios
-- Firebase Authentication
-- Expo-based mobile UI components
+## Repository Structure — Detailed 📁
+This repository contains two primary workspaces: `backend/` (API) and `frontend/` (Expo app). Below is a detailed breakdown of the most important files and folders to help you navigate the codebase.
 
-### Backend ⚙️
-- Node.js
-- Express.js
-- MongoDB with Mongoose
-- Firebase Admin SDK
-- Cloudinary for media storage
-- JWT-based authentication
-- Translation and notification services
+backend/
+- `server.js` — Express app entrypoint and main server bootstrap
+- `package.json` — backend dependencies and npm scripts
+- `config/`
+  - `db.js` — MongoDB connection and Mongoose setup
+  - `firebaseAdmin.js` — Firebase Admin SDK initialization
+  - `cloudinary.js` — Cloudinary configuration
+- `controllers/` — Express route handlers (per resource)
+  - `authController.js`, `userController.js`, `channelController.js`, `articleController.js`, `videoController.js`, `liveController.js`, `translateController.js`
+- `routes/` — Route definitions that wire controllers to endpoints
+  - `authRoutes.js`, `userRoutes.js`, `channelRoutes.js`, `articleRoutes.js`, `videoRoutes.js`, `liveRoutes.js`, `translateRoutes.js`
+- `models/` — Mongoose schemas and models
+  - `User.js`, `Channel.js`, `Article.js`, `Video.js`, `Comment.js`, `Like.js`, `Live.js`, `Subscription.js`
+- `middleware/` — Request middleware
+  - `verifyFirebaseToken.js` — Firebase token verification
+  - `uploadMiddleware.js` — file upload handling
+  - `errorHandler.js` — centralized error responses
+- `services/` — Integrations and business logic
+  - `cloudinaryService.js`, `notificationService.js`, `translationService.js`
+- `scripts/` — Utility scripts for maintenance
+  - `cleanIndexes.js`, `cleanAllIndexes.js`, `cleanLikesIndexes.js`, `verifyIndexes.js`, `test-*.js`
+- `logs/` — runtime logs (if used)
 
-## Project Structure 🗂️
+frontend/
+- `app/` — Expo pages and navigation structure
+  - `(auth)/` — auth screens: `ViewerLogin.jsx`, `ViewerSignup.jsx`, `OwnerLogin.jsx`, `OwnerSignup.jsx`, `ForgotPassword.jsx`, `VerifyEmail.jsx`, `SelectRole.jsx`, `Welcome.jsx`
+  - `(owner)/` — owner screens: `Dashboard.jsx`, `CreateChannel.jsx`, `GoLive.jsx`, `UploadArticle.jsx`, `UploadVideo.jsx`, `ManagePosts.jsx`, `Profile.jsx`, `Subscribers.jsx`
+  - `(viewer)/` — viewer screens: `Home.jsx`, `ChannelDetails.jsx`, `ArticleDetails.jsx`, `VideoPlayer.jsx` (and variants)
+- `components/` — Reusable UI components
+  - `Header.jsx`, `Footer.jsx`, `ChannelCard.jsx`, `VideoCard.jsx`, `NewsCard.jsx`, `LiveCard.jsx`, `SearchBar.jsx`, `Loader.jsx`, `EmptyState.jsx`, `AreaSelector.jsx`, `LanguageSelector.jsx`
+- `context/` — React Context providers
+  - `AuthContext.js`, `UserContext.js`, `ThemeContext.js`
+- `hooks/` — Custom React hooks
+  - `useAuth.js`, `useArticles.js`, `useChannels.js`, `useVideos.js`, `useTranslation.js`
+- `services/` — Client-side API wrappers and Firebase client
+  - `api.js`, `articleService.js`, `channelService.js`, `videoService.js`, `liveService.js`, `translateService.js`, `firebase.js`
+- `utils/` — Helper utilities
+  - `constants.js`, `helpers.js`, `validators.js`
+- `assets/` — Images and static assets
+- `app.json`, `babel.config.js`, `package.json` — Expo and project config
 
-- backend/ - REST API, database models, authentication, and media services
-- frontend/ - Expo mobile application UI and client-side services
-- configuration files - environment setup and app configuration
+Other top-level files
+- `READme.MD` — project overview (this file)
+- `AGENTS.md`, `CLAUDE.md` — project notes and agent docs (if present)
 
-## Prerequisites ✅
+This detailed structure should help you locate the main areas of work quickly.
 
-Before running this project, ensure you have the following installed:
-- Node.js (v18 or later)
-- npm or yarn
-- MongoDB
-- Firebase project credentials
-- Cloudinary account credentials
+## Quick Download
+Clone the repository and enter the project directory:
 
-## Backend Setup 🛠️
+```bash
+git clone https://github.com/sag2004-hub/BartaOne-2.0.git
+cd BartaOne-2.0
+```
 
-1. Navigate to the backend folder:
-   ```bash
-   cd backend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file and configure the required variables, including:
-   - `MONGO_URI`
-   - `PORT`
-   - `JWT_SECRET`
-   - `FIREBASE_PROJECT_ID`
-   - `FIREBASE_CLIENT_EMAIL`
-   - `FIREBASE_PRIVATE_KEY`
-   - `CLOUDINARY_CLOUD_NAME`
-   - `CLOUDINARY_API_KEY`
-   - `CLOUDINARY_API_SECRET`
-   - `TRANSLATION_API_URL` (optional)
-   - `TRANSLATION_API_EMAIL` (optional)
-4. Start the backend server:
-   ```bash
-   npm run dev
-   ```
+## Environment & Configuration 🔐
 
-The API will be available at:
-- `http://localhost:5000/api`
-- Health check: `http://localhost:5000/api/health`
+Before running the services, create environment configuration files for `backend` and (optionally) `frontend`. Below is a concise description of the environment values the project expects — the README no longer contains a copy/paste `.env` example; instead, just create a file and fill the following values.
 
-## Frontend Setup 📲
+Backend environment keys (description):
+- `MONGO_URI` — MongoDB connection string
+- `PORT` — port the backend server listens on
+- `JWT_SECRET` — secret for signing JWTs
+- `FIREBASE_PROJECT_ID` — Firebase project identifier
+- `FIREBASE_CLIENT_EMAIL` — Firebase service account client email
+- `FIREBASE_PRIVATE_KEY` — Firebase service account private key (keep secure)
+- `CLOUDINARY_CLOUD_NAME` — Cloudinary cloud name
+- `CLOUDINARY_API_KEY` — Cloudinary API key
+- `CLOUDINARY_API_SECRET` — Cloudinary API secret
+- `TRANSLATION_API_URL` — optional external translation service URL
+- `TRANSLATION_API_EMAIL` — optional translation service account email
 
-1. Navigate to the frontend folder:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create the frontend environment configuration for Expo, including the API base URL.
-4. Start the app:
-   ```bash
-   npm start
-   ```
+Frontend environment notes:
+- Add a public-facing API URL (e.g., `EXPO_PUBLIC_API_URL` or `REACT_NATIVE_API_URL`) that points to your backend API. Use `10.0.2.2` for Android emulators or `http://localhost:5000/api` for web development as appropriate.
 
-You can then run the app on Android, iOS, or a web simulator depending on your development environment.
+Security note: never commit secrets to source control; use environment managers, CI secrets, or encrypted vaults for production deployments.
 
-## Usage 🚀
+## Run Locally (Development) ▶️
 
-- Register as a channel owner or viewer
-- Create a channel if you are an owner
-- Publish content, go live, or subscribe to creators
-- Explore the dashboard for managing and monitoring content
+Backend (API):
 
-## License 📄
+```bash
+cd backend
+npm install
+# create .env from example
+npm run dev
+```
 
-This project is licensed under the ISC License.
+The backend default base URL is `http://localhost:5000/api` (verify `server.js` for exact port).
 
-## Contact 🤝
+Frontend (Expo mobile app):
 
-For questions or support, please contact the project maintainers through the repository or development team.
+```bash
+cd frontend
+npm install
+npm start
+# or
+npx expo start
+```
+
+Open the Expo dev tools then run on a simulator, emulator, or a physical device.
+
+## Build & Production Notes 🏁
+- Backend: use a process manager (PM2, Docker) and configure environment variables securely.
+- Frontend: build native binaries with Expo Application Services (EAS) or Expo classic build workflows.
+
+Example production backend run (PM2):
+
+```bash
+pm2 start backend/server.js --name bartaone-api --env production
+```
+
+## API & Health Checks ✅
+- Health check endpoint: `GET /api/health` (returns simple status)
+- Explore route files in `backend/routes/` for available endpoints and request shapes.
+
+## Testing
+- Unit and integration tests, if present, live under `backend/tests` or similar.
+- Run tests with the scripts defined in each `package.json`, e.g.:
+
+```bash
+cd backend
+npm test
+```
+
+## Contributing 🤝
+- Fork the repository, create a branch for your feature or bugfix, and open a PR targeting `main`.
+- Follow existing code style and run linters/tests before submitting.
+
+Suggested branch workflow:
+
+```
+git checkout -b feat/your-feature
+# implement changes
+git commit -m "feat: short description"
+git push origin feat/your-feature
+```
+
+## Troubleshooting & Tips 🛠️
+- If you're using Android emulator, use `10.0.2.2` to reach `localhost` backend.
+- If Firebase private key includes newlines, wrap it in quotes in `.env` or use a JSON credential file and load it in `config/firebaseAdmin.js`.
+
+## License
+This project is licensed under the ISC License. See the `LICENSE` file for details.
+
+## Maintainers & Contact 📬
+For questions or feature requests, open an issue on the repository or contact the maintainers via the project GitHub: https://github.com/sag2004-hub/BartaOne-2.0
+
+---
+
+If you'd like, I can also:
+- add a `.env.example` file to the `backend` folder
+- generate a short CONTRIBUTING.md
+- open a PR with these changes
+
+Tell me which of the above you'd like next.
