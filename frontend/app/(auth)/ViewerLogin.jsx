@@ -27,8 +27,8 @@ import { auth } from '../../services/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
 const MAX_CONTENT_WIDTH = 480;
 
 const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
@@ -36,16 +36,24 @@ const EASE_OUT_SOFT = Easing.bezier(0.16, 1, 0.3, 1);
 
 // ─── Responsive Helpers ────────────────────────────────────────────────────
 const createScalers = (windowWidth, windowHeight) => {
-  const widthRatio = windowWidth / BASE_WIDTH;
-  const clampedRatio = Math.min(Math.max(widthRatio, 0.85), 1.25);
+  const widthScale = windowWidth / BASE_WIDTH;
+  const heightScale = windowHeight / BASE_HEIGHT;
+  
+  // Clamp to prevent extreme scaling on very small/large devices
+  const clampedWidth = Math.min(Math.max(widthScale, 0.7), 1.3);
+  const clampedHeight = Math.min(Math.max(heightScale, 0.7), 1.3);
 
-  const scale = (size) => Math.round(clampedRatio * size);
-  const verticalScale = (size) =>
-    Math.round((windowHeight / BASE_HEIGHT) * size);
-  const moderateScale = (size, factor = 0.5) =>
-    Math.round(size + (scale(size) - size) * factor);
+  const scale = (size) => Math.round(clampedWidth * size);
+  const verticalScale = (size) => Math.round(clampedHeight * size);
+  const moderateScale = (size, factor = 0.5) => {
+    return Math.round(size + (scale(size) - size) * factor);
+  };
+  const fontScale = (size) => {
+    const baseScale = Math.min(clampedWidth, clampedHeight);
+    return Math.round(size * baseScale);
+  };
 
-  return { scale, verticalScale, moderateScale };
+  return { scale, verticalScale, moderateScale, fontScale };
 };
 
 // ─── Theme Configuration ──────────────────────────────────────────────────
@@ -67,6 +75,7 @@ const THEMES = {
       inputBackground: '#FFFFFF',
       inputBorder: '#E4E0D8',
       inputFocusBorder: '#C8001A',
+      cardShadowOpacity: 0.06,
     },
     statusBarStyle: 'dark-content',
   },
@@ -87,6 +96,7 @@ const THEMES = {
       inputBackground: '#1C2330',
       inputBorder: '#2A3340',
       inputFocusBorder: '#E8192C',
+      cardShadowOpacity: 0.35,
     },
     statusBarStyle: 'light-content',
   },
@@ -163,7 +173,7 @@ const AnimatedInput = ({
     >
       <Ionicons
         name={icon}
-        size={S.scale(19)}
+        size={S.moderateScale(19)}
         color={isFocused ? colors.accent : colors.muted}
         style={styles.inputIcon}
       />
@@ -201,7 +211,7 @@ export default function ViewerLogin() {
     () => createScalers(winWidth, winHeight),
     [winWidth, winHeight]
   );
-  const { scale, verticalScale, moderateScale } = S;
+  const { scale, verticalScale, moderateScale, fontScale } = S;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -368,6 +378,7 @@ export default function ViewerLogin() {
       <StatusBar
         barStyle={theme.statusBarStyle}
         backgroundColor={colors.background}
+        translucent={false}
       />
 
       {/* ─── Top Stripe ─────────────────────────────────────────────────────── */}
@@ -376,7 +387,7 @@ export default function ViewerLogin() {
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
         <ScrollView
           ref={scrollViewRef}
@@ -401,13 +412,14 @@ export default function ViewerLogin() {
                   style={[styles.backBtn, { backgroundColor: colors.background }]}
                   onPress={goBack}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons name="arrow-back" size={scale(20)} color={colors.primary} />
+                  <Ionicons name="arrow-back" size={moderateScale(20)} color={colors.primary} />
                 </TouchableOpacity>
 
                 <View style={styles.headerTextBlock}>
-                  <Text style={styles.headerLabel}>Viewer Login</Text>
-                  <Text style={styles.headerTitle}>Welcome Back</Text>
+                  <Text style={[styles.headerLabel, { color: colors.muted }]}>Viewer Login</Text>
+                  <Text style={[styles.headerTitle, { color: colors.primary }]}>Welcome Back</Text>
                 </View>
 
                 <View style={styles.headerRight} />
@@ -437,13 +449,13 @@ export default function ViewerLogin() {
                 >
                   <View style={styles.badgeContainer}>
                     <View style={[styles.badge, { backgroundColor: colors.accentBg }]}>
-                      <Ionicons name="eye-outline" size={scale(14)} color={colors.accent} />
+                      <Ionicons name="eye-outline" size={moderateScale(14)} color={colors.accent} />
                       <Text style={[styles.badgeText, { color: colors.accent }]}>
                         Viewer
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.welcomeText}>
+                  <Text style={[styles.welcomeText, { color: colors.primary }]}>
                     Stay Updated With{'\n'}
                     <Text style={{ color: colors.accent }}>Local News!</Text>
                   </Text>
@@ -487,10 +499,11 @@ export default function ViewerLogin() {
                     <TouchableOpacity
                       onPress={() => setShowPassword((prev) => !prev)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      activeOpacity={0.7}
                     >
                       <Ionicons
                         name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                        size={scale(19)}
+                        size={moderateScale(19)}
                         color={colors.muted}
                       />
                     </TouchableOpacity>
@@ -504,6 +517,7 @@ export default function ViewerLogin() {
                   <TouchableOpacity
                     style={styles.forgotPassword}
                     onPress={() => router.push('/(auth)/ForgotPassword')}
+                    activeOpacity={0.7}
                   >
                     <Text style={[styles.forgotPasswordText, { color: colors.accent }]}>
                       Forgot Password?
@@ -521,7 +535,11 @@ export default function ViewerLogin() {
                   <TouchableOpacity
                     style={[
                       styles.loginButton,
-                      { backgroundColor: colors.accent, opacity: isLoading ? 0.75 : 1 },
+                      { 
+                        backgroundColor: colors.accent, 
+                        opacity: isLoading ? 0.75 : 1,
+                        shadowColor: colors.accent,
+                      },
                     ]}
                     onPress={handleLogin}
                     onPressIn={handlePressIn}
@@ -530,11 +548,11 @@ export default function ViewerLogin() {
                     activeOpacity={1}
                   >
                     {isLoading ? (
-                      <ActivityIndicator color="#FFFFFF" />
+                      <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
                       <>
                         <Text style={styles.loginButtonText}>Login</Text>
-                        <Ionicons name="arrow-forward" size={scale(18)} color="#FFFFFF" />
+                        <Ionicons name="arrow-forward" size={moderateScale(18)} color="#FFFFFF" />
                       </>
                     )}
                   </TouchableOpacity>
@@ -545,7 +563,10 @@ export default function ViewerLogin() {
                   <Text style={[styles.footerText, { color: colors.muted }]}>
                     Don't have an account?{' '}
                   </Text>
-                  <TouchableOpacity onPress={() => router.push('/(auth)/ViewerSignup')}>
+                  <TouchableOpacity 
+                    onPress={() => router.push('/(auth)/ViewerSignup')}
+                    activeOpacity={0.7}
+                  >
                     <Text style={[styles.signupText, { color: colors.accent }]}>
                       Sign Up
                     </Text>
@@ -564,7 +585,7 @@ export default function ViewerLogin() {
 
 // ─── Styles ──────────────────────────────────────────────────────────────
 const createStyles = (colors, S) => {
-  const { scale, verticalScale, moderateScale } = S;
+  const { scale, verticalScale, moderateScale, fontScale } = S;
 
   return StyleSheet.create({
     root: {
@@ -572,7 +593,7 @@ const createStyles = (colors, S) => {
       backgroundColor: colors.background,
     },
     topStripe: {
-      height: 3,
+      height: verticalScale(3),
     },
     keyboardView: {
       flex: 1,
@@ -588,6 +609,7 @@ const createStyles = (colors, S) => {
       width: '100%',
       maxWidth: MAX_CONTENT_WIDTH,
       alignSelf: 'center',
+      paddingHorizontal: scale(16),
     },
 
     // ─── Header ─────────────────────────────────────────────────────────────
@@ -595,26 +617,28 @@ const createStyles = (colors, S) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingTop: verticalScale(28),
+      paddingTop: verticalScale(20),
       paddingBottom: verticalScale(10),
-      paddingHorizontal: scale(20),
+      paddingHorizontal: scale(4),
     },
     backBtn: {
-      width: scale(38),
-      height: scale(38),
+      width: scale(40),
+      height: scale(40),
       borderRadius: scale(10),
       justifyContent: 'center',
       alignItems: 'center',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
     },
     headerTextBlock: {
       flex: 1,
       alignItems: 'center',
     },
     headerRight: {
-      width: scale(38),
+      width: scale(40),
     },
     headerLabel: {
-      fontSize: moderateScale(9),
+      fontSize: fontScale(9),
       fontWeight: '700',
       color: colors.muted,
       letterSpacing: 1.8,
@@ -622,7 +646,7 @@ const createStyles = (colors, S) => {
       marginBottom: verticalScale(3),
     },
     headerTitle: {
-      fontSize: moderateScale(24),
+      fontSize: fontScale(24),
       fontWeight: '800',
       color: colors.primary,
       letterSpacing: -0.4,
@@ -631,54 +655,56 @@ const createStyles = (colors, S) => {
     // ─── Red Underline ──────────────────────────────────────────────────────
     underlineContainer: {
       width: '100%',
-      paddingHorizontal: scale(20),
+      paddingHorizontal: scale(4),
       marginBottom: verticalScale(8),
     },
     underline: {
-      height: 2,
+      height: verticalScale(2.5),
       width: '100%',
     },
 
     // ─── Content ────────────────────────────────────────────────────────────
     content: {
       flex: 1,
-      paddingHorizontal: scale(22),
-      paddingTop: verticalScale(12),
+      paddingHorizontal: scale(6),
+      paddingTop: verticalScale(10),
     },
     welcomeSection: {
-      marginBottom: verticalScale(22),
+      marginBottom: verticalScale(20),
     },
     badgeContainer: {
-      marginBottom: verticalScale(8),
+      marginBottom: verticalScale(6),
     },
     badge: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: scale(12),
-      paddingVertical: verticalScale(4),
+      paddingVertical: verticalScale(5),
       borderRadius: scale(20),
       alignSelf: 'flex-start',
       gap: scale(6),
-      marginTop: verticalScale(20),
+      marginTop: verticalScale(16),
+      borderWidth: 1,
+      borderColor: colors.accentBorder,
     },
     badgeText: {
-      fontSize: moderateScale(11),
+      fontSize: fontScale(11),
       fontWeight: '600',
       letterSpacing: 0.3,
       color: colors.accent,
     },
     welcomeText: {
-      fontSize: moderateScale(26),
+      fontSize: fontScale(26),
       fontWeight: '800',
       color: colors.primary,
       letterSpacing: -0.5,
-      lineHeight: moderateScale(34),
+      lineHeight: fontScale(34),
       marginBottom: verticalScale(6),
-      marginTop: verticalScale(10),
+      marginTop: verticalScale(8),
     },
     subtitle: {
-      fontSize: moderateScale(13),
-      lineHeight: moderateScale(19),
+      fontSize: fontScale(13.5),
+      lineHeight: fontScale(19.5),
       fontWeight: '400',
       color: colors.secondary,
     },
@@ -693,10 +719,11 @@ const createStyles = (colors, S) => {
       marginBottom: verticalScale(14),
       backgroundColor: colors.inputBackground,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
-      shadowRadius: 6,
-      elevation: 1,
+      shadowOffset: { width: 0, height: verticalScale(2) },
+      shadowOpacity: colors.cardShadowOpacity || 0.06,
+      shadowRadius: scale(6),
+      elevation: 2,
+      minHeight: verticalScale(52),
     },
     inputIcon: {
       marginRight: scale(11),
@@ -704,17 +731,20 @@ const createStyles = (colors, S) => {
     input: {
       flex: 1,
       paddingVertical: verticalScale(14),
-      fontSize: moderateScale(15),
+      fontSize: fontScale(15),
       fontWeight: '400',
+      padding: 0, // Remove default padding on Android
     },
 
     // ─── Forgot Password ────────────────────────────────────────────────────
     forgotPassword: {
       alignSelf: 'flex-end',
-      marginBottom: verticalScale(22),
+      marginBottom: verticalScale(20),
+      paddingVertical: verticalScale(4),
+      paddingHorizontal: scale(4),
     },
     forgotPasswordText: {
-      fontSize: moderateScale(13),
+      fontSize: fontScale(13),
       fontWeight: '600',
       color: colors.accent,
     },
@@ -724,18 +754,18 @@ const createStyles = (colors, S) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: verticalScale(15),
+      paddingVertical: verticalScale(16),
       borderRadius: scale(14),
       gap: scale(9),
-      shadowColor: colors.accent,
-      shadowOffset: { width: 0, height: scale(5) },
+      shadowOffset: { width: 0, height: verticalScale(5) },
       shadowOpacity: 0.28,
       shadowRadius: scale(14),
       elevation: 5,
+      minHeight: verticalScale(54),
     },
     loginButtonText: {
       color: '#FFFFFF',
-      fontSize: moderateScale(16),
+      fontSize: fontScale(16),
       fontWeight: '700',
       letterSpacing: 0.2,
     },
@@ -745,20 +775,21 @@ const createStyles = (colors, S) => {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: verticalScale(30),
+      marginTop: verticalScale(28),
       paddingVertical: verticalScale(12),
+      flexWrap: 'wrap',
     },
     footerText: {
-      fontSize: moderateScale(13),
+      fontSize: fontScale(13.5),
       color: colors.muted,
     },
     signupText: {
-      fontSize: moderateScale(13),
+      fontSize: fontScale(13.5),
       fontWeight: '700',
       color: colors.accent,
     },
     extraBottomPadding: {
-      height: verticalScale(60),
+      height: verticalScale(40),
     },
   });
 };

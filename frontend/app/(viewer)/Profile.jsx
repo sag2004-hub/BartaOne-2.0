@@ -12,7 +12,9 @@ import {
   Modal,
   FlatList,
   RefreshControl,
-  Switch,
+  Dimensions,
+  PixelRatio,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,9 +30,42 @@ import {
 } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { channelService } from '../../services/channelService';
 import { userAPI } from '../../services/api';
+
+// ─── Responsive helpers ──────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+// Responsive scaling functions
+const scale = (size) => {
+  const scaleFactor = SCREEN_WIDTH / BASE_WIDTH;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const verticalScale = (size) => {
+  const scaleFactor = SCREEN_HEIGHT / BASE_HEIGHT;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const moderateScale = (size, factor = 0.5) => {
+  return Math.round(size + (scale(size) - size) * factor);
+};
+
+const fontScale = (size) => {
+  const scaleFactor = Math.min(
+    SCREEN_WIDTH / BASE_WIDTH,
+    SCREEN_HEIGHT / BASE_HEIGHT
+  );
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(size * clamped / PixelRatio.getFontScale());
+};
 
 const LANGUAGES = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -48,7 +83,8 @@ const LANGUAGES = [
   { code: 'as', name: 'অসমীয়া', flag: '🇮🇳' },
 ];
 
-export default function Profile({ navigation }) {
+export default function Profile() {
+  const router = useRouter();
   const { user } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -64,7 +100,6 @@ export default function Profile({ navigation }) {
   const [readingHistory, setReadingHistory] = useState([]);
   const [subscribedChannels, setSubscribedChannels] = useState([]);
   const [activeTab, setActiveTab] = useState('saved');
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [userDisplayName, setUserDisplayName] = useState('');
   const [userEmail, setUserEmail] = useState('');
 
@@ -102,7 +137,6 @@ export default function Profile({ navigation }) {
         setEditName(displayName);
         setEditEmail(email);
         
-        // ─── Load user data from MongoDB via API ──────────────────────────
         try {
           const response = await userAPI.getProfile();
           console.log('📊 User profile from MongoDB:', response.data);
@@ -205,44 +239,6 @@ export default function Profile({ navigation }) {
     }
   };
 
-  // ─── Save Article ──────────────────────────────────────────────────────────
-  const saveArticle = async (article) => {
-    try {
-      const existing = await AsyncStorage.getItem('savedArticles');
-      let saved = existing ? JSON.parse(existing) : [];
-      
-      if (!saved.some(item => item.id === article.id)) {
-        saved.push(article);
-        await AsyncStorage.setItem('savedArticles', JSON.stringify(saved));
-        setSavedArticles(saved);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error saving article:', error);
-      return false;
-    }
-  };
-
-  // ─── Save Channel Subscription ─────────────────────────────────────────────
-  const saveChannelSubscription = async (channel) => {
-    try {
-      const existing = await AsyncStorage.getItem('subscribedChannels');
-      let channels = existing ? JSON.parse(existing) : [];
-      
-      if (!channels.some(c => c.id === channel.id)) {
-        channels.push(channel);
-        await AsyncStorage.setItem('subscribedChannels', JSON.stringify(channels));
-        setSubscribedChannels(channels);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error saving channel subscription:', error);
-      return false;
-    }
-  };
-
   // ─── Save Profile to MongoDB ─────────────────────────────────────────────
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
@@ -277,7 +273,6 @@ export default function Profile({ navigation }) {
         return;
       }
 
-      // ─── Update Email in Firebase Auth ──────────────────────────────────
       if (editEmail.trim() !== userEmail) {
         try {
           if (editPassword.trim()) {
@@ -314,7 +309,6 @@ export default function Profile({ navigation }) {
         }
       }
 
-      // ─── Update Display Name in Firebase Auth ──────────────────────────
       if (editName.trim() !== userDisplayName) {
         await updateProfile(currentUser, {
           displayName: editName.trim(),
@@ -323,7 +317,6 @@ export default function Profile({ navigation }) {
         console.log('✅ Display name updated in Firebase Auth');
       }
 
-      // ─── Update MongoDB via API ─────────────────────────────────────────
       try {
         const updateData = {
           name: editName.trim(),
@@ -360,7 +353,6 @@ export default function Profile({ navigation }) {
       await AsyncStorage.setItem('appLanguage', langCode);
       setShowLanguageModal(false);
       
-      // ─── Also update language in MongoDB ──────────────────────────────
       try {
         await userAPI.updateProfile({ preferredLanguage: langCode });
         console.log('✅ Language preference saved to MongoDB');
@@ -403,7 +395,6 @@ export default function Profile({ navigation }) {
     );
   };
 
-  // ─── Unsubscribe from Channel (Updates Database) ─────────────────────────
   const handleUnsubscribe = async (channelId) => {
     Alert.alert(
       'Unsubscribe',
@@ -456,7 +447,7 @@ export default function Profile({ navigation }) {
               await AsyncStorage.removeItem('appLanguage');
               
               await signOut(auth);
-              navigation.replace('Welcome');
+              router.replace('/(auth)/Welcome');
             } catch (error) {
               Alert.alert('Error', 'Failed to logout');
             } finally {
@@ -482,41 +473,43 @@ export default function Profile({ navigation }) {
 
   const renderSavedItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.historyItem, isDarkMode && styles.historyItemDark]}
+      style={styles.historyItem}
       onPress={() => {
         addToReadingHistory({ id: item.id, title: item.title, image: item.image, channelName: item.channelName, type: 'article' });
-        navigation.navigate('ArticleDetails', { id: item.id });
+        router.push(`/(viewer)/ArticleDetails?id=${item.id}`);
       }}
+      activeOpacity={0.7}
     >
       {item.image && (
         <Image source={{ uri: item.image }} style={styles.historyImage} />
       )}
       <View style={styles.historyContent}>
-        <Text style={[styles.historyTitle, isDarkMode && styles.textDark]} numberOfLines={2}>
+        <Text style={styles.historyTitle} numberOfLines={2}>
           {item.title}
         </Text>
-        <Text style={[styles.historyMeta, isDarkMode && styles.textMuted]}>
+        <Text style={styles.historyMeta}>
           {item.channelName || 'Unknown'} • {new Date(item.timestamp || Date.now()).toLocaleDateString()}
         </Text>
       </View>
       <TouchableOpacity
         style={styles.removeButton}
         onPress={() => handleRemoveSaved(item.id)}
+        activeOpacity={0.7}
       >
-        <Ionicons name="close-circle" size={22} color="#C8001A" />
+        <Ionicons name="close-circle" size={moderateScale(22)} color="#C8001A" />
       </TouchableOpacity>
     </TouchableOpacity>
   );
 
   const renderHistoryItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.historyItem, isDarkMode && styles.historyItemDark]}
+      style={styles.historyItem}
       onPress={() => {
-        navigation.navigate(
-          item.type === 'video' ? 'VideoPlayer' : 'ArticleDetails',
-          { id: item.id }
+        router.push(
+          item.type === 'video' ? `/(viewer)/VideoPlayer?id=${item.id}` : `/(viewer)/ArticleDetails?id=${item.id}`
         );
       }}
+      activeOpacity={0.7}
     >
       {item.image && (
         <Image source={{ uri: item.image }} style={styles.historyImage} />
@@ -527,10 +520,10 @@ export default function Profile({ navigation }) {
             {item.type === 'video' ? '🎬 Video' : '📰 Article'}
           </Text>
         </View>
-        <Text style={[styles.historyTitle, isDarkMode && styles.textDark]} numberOfLines={2}>
+        <Text style={styles.historyTitle} numberOfLines={2}>
           {item.title}
         </Text>
-        <Text style={[styles.historyMeta, isDarkMode && styles.textMuted]}>
+        <Text style={styles.historyMeta}>
           {item.channelName || 'Unknown'} • {new Date(item.timestamp).toLocaleDateString()}
         </Text>
       </View>
@@ -539,20 +532,22 @@ export default function Profile({ navigation }) {
 
   const renderChannelItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.channelItem, isDarkMode && styles.channelItemDark]}
+      style={styles.channelItem}
       onPress={() => {
-        navigation.navigate('ChannelDetails', { id: item.id });
+        router.push(`/(viewer)/ChannelDetails?id=${item.id}`);
       }}
+      activeOpacity={0.7}
     >
       <Image source={{ uri: item.logo || 'https://via.placeholder.com/50' }} style={styles.channelLogo} />
-      <Text style={[styles.channelName, isDarkMode && styles.textDark]} numberOfLines={1}>
+      <Text style={styles.channelName} numberOfLines={1}>
         {item.name}
       </Text>
       <TouchableOpacity
         style={styles.unsubscribeButton}
         onPress={() => handleUnsubscribe(item.id)}
+        activeOpacity={0.7}
       >
-        <Ionicons name="close-circle" size={20} color="#C8001A" />
+        <Ionicons name="close-circle" size={moderateScale(20)} color="#C8001A" />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -576,40 +571,35 @@ export default function Profile({ navigation }) {
       title: 'Language Preferences',
       onPress: () => setShowLanguageModal(true),
     },
-    {
-      id: 'darkmode',
-      icon: 'moon-outline',
-      title: 'Dark Mode',
-      isSwitch: true,
-      value: isDarkMode,
-      onToggle: () => setIsDarkMode(!isDarkMode),
-    },
   ];
 
+  const styles = createStyles();
+
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh}
-            tintColor={isDarkMode ? '#FFF' : '#C8001A'}
-            colors={[isDarkMode ? '#FFF' : '#C8001A']}
+            tintColor="#C8001A"
+            colors={["#C8001A"]}
           />
         }
+        bounces={true}
       >
         {/* Profile Header */}
-        <View style={[styles.header, isDarkMode && styles.headerDark]}>
+        <View style={styles.header}>
           <View style={styles.profileInitialsLarge}>
-            <Text style={[styles.initialsTextLarge, isDarkMode && styles.textDark]}>
+            <Text style={styles.initialsTextLarge}>
               {getInitials(userDisplayName || user?.displayName)}
             </Text>
           </View>
-          <Text style={[styles.userName, isDarkMode && styles.textDark]}>
+          <Text style={styles.userName}>
             {userDisplayName || user?.displayName || 'User'}
           </Text>
-          <Text style={[styles.userEmail, isDarkMode && styles.textMuted]}>
+          <Text style={styles.userEmail}>
             {userEmail || user?.email}
           </Text>
           <View style={styles.roleBadge}>
@@ -618,70 +608,61 @@ export default function Profile({ navigation }) {
         </View>
 
         {/* Stats */}
-        <View style={[styles.statsContainer, isDarkMode && styles.statsContainerDark]}>
+        <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, isDarkMode && styles.textDark]}>
+            <Text style={styles.statNumber}>
               {subscribedChannels.length}
             </Text>
-            <Text style={[styles.statLabel, isDarkMode && styles.textMuted]}>Subscriptions</Text>
+            <Text style={styles.statLabel}>Subscriptions</Text>
           </View>
-          <View style={[styles.statDivider, isDarkMode && styles.dividerDark]} />
+          <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, isDarkMode && styles.textDark]}>
+            <Text style={styles.statNumber}>
               {savedArticles.length}
             </Text>
-            <Text style={[styles.statLabel, isDarkMode && styles.textMuted]}>Saved</Text>
+            <Text style={styles.statLabel}>Saved</Text>
           </View>
-          <View style={[styles.statDivider, isDarkMode && styles.dividerDark]} />
+          <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, isDarkMode && styles.textDark]}>
+            <Text style={styles.statNumber}>
               {readingHistory.length}
             </Text>
-            <Text style={[styles.statLabel, isDarkMode && styles.textMuted]}>History</Text>
+            <Text style={styles.statLabel}>History</Text>
           </View>
         </View>
 
         {/* Menu Items */}
-        <View style={[styles.menuContainer, isDarkMode && styles.menuContainerDark]}>
+        <View style={styles.menuContainer}>
           {menuItems.map((item) => (
             <TouchableOpacity
               key={item.id}
-              style={[styles.menuItem, isDarkMode && styles.menuItemDark]}
+              style={styles.menuItem}
               onPress={item.onPress}
-              disabled={item.isSwitch}
+              activeOpacity={0.7}
             >
               <View style={styles.menuLeft}>
-                <Ionicons name={item.icon} size={22} color={isDarkMode ? '#8B9BAB' : '#666'} />
-                <Text style={[styles.menuTitle, isDarkMode && styles.textDark]}>
+                <Ionicons name={item.icon} size={moderateScale(22)} color="#666" />
+                <Text style={styles.menuTitle}>
                   {item.title}
                 </Text>
               </View>
-              {item.isSwitch ? (
-                <Switch
-                  value={item.value}
-                  onValueChange={item.onToggle}
-                  trackColor={{ false: '#767577', true: '#C8001A' }}
-                  thumbColor={item.value ? '#FFF' : '#f4f3f4'}
-                />
-              ) : (
-                <Ionicons name="chevron-forward" size={20} color={isDarkMode ? '#3A4A58' : '#CCC'} />
-              )}
+              <Ionicons name="chevron-forward" size={moderateScale(20)} color="#CCC" />
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Tabs */}
-        <View style={[styles.tabContainer, isDarkMode && styles.tabContainerDark]}>
+        <View style={styles.tabContainer}>
           {['saved', 'history', 'subscriptions'].map((tab) => (
             <TouchableOpacity
               key={tab}
               style={[styles.tab, activeTab === tab && styles.tabActive]}
               onPress={() => setActiveTab(tab)}
+              activeOpacity={0.7}
             >
               <Text style={[
                 styles.tabText,
                 activeTab === tab && styles.tabTextActive,
-                isDarkMode && styles.textDark,
               ]}>
                 {tab === 'saved' ? 'Saved' : tab === 'history' ? 'History' : 'Subscriptions'}
               </Text>
@@ -701,11 +682,11 @@ export default function Profile({ navigation }) {
               />
             ) : (
               <View style={styles.emptyState}>
-                <Ionicons name="bookmark-outline" size={50} color={isDarkMode ? '#3A4A58' : '#CCC'} />
-                <Text style={[styles.emptyText, isDarkMode && styles.textMuted]}>
+                <Ionicons name="bookmark-outline" size={moderateScale(50)} color="#CCC" />
+                <Text style={styles.emptyText}>
                   No saved articles yet
                 </Text>
-                <Text style={[styles.emptySubText, isDarkMode && styles.textMuted]}>
+                <Text style={styles.emptySubText}>
                   Save articles by tapping the bookmark icon
                 </Text>
               </View>
@@ -715,7 +696,7 @@ export default function Profile({ navigation }) {
           {activeTab === 'history' && (
             readingHistory.length > 0 ? (
               <>
-                <TouchableOpacity style={styles.clearHistoryBtn} onPress={handleClearHistory}>
+                <TouchableOpacity style={styles.clearHistoryBtn} onPress={handleClearHistory} activeOpacity={0.7}>
                   <Text style={styles.clearHistoryText}>Clear All</Text>
                 </TouchableOpacity>
                 <FlatList
@@ -727,11 +708,11 @@ export default function Profile({ navigation }) {
               </>
             ) : (
               <View style={styles.emptyState}>
-                <Ionicons name="time-outline" size={50} color={isDarkMode ? '#3A4A58' : '#CCC'} />
-                <Text style={[styles.emptyText, isDarkMode && styles.textMuted]}>
+                <Ionicons name="time-outline" size={moderateScale(50)} color="#CCC" />
+                <Text style={styles.emptyText}>
                   No reading history yet
                 </Text>
-                <Text style={[styles.emptySubText, isDarkMode && styles.textMuted]}>
+                <Text style={styles.emptySubText}>
                   Articles and videos you view will appear here
                 </Text>
               </View>
@@ -750,11 +731,11 @@ export default function Profile({ navigation }) {
               />
             ) : (
               <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={50} color={isDarkMode ? '#3A4A58' : '#CCC'} />
-                <Text style={[styles.emptyText, isDarkMode && styles.textMuted]}>
+                <Ionicons name="people-outline" size={moderateScale(50)} color="#CCC" />
+                <Text style={styles.emptyText}>
                   No subscriptions yet
                 </Text>
-                <Text style={[styles.emptySubText, isDarkMode && styles.textMuted]}>
+                <Text style={styles.emptySubText}>
                   Subscribe to channels to see them here
                 </Text>
               </View>
@@ -764,17 +745,18 @@ export default function Profile({ navigation }) {
 
         {/* Logout Button */}
         <TouchableOpacity
-          style={[styles.logoutButton, isDarkMode && styles.logoutButtonDark]}
+          style={styles.logoutButton}
           onPress={handleLogout}
           disabled={isLoading}
+          activeOpacity={0.7}
         >
-          <Ionicons name="log-out-outline" size={22} color="#C8001A" />
-          <Text style={[styles.logoutText, isDarkMode && styles.logoutTextDark]}>
+          <Ionicons name="log-out-outline" size={moderateScale(22)} color="#C8001A" />
+          <Text style={styles.logoutText}>
             {isLoading ? 'Logging out...' : 'Logout'}
           </Text>
         </TouchableOpacity>
 
-        <Text style={[styles.versionText, isDarkMode && styles.textMuted]}>
+        <Text style={styles.versionText}>
           BartaOne v1.0.0
         </Text>
       </ScrollView>
@@ -787,48 +769,48 @@ export default function Profile({ navigation }) {
         onRequestClose={() => setIsEditing(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
-            <View style={[styles.modalHeader, isDarkMode && styles.modalHeaderDark]}>
-              <Text style={[styles.modalTitle, isDarkMode && styles.textDark]}>Edit Profile</Text>
-              <TouchableOpacity onPress={() => setIsEditing(false)}>
-                <Ionicons name="close" size={24} color={isDarkMode ? '#EDF2F7' : '#333'} />
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity onPress={() => setIsEditing(false)} activeOpacity={0.7}>
+                <Ionicons name="close" size={moderateScale(24)} color="#333" />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              <Text style={[styles.inputLabel, isDarkMode && styles.textDark]}>Display Name</Text>
+              <Text style={styles.inputLabel}>Display Name</Text>
               <TextInput
-                style={[styles.input, isDarkMode && styles.inputDark]}
+                style={styles.input}
                 value={editName}
                 onChangeText={setEditName}
                 placeholder="Enter your name"
-                placeholderTextColor={isDarkMode ? '#5C6E80' : '#999'}
+                placeholderTextColor="#999"
               />
 
-              <Text style={[styles.inputLabel, isDarkMode && styles.textDark, { marginTop: 16 }]}>Email Address</Text>
+              <Text style={[styles.inputLabel, { marginTop: verticalScale(16) }]}>Email Address</Text>
               <TextInput
-                style={[styles.input, isDarkMode && styles.inputDark]}
+                style={styles.input}
                 value={editEmail}
                 onChangeText={setEditEmail}
                 placeholder="Enter your email"
-                placeholderTextColor={isDarkMode ? '#5C6E80' : '#999'}
+                placeholderTextColor="#999"
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
 
               {(showPasswordField || editEmail !== userEmail) && (
                 <>
-                  <Text style={[styles.inputLabel, isDarkMode && styles.textDark, { marginTop: 16 }]}>
+                  <Text style={[styles.inputLabel, { marginTop: verticalScale(16) }]}>
                     Current Password
                   </Text>
                   <TextInput
-                    style={[styles.input, isDarkMode && styles.inputDark]}
+                    style={styles.input}
                     value={editPassword}
                     onChangeText={setEditPassword}
                     placeholder="Enter current password"
-                    placeholderTextColor={isDarkMode ? '#5C6E80' : '#999'}
+                    placeholderTextColor="#999"
                     secureTextEntry
                   />
-                  <Text style={[styles.passwordHint, isDarkMode && styles.textMuted]}>
+                  <Text style={styles.passwordHint}>
                     Password required to change email address
                   </Text>
                 </>
@@ -836,19 +818,21 @@ export default function Profile({ navigation }) {
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity
-                  style={[styles.cancelButton, isDarkMode && styles.cancelButtonDark]}
+                  style={styles.cancelButton}
                   onPress={() => {
                     setIsEditing(false);
                     setShowPasswordField(false);
                     setEditPassword('');
                   }}
+                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.cancelButtonText, isDarkMode && styles.textDark]}>Cancel</Text>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
                   onPress={handleSaveProfile}
                   disabled={isLoading}
+                  activeOpacity={0.8}
                 >
                   <Text style={styles.saveButtonText}>
                     {isLoading ? 'Saving...' : 'Save Changes'}
@@ -868,11 +852,11 @@ export default function Profile({ navigation }) {
         onRequestClose={() => setShowLanguageModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
-            <View style={[styles.modalHeader, isDarkMode && styles.modalHeaderDark]}>
-              <Text style={[styles.modalTitle, isDarkMode && styles.textDark]}>Select Language</Text>
-              <TouchableOpacity onPress={() => setShowLanguageModal(false)}>
-                <Ionicons name="close" size={24} color={isDarkMode ? '#EDF2F7' : '#333'} />
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Language</Text>
+              <TouchableOpacity onPress={() => setShowLanguageModal(false)} activeOpacity={0.7}>
+                <Ionicons name="close" size={moderateScale(24)} color="#333" />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -883,16 +867,16 @@ export default function Profile({ navigation }) {
                   style={[
                     styles.languageItem,
                     selectedLanguage === item.code && styles.languageItemSelected,
-                    isDarkMode && styles.languageItemDark,
                   ]}
                   onPress={() => handleLanguageChange(item.code)}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.languageFlag}>{item.flag}</Text>
-                  <Text style={[styles.languageName, isDarkMode && styles.textDark]}>
+                  <Text style={styles.languageName}>
                     {item.name}
                   </Text>
                   {selectedLanguage === item.code && (
-                    <Ionicons name="checkmark-circle" size={22} color="#C8001A" />
+                    <Ionicons name="checkmark-circle" size={moderateScale(22)} color="#C8001A" />
                   )}
                 </TouchableOpacity>
               )}
@@ -905,169 +889,142 @@ export default function Profile({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const createStyles = () => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
-  containerDark: {
-    backgroundColor: '#0D1117',
-  },
   header: {
     backgroundColor: '#FFF',
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: verticalScale(24),
+    paddingHorizontal: scale(16),
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  headerDark: {
-    backgroundColor: '#161B22',
-    borderBottomColor: '#2A3340',
-  },
   profileInitialsLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: scale(80),
+    height: scale(80),
+    borderRadius: scale(40),
     backgroundColor: '#C8001A',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   initialsTextLarge: {
     color: '#FFF',
-    fontSize: 28,
+    fontSize: fontScale(28),
     fontWeight: 'bold',
   },
   userName: {
-    fontSize: 22,
+    fontSize: fontScale(22),
     fontWeight: 'bold',
     color: '#333',
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: fontScale(14),
     color: '#888',
-    marginTop: 2,
+    marginTop: verticalScale(2),
   },
   roleBadge: {
     backgroundColor: '#FFF0F2',
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 8,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(4),
+    borderRadius: scale(12),
+    marginTop: verticalScale(8),
   },
   roleText: {
     color: '#C8001A',
-    fontSize: 12,
+    fontSize: fontScale(12),
     fontWeight: '600',
-  },
-  textDark: {
-    color: '#EDF2F7',
-  },
-  textMuted: {
-    color: '#8B9BAB',
   },
   statsContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFF',
-    paddingVertical: 16,
-    marginTop: 12,
-    marginHorizontal: 16,
-    borderRadius: 12,
+    paddingVertical: verticalScale(16),
+    marginTop: verticalScale(12),
+    marginHorizontal: scale(16),
+    borderRadius: scale(12),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
     elevation: 2,
-  },
-  statsContainerDark: {
-    backgroundColor: '#161B22',
-    shadowOpacity: 0.35,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: fontScale(20),
     fontWeight: 'bold',
     color: '#333',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: fontScale(12),
     color: '#888',
-    marginTop: 2,
+    marginTop: verticalScale(2),
   },
   statDivider: {
     width: 1,
     backgroundColor: '#E0E0E0',
   },
-  dividerDark: {
-    backgroundColor: '#2A3340',
-  },
   menuContainer: {
     backgroundColor: '#FFF',
-    marginTop: 16,
-    marginHorizontal: 16,
-    borderRadius: 12,
+    marginTop: verticalScale(16),
+    marginHorizontal: scale(16),
+    borderRadius: scale(12),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
     elevation: 2,
-  },
-  menuContainerDark: {
-    backgroundColor: '#161B22',
-    shadowOpacity: 0.35,
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(14),
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
-  },
-  menuItemDark: {
-    borderBottomColor: '#2A3340',
+    minHeight: verticalScale(50),
   },
   menuLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: scale(12),
   },
   menuTitle: {
-    fontSize: 16,
+    fontSize: fontScale(16),
     color: '#333',
   },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFF',
-    marginTop: 16,
-    marginHorizontal: 16,
-    borderRadius: 12,
+    marginTop: verticalScale(16),
+    marginHorizontal: scale(16),
+    borderRadius: scale(12),
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
     elevation: 2,
-  },
-  tabContainerDark: {
-    backgroundColor: '#161B22',
-    shadowOpacity: 0.35,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: verticalScale(12),
     alignItems: 'center',
+    minHeight: verticalScale(44),
   },
   tabActive: {
-    borderBottomWidth: 3,
+    borderBottomWidth: verticalScale(3),
     borderBottomColor: '#C8001A',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: fontScale(14),
     fontWeight: '500',
     color: '#888',
   },
@@ -1075,30 +1032,27 @@ const styles = StyleSheet.create({
     color: '#C8001A',
   },
   tabContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 20,
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(12),
+    paddingBottom: verticalScale(20),
   },
   historyItem: {
     flexDirection: 'row',
     backgroundColor: '#FFF',
-    borderRadius: 10,
-    marginBottom: 10,
-    padding: 10,
+    borderRadius: scale(10),
+    marginBottom: verticalScale(10),
+    padding: scale(10),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: scale(1) },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: scale(2),
     elevation: 1,
   },
-  historyItemDark: {
-    backgroundColor: '#161B22',
-  },
   historyImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 8,
-    marginRight: 12,
+    width: scale(70),
+    height: scale(70),
+    borderRadius: scale(8),
+    marginRight: scale(12),
   },
   historyContent: {
     flex: 1,
@@ -1106,45 +1060,46 @@ const styles = StyleSheet.create({
   },
   historyTypeBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(2),
+    borderRadius: scale(4),
     backgroundColor: '#FFF0F2',
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   historyTypeText: {
-    fontSize: 10,
+    fontSize: fontScale(10),
     fontWeight: '600',
     color: '#C8001A',
   },
   historyTitle: {
-    fontSize: 14,
+    fontSize: fontScale(14),
     fontWeight: '600',
     color: '#333',
-    marginBottom: 2,
+    marginBottom: verticalScale(2),
   },
   historyMeta: {
-    fontSize: 11,
+    fontSize: fontScale(11),
     color: '#888',
   },
   removeButton: {
-    padding: 4,
+    padding: scale(4),
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: verticalScale(40),
+    paddingHorizontal: scale(16),
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: fontScale(16),
     fontWeight: '600',
     color: '#888',
-    marginTop: 12,
+    marginTop: verticalScale(12),
   },
   emptySubText: {
-    fontSize: 13,
+    fontSize: fontScale(13),
     color: '#AAA',
-    marginTop: 4,
+    marginTop: verticalScale(4),
     textAlign: 'center',
   },
   channelGrid: {
@@ -1152,46 +1107,44 @@ const styles = StyleSheet.create({
   },
   channelItem: {
     backgroundColor: '#FFF',
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: scale(10),
+    padding: scale(12),
     alignItems: 'center',
     width: '48%',
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: scale(1) },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: scale(2),
     elevation: 1,
-  },
-  channelItemDark: {
-    backgroundColor: '#161B22',
+    position: 'relative',
   },
   channelLogo: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginBottom: 8,
+    width: scale(50),
+    height: scale(50),
+    borderRadius: scale(25),
+    marginBottom: verticalScale(8),
   },
   channelName: {
-    fontSize: 12,
+    fontSize: fontScale(12),
     fontWeight: '600',
     color: '#333',
     textAlign: 'center',
   },
   unsubscribeButton: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: scale(4),
+    right: scale(4),
   },
   clearHistoryBtn: {
     alignSelf: 'flex-end',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginBottom: 8,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
+    marginBottom: verticalScale(8),
   },
   clearHistoryText: {
     color: '#C8001A',
-    fontSize: 13,
+    fontSize: fontScale(13),
     fontWeight: '500',
   },
   logoutButton: {
@@ -1199,32 +1152,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFF',
-    marginTop: 16,
-    marginHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
+    marginTop: verticalScale(16),
+    marginHorizontal: scale(16),
+    paddingVertical: verticalScale(14),
+    borderRadius: scale(12),
+    gap: scale(8),
     borderWidth: 1,
     borderColor: '#C8001A',
-  },
-  logoutButtonDark: {
-    backgroundColor: '#161B22',
-    borderColor: '#E8192C',
+    minHeight: verticalScale(50),
   },
   logoutText: {
     color: '#C8001A',
-    fontSize: 16,
+    fontSize: fontScale(16),
     fontWeight: '600',
-  },
-  logoutTextDark: {
-    color: '#E8192C',
   },
   versionText: {
     textAlign: 'center',
     color: '#CCC',
-    fontSize: 12,
-    marginTop: 20,
-    marginBottom: 30,
+    fontSize: fontScale(12),
+    marginTop: verticalScale(20),
+    marginBottom: verticalScale(30),
   },
   modalOverlay: {
     flex: 1,
@@ -1233,121 +1180,109 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    minHeight: 300,
+    borderTopLeftRadius: scale(20),
+    borderTopRightRadius: scale(20),
+    minHeight: verticalScale(300),
     maxHeight: '80%',
-  },
-  modalContainerDark: {
-    backgroundColor: '#161B22',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(16),
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
-  },
-  modalHeaderDark: {
-    borderBottomColor: '#2A3340',
+    minHeight: verticalScale(56),
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: fontScale(18),
     fontWeight: 'bold',
     color: '#333',
   },
   modalBody: {
-    padding: 20,
+    padding: scale(20),
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: fontScale(14),
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   input: {
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
+    borderRadius: scale(10),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(12),
+    fontSize: fontScale(16),
     color: '#333',
-  },
-  inputDark: {
-    borderColor: '#2A3340',
-    backgroundColor: '#0D1117',
-    color: '#EDF2F7',
+    minHeight: verticalScale(48),
   },
   saveButton: {
     backgroundColor: '#C8001A',
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: verticalScale(14),
+    borderRadius: scale(10),
     alignItems: 'center',
     flex: 1,
-    marginLeft: 10,
+    marginLeft: scale(10),
+    minHeight: verticalScale(48),
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
   saveButtonText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: fontScale(16),
     fontWeight: '600',
   },
   modalButtons: {
     flexDirection: 'row',
-    marginTop: 20,
+    marginTop: verticalScale(20),
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: verticalScale(14),
+    borderRadius: scale(10),
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    marginRight: 10,
-  },
-  cancelButtonDark: {
-    borderColor: '#2A3340',
+    marginRight: scale(10),
+    minHeight: verticalScale(48),
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: fontScale(16),
     fontWeight: '600',
     color: '#666',
   },
   passwordHint: {
-    fontSize: 12,
+    fontSize: fontScale(12),
     color: '#888',
-    marginTop: 4,
-    marginLeft: 4,
+    marginTop: verticalScale(4),
+    marginLeft: scale(4),
   },
   languageList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(20),
   },
   languageItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: verticalScale(14),
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
-    paddingHorizontal: 4,
-  },
-  languageItemDark: {
-    borderBottomColor: '#2A3340',
+    paddingHorizontal: scale(4),
+    minHeight: verticalScale(50),
   },
   languageItemSelected: {
     backgroundColor: '#FFF0F2',
   },
   languageFlag: {
-    fontSize: 24,
-    marginRight: 12,
+    fontSize: fontScale(24),
+    marginRight: scale(12),
   },
   languageName: {
     flex: 1,
-    fontSize: 16,
+    fontSize: fontScale(16),
     color: '#333',
   },
 });

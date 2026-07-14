@@ -29,11 +29,38 @@ import { getChannelByOwner } from '../../services/channelService';
 import Loader from '../../components/Loader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-const { width: SW, height: SH } = Dimensions.get('window');
-const BASE_W = 390;
-const scale = (n) => Math.round((SW / BASE_W) * n);
-const vs = (n) => Math.round((SH / 844) * n);
-const sp = (n) => n / PixelRatio.getFontScale();
+// ─── Responsive helpers ──────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+// Responsive scaling functions
+const scale = (size) => {
+  const scaleFactor = SCREEN_WIDTH / BASE_WIDTH;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const verticalScale = (size) => {
+  const scaleFactor = SCREEN_HEIGHT / BASE_HEIGHT;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const moderateScale = (size, factor = 0.5) => {
+  return Math.round(size + (scale(size) - size) * factor);
+};
+
+const fontScale = (size) => {
+  const scaleFactor = Math.min(
+    SCREEN_WIDTH / BASE_WIDTH,
+    SCREEN_HEIGHT / BASE_HEIGHT
+  );
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(size * clamped / PixelRatio.getFontScale());
+};
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 const LIGHT = {
@@ -436,15 +463,16 @@ export default function UploadArticle() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topStripe} />
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <View style={[styles.topStripe, { backgroundColor: C.accent }]} />
 
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity 
-          style={styles.backBtn}
+          style={[styles.backBtn, { backgroundColor: C.bg }]}
           onPress={goBack}
+          activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={scale(24)} color={C.primary} />
+          <Ionicons name="arrow-back" size={moderateScale(24)} color={C.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: C.primary }]}>
           {isEditing ? 'Edit Article' : 'Write Article'}
@@ -452,9 +480,10 @@ export default function UploadArticle() {
         <TouchableOpacity 
           style={[styles.publishBtn, { backgroundColor: C.accent }]}
           onPress={handleSubmit}
+          activeOpacity={0.8}
         >
           <Text style={styles.publishText}>{isEditing ? 'Update' : 'Publish'}</Text>
-          <Ionicons name="send-outline" size={scale(16)} color="#FFFFFF" />
+          <Ionicons name="send-outline" size={moderateScale(16)} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -468,6 +497,7 @@ export default function UploadArticle() {
         extraScrollHeight={Platform.OS === 'ios' ? 40 : 20}
         enableResetScrollToCoords={false}
         keyboardOpeningTime={0}
+        bounces={true}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View>
@@ -482,7 +512,7 @@ export default function UploadArticle() {
               <View style={[
                 styles.inputWrap,
                 { 
-                  borderColor: errors.title ? C.accent : (focusedInput === 'title' ? C.accent : C.inputBorder),
+                  borderColor: errors.title ? C.accent : (focusedInput === 'title' ? C.inputFocusBorder : C.inputBorder),
                   backgroundColor: C.inputBg,
                 }
               ]}>
@@ -524,7 +554,7 @@ export default function UploadArticle() {
               ) : (
                 <View style={styles.uploadPlaceholder}>
                   <View style={[styles.uploadIconWrap, { backgroundColor: C.accentBg }]}>
-                    <Ionicons name="image-outline" size={scale(32)} color={C.accent} />
+                    <Ionicons name="image-outline" size={moderateScale(32)} color={C.accent} />
                   </View>
                   <Text style={[styles.uploadText, { color: C.secondary }]}>Add Cover Image</Text>
                   <Text style={[styles.uploadSubtext, { color: C.muted }]}>16:9 image recommended</Text>
@@ -533,14 +563,14 @@ export default function UploadArticle() {
               {(image || existingImage) && (
                 <View style={styles.imageOverlay}>
                   <View style={[styles.imageBadge, { backgroundColor: C.accent }]}>
-                    <Ionicons name="camera-outline" size={scale(14)} color="#FFF" />
+                    <Ionicons name="camera-outline" size={moderateScale(14)} color="#FFF" />
                     <Text style={styles.imageBadgeText}>Change</Text>
                   </View>
                 </View>
               )}
             </TouchableOpacity>
             {errors.image && (
-              <Text style={[styles.errorText, { marginTop: -8, marginBottom: 8 }]}>{errors.image}</Text>
+              <Text style={[styles.errorText, { marginTop: verticalScale(-8), marginBottom: verticalScale(8) }]}>{errors.image}</Text>
             )}
 
             {/* Summary Input */}
@@ -554,7 +584,7 @@ export default function UploadArticle() {
               <View style={[
                 styles.inputWrap,
                 { 
-                  borderColor: errors.summary ? C.accent : (focusedInput === 'summary' ? C.accent : C.inputBorder),
+                  borderColor: errors.summary ? C.accent : (focusedInput === 'summary' ? C.inputFocusBorder : C.inputBorder),
                   backgroundColor: C.inputBg,
                 }
               ]}>
@@ -590,7 +620,7 @@ export default function UploadArticle() {
                 styles.inputWrap,
                 styles.bodyWrap,
                 { 
-                  borderColor: errors.body ? C.accent : (focusedInput === 'body' ? C.accent : C.inputBorder),
+                  borderColor: errors.body ? C.accent : (focusedInput === 'body' ? C.inputFocusBorder : C.inputBorder),
                   backgroundColor: C.inputBg,
                 }
               ]}>
@@ -632,7 +662,7 @@ export default function UploadArticle() {
                   >
                     <Ionicons 
                       name={cat.icon} 
-                      size={scale(18)} 
+                      size={moderateScale(18)} 
                       color={formData.category === cat.value ? '#FFFFFF' : C.muted} 
                     />
                     <Text
@@ -653,13 +683,13 @@ export default function UploadArticle() {
             {/* Word Count & Stats */}
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
-                <Ionicons name="text-outline" size={scale(16)} color={C.muted} />
+                <Ionicons name="text-outline" size={moderateScale(16)} color={C.muted} />
                 <Text style={[styles.statText, { color: C.muted }]}>
                   {formData.body.split(/\s+/).filter(Boolean).length} words
                 </Text>
               </View>
               <View style={styles.statItem}>
-                <Ionicons name="time-outline" size={scale(16)} color={C.muted} />
+                <Ionicons name="time-outline" size={moderateScale(16)} color={C.muted} />
                 <Text style={[styles.statText, { color: C.muted }]}>
                   {Math.ceil(formData.body.split(/\s+/).filter(Boolean).length / 200)} min read
                 </Text>
@@ -681,8 +711,7 @@ function makeStyles(C) {
       backgroundColor: C.bg,
     },
     topStripe: {
-      height: 3,
-      backgroundColor: C.accent,
+      height: verticalScale(3),
     },
     keyboardView: {
       flex: 1,
@@ -690,15 +719,16 @@ function makeStyles(C) {
     scrollContent: {
       flexGrow: 1,
       paddingHorizontal: scale(20),
-      paddingBottom: vs(30),
+      paddingBottom: verticalScale(30),
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: scale(16),
-      paddingVertical: vs(12),
-      borderBottomWidth: 1,
+      paddingVertical: verticalScale(12),
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      minHeight: verticalScale(56),
     },
     backBtn: {
       width: scale(38),
@@ -708,7 +738,7 @@ function makeStyles(C) {
       alignItems: 'center',
     },
     headerTitle: {
-      fontSize: sp(18),
+      fontSize: fontScale(18),
       fontWeight: '700',
       letterSpacing: -0.3,
     },
@@ -717,30 +747,33 @@ function makeStyles(C) {
       alignItems: 'center',
       gap: scale(6),
       paddingHorizontal: scale(16),
-      paddingVertical: vs(8),
+      paddingVertical: verticalScale(8),
       borderRadius: scale(10),
       shadowColor: C.accent,
       shadowOffset: { width: 0, height: scale(3) },
       shadowOpacity: 0.25,
       shadowRadius: scale(8),
       elevation: 3,
+      minHeight: verticalScale(40),
     },
     publishText: {
       color: '#FFFFFF',
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '700',
     },
     inputGroup: {
-      marginBottom: vs(16),
+      marginBottom: verticalScale(16),
     },
     inputLabelRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: vs(6),
+      marginBottom: verticalScale(6),
+      flexWrap: 'wrap',
+      gap: scale(4),
     },
     inputLabel: {
-      fontSize: sp(13),
+      fontSize: fontScale(13),
       fontWeight: '600',
       letterSpacing: 0.2,
     },
@@ -748,43 +781,47 @@ function makeStyles(C) {
       borderWidth: 1.5,
       borderRadius: scale(12),
       paddingHorizontal: scale(14),
+      minHeight: verticalScale(48),
     },
     titleInput: {
-      fontSize: sp(20),
+      fontSize: fontScale(20),
       fontWeight: '700',
-      paddingVertical: vs(12),
-      minHeight: vs(50),
+      paddingVertical: verticalScale(12),
+      minHeight: verticalScale(50),
       letterSpacing: -0.3,
+      padding: 0, // Remove default padding on Android
     },
     summaryInput: {
-      fontSize: sp(15),
-      paddingVertical: vs(12),
-      minHeight: vs(60),
-      lineHeight: sp(22),
+      fontSize: fontScale(15),
+      paddingVertical: verticalScale(12),
+      minHeight: verticalScale(60),
+      lineHeight: fontScale(22),
+      padding: 0,
     },
     bodyWrap: {
-      minHeight: vs(200),
+      minHeight: verticalScale(200),
     },
     bodyInput: {
-      fontSize: sp(15),
-      paddingVertical: vs(12),
-      minHeight: vs(200),
-      lineHeight: sp(24),
+      fontSize: fontScale(15),
+      paddingVertical: verticalScale(12),
+      minHeight: verticalScale(200),
+      lineHeight: fontScale(24),
       textAlignVertical: 'top',
+      padding: 0,
     },
     errorText: {
       color: C.accent,
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '500',
     },
     imageUpload: {
       width: '100%',
-      height: vs(180),
+      height: verticalScale(180),
       borderRadius: scale(14),
       borderWidth: 2,
       borderStyle: 'dashed',
       overflow: 'hidden',
-      marginBottom: vs(16),
+      marginBottom: verticalScale(16),
       position: 'relative',
     },
     imagePreview: {
@@ -802,19 +839,19 @@ function makeStyles(C) {
       alignItems: 'center',
       gap: scale(4),
       paddingHorizontal: scale(10),
-      paddingVertical: vs(4),
+      paddingVertical: verticalScale(4),
       borderRadius: scale(8),
     },
     imageBadgeText: {
       color: '#FFFFFF',
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '600',
     },
     uploadPlaceholder: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      gap: vs(6),
+      gap: verticalScale(6),
     },
     uploadIconWrap: {
       width: scale(56),
@@ -824,12 +861,12 @@ function makeStyles(C) {
       alignItems: 'center',
     },
     uploadText: {
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '600',
-      marginTop: vs(4),
+      marginTop: verticalScale(4),
     },
     uploadSubtext: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
     },
     categoryGrid: {
       flexDirection: 'row',
@@ -841,19 +878,22 @@ function makeStyles(C) {
       alignItems: 'center',
       gap: scale(6),
       paddingHorizontal: scale(14),
-      paddingVertical: vs(8),
+      paddingVertical: verticalScale(8),
       borderRadius: scale(10),
       borderWidth: 1.5,
+      minHeight: verticalScale(40),
     },
     categoryText: {
-      fontSize: sp(13),
+      fontSize: fontScale(13),
       fontWeight: '600',
     },
     statsRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingVertical: vs(8),
-      marginTop: vs(4),
+      paddingVertical: verticalScale(8),
+      marginTop: verticalScale(4),
+      flexWrap: 'wrap',
+      gap: scale(8),
     },
     statItem: {
       flexDirection: 'row',
@@ -861,11 +901,11 @@ function makeStyles(C) {
       gap: scale(6),
     },
     statText: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '500',
     },
     bottomSpacer: {
-      height: vs(20),
+      height: verticalScale(20),
     },
   });
 }

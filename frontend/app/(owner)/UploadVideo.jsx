@@ -27,11 +27,38 @@ import { getChannelByOwner } from '../../services/channelService';
 import Loader from '../../components/Loader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-const { width: SW, height: SH } = Dimensions.get('window');
-const BASE_W = 390;
-const scale = (n) => Math.round((SW / BASE_W) * n);
-const vs = (n) => Math.round((SH / 844) * n);
-const sp = (n) => n / PixelRatio.getFontScale();
+// ─── Responsive helpers ──────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+// Responsive scaling functions
+const scale = (size) => {
+  const scaleFactor = SCREEN_WIDTH / BASE_WIDTH;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const verticalScale = (size) => {
+  const scaleFactor = SCREEN_HEIGHT / BASE_HEIGHT;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const moderateScale = (size, factor = 0.5) => {
+  return Math.round(size + (scale(size) - size) * factor);
+};
+
+const fontScale = (size) => {
+  const scaleFactor = Math.min(
+    SCREEN_WIDTH / BASE_WIDTH,
+    SCREEN_HEIGHT / BASE_HEIGHT
+  );
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(size * clamped / PixelRatio.getFontScale());
+};
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 const LIGHT = {
@@ -479,16 +506,17 @@ export default function UploadVideo() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topStripe} />
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <View style={[styles.topStripe, { backgroundColor: C.accent }]} />
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity 
-          style={styles.backBtn}
+          style={[styles.backBtn, { backgroundColor: C.bg }]}
           onPress={goBack}
+          activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={scale(24)} color={C.primary} />
+          <Ionicons name="arrow-back" size={moderateScale(24)} color={C.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: C.primary }]}>
           {isEditing ? 'Edit Video' : 'Upload Video'}
@@ -496,9 +524,10 @@ export default function UploadVideo() {
         <TouchableOpacity 
           style={[styles.uploadBtn, { backgroundColor: C.accent }]}
           onPress={handleSubmit}
+          activeOpacity={0.8}
         >
           <Text style={styles.uploadText}>{isEditing ? 'Update' : 'Upload'}</Text>
-          <Ionicons name="cloud-upload-outline" size={scale(16)} color="#FFFFFF" />
+          <Ionicons name="cloud-upload-outline" size={moderateScale(16)} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -512,6 +541,7 @@ export default function UploadVideo() {
         extraScrollHeight={Platform.OS === 'ios' ? 40 : 20}
         enableResetScrollToCoords={false}
         keyboardOpeningTime={0}
+        bounces={true}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View>
@@ -538,20 +568,20 @@ export default function UploadVideo() {
                   {videoFile ? (
                     <View style={styles.videoPreview}>
                       <View style={[styles.videoIconWrap, { backgroundColor: C.accentBg }]}>
-                        <Ionicons name="videocam" size={scale(32)} color={C.accent} />
+                        <Ionicons name="videocam" size={moderateScale(32)} color={C.accent} />
                       </View>
                       <Text style={[styles.videoName, { color: C.primary }]} numberOfLines={1}>
                         {videoFile.fileName || 'Video selected'}
                       </Text>
                       <View style={[styles.videoBadge, { backgroundColor: C.accent }]}>
-                        <Ionicons name="checkmark" size={scale(12)} color="#FFF" />
+                        <Ionicons name="checkmark" size={moderateScale(12)} color="#FFF" />
                         <Text style={styles.videoBadgeText}>Selected</Text>
                       </View>
                     </View>
                   ) : (
                     <View style={styles.uploadPlaceholder}>
                       <View style={[styles.uploadIconWrap, { backgroundColor: C.accentBg }]}>
-                        <Ionicons name="cloud-upload-outline" size={scale(32)} color={C.accent} />
+                        <Ionicons name="cloud-upload-outline" size={moderateScale(32)} color={C.accent} />
                       </View>
                       <Text style={[styles.uploadTitle, { color: C.secondary }]}>Select Video</Text>
                       <Text style={[styles.uploadSubtext, { color: C.muted }]}>MP4, MOV, AVI supported</Text>
@@ -581,7 +611,7 @@ export default function UploadVideo() {
                   <Image source={{ uri: existingThumbnail }} style={styles.thumbnailPreview} />
                 ) : (
                   <View style={styles.thumbnailPlaceholder}>
-                    <Ionicons name="image-outline" size={scale(24)} color={C.muted} />
+                    <Ionicons name="image-outline" size={moderateScale(24)} color={C.muted} />
                     <Text style={[styles.thumbnailText, { color: C.muted }]}>Add Thumbnail</Text>
                     <Text style={[styles.thumbnailSubtext, { color: C.faint }]}>16:9 image recommended</Text>
                   </View>
@@ -589,7 +619,7 @@ export default function UploadVideo() {
                 {(thumbnail || existingThumbnail) && (
                   <View style={styles.thumbnailOverlay}>
                     <View style={[styles.thumbnailBadge, { backgroundColor: C.accent }]}>
-                      <Ionicons name="camera-outline" size={scale(12)} color="#FFF" />
+                      <Ionicons name="camera-outline" size={moderateScale(12)} color="#FFF" />
                       <Text style={styles.thumbnailBadgeText}>Change</Text>
                     </View>
                   </View>
@@ -608,7 +638,7 @@ export default function UploadVideo() {
               <View style={[
                 styles.inputWrap,
                 { 
-                  borderColor: errors.title ? C.accent : (focusedInput === 'title' ? C.accent : C.inputBorder),
+                  borderColor: errors.title ? C.accent : (focusedInput === 'title' ? C.inputFocusBorder : C.inputBorder),
                   backgroundColor: C.inputBg,
                 }
               ]}>
@@ -642,7 +672,7 @@ export default function UploadVideo() {
                 styles.inputWrap,
                 styles.descriptionWrap,
                 { 
-                  borderColor: errors.description ? C.accent : (focusedInput === 'description' ? C.accent : C.inputBorder),
+                  borderColor: errors.description ? C.accent : (focusedInput === 'description' ? C.inputFocusBorder : C.inputBorder),
                   backgroundColor: C.inputBg,
                 }
               ]}>
@@ -686,7 +716,7 @@ export default function UploadVideo() {
                   >
                     <Ionicons 
                       name={cat.icon} 
-                      size={scale(18)} 
+                      size={moderateScale(18)} 
                       color={formData.category === cat.value ? '#FFFFFF' : C.muted} 
                     />
                     <Text
@@ -706,12 +736,12 @@ export default function UploadVideo() {
 
             {/* Child Friendly Toggle */}
             <View style={styles.inputGroup}>
-              <View style={styles.toggleContainer}>
+              <View style={[styles.toggleContainer, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <View style={styles.toggleLeft}>
                   <View style={[styles.toggleIconWrap, { backgroundColor: formData.isChildFriendly ? C.iconGreenBg : C.accentBg }]}>
                     <Ionicons 
                       name={formData.isChildFriendly ? 'people-outline' : 'warning-outline'} 
-                      size={scale(20)} 
+                      size={moderateScale(20)} 
                       color={formData.isChildFriendly ? C.iconGreen : C.accent} 
                     />
                   </View>
@@ -751,13 +781,13 @@ export default function UploadVideo() {
             {videoFile && (
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <Ionicons name="videocam-outline" size={scale(16)} color={C.muted} />
-                  <Text style={[styles.statText, { color: C.muted }]}>
+                  <Ionicons name="videocam-outline" size={moderateScale(16)} color={C.muted} />
+                  <Text style={[styles.statText, { color: C.muted }]} numberOfLines={1}>
                     {videoFile.fileName || 'Video ready'}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Ionicons name="time-outline" size={scale(16)} color={C.muted} />
+                  <Ionicons name="time-outline" size={moderateScale(16)} color={C.muted} />
                   <Text style={[styles.statText, { color: C.muted }]}>
                     {videoFile.duration ? `${Math.round(videoFile.duration)}s` : 'Ready'}
                   </Text>
@@ -781,8 +811,7 @@ function makeStyles(C) {
       backgroundColor: C.bg,
     },
     topStripe: {
-      height: 3,
-      backgroundColor: C.accent,
+      height: verticalScale(3),
     },
     keyboardView: {
       flex: 1,
@@ -790,7 +819,7 @@ function makeStyles(C) {
     scrollContent: {
       flexGrow: 1,
       paddingHorizontal: scale(20),
-      paddingBottom: vs(30),
+      paddingBottom: verticalScale(30),
     },
 
     // Header
@@ -799,8 +828,9 @@ function makeStyles(C) {
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: scale(16),
-      paddingVertical: vs(12),
-      borderBottomWidth: 1,
+      paddingVertical: verticalScale(12),
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      minHeight: verticalScale(56),
     },
     backBtn: {
       width: scale(38),
@@ -810,7 +840,7 @@ function makeStyles(C) {
       alignItems: 'center',
     },
     headerTitle: {
-      fontSize: sp(18),
+      fontSize: fontScale(18),
       fontWeight: '700',
       letterSpacing: -0.3,
     },
@@ -819,32 +849,35 @@ function makeStyles(C) {
       alignItems: 'center',
       gap: scale(6),
       paddingHorizontal: scale(16),
-      paddingVertical: vs(8),
+      paddingVertical: verticalScale(8),
       borderRadius: scale(10),
       shadowColor: C.accent,
       shadowOffset: { width: 0, height: scale(3) },
       shadowOpacity: 0.25,
       shadowRadius: scale(8),
       elevation: 3,
+      minHeight: verticalScale(40),
     },
     uploadText: {
       color: '#FFFFFF',
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '700',
     },
 
     // Inputs
     inputGroup: {
-      marginBottom: vs(16),
+      marginBottom: verticalScale(16),
     },
     inputLabelRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: vs(6),
+      marginBottom: verticalScale(6),
+      flexWrap: 'wrap',
+      gap: scale(4),
     },
     inputLabel: {
-      fontSize: sp(13),
+      fontSize: fontScale(13),
       fontWeight: '600',
       letterSpacing: 0.2,
     },
@@ -852,33 +885,36 @@ function makeStyles(C) {
       borderWidth: 1.5,
       borderRadius: scale(12),
       paddingHorizontal: scale(14),
+      minHeight: verticalScale(48),
     },
     titleInput: {
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '600',
-      paddingVertical: vs(12),
-      minHeight: vs(50),
+      paddingVertical: verticalScale(12),
+      minHeight: verticalScale(50),
+      padding: 0, // Remove default padding on Android
     },
     descriptionWrap: {
-      minHeight: vs(100),
+      minHeight: verticalScale(100),
     },
     descriptionInput: {
-      fontSize: sp(15),
-      paddingVertical: vs(12),
-      minHeight: vs(100),
-      lineHeight: sp(22),
+      fontSize: fontScale(15),
+      paddingVertical: verticalScale(12),
+      minHeight: verticalScale(100),
+      lineHeight: fontScale(22),
       textAlignVertical: 'top',
+      padding: 0,
     },
     errorText: {
       color: C.accent,
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '500',
     },
 
     // Video Upload
     videoUpload: {
       width: '100%',
-      height: vs(180),
+      height: verticalScale(180),
       borderRadius: scale(14),
       borderWidth: 2,
       borderStyle: 'dashed',
@@ -890,7 +926,7 @@ function makeStyles(C) {
       justifyContent: 'center',
       alignItems: 'center',
       padding: scale(20),
-      gap: vs(8),
+      gap: verticalScale(8),
     },
     videoIconWrap: {
       width: scale(56),
@@ -900,7 +936,7 @@ function makeStyles(C) {
       alignItems: 'center',
     },
     videoName: {
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '500',
       textAlign: 'center',
     },
@@ -909,20 +945,20 @@ function makeStyles(C) {
       alignItems: 'center',
       gap: scale(4),
       paddingHorizontal: scale(12),
-      paddingVertical: vs(4),
+      paddingVertical: verticalScale(4),
       borderRadius: scale(8),
-      marginTop: vs(4),
+      marginTop: verticalScale(4),
     },
     videoBadgeText: {
       color: '#FFFFFF',
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '600',
     },
     uploadPlaceholder: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      gap: vs(4),
+      gap: verticalScale(4),
     },
     uploadIconWrap: {
       width: scale(56),
@@ -932,18 +968,18 @@ function makeStyles(C) {
       alignItems: 'center',
     },
     uploadTitle: {
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '600',
-      marginTop: vs(4),
+      marginTop: verticalScale(4),
     },
     uploadSubtext: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
     },
 
     // Thumbnail
     thumbnailUpload: {
       width: '100%',
-      height: vs(120),
+      height: verticalScale(120),
       borderRadius: scale(12),
       borderWidth: 1.5,
       borderStyle: 'dashed',
@@ -965,26 +1001,26 @@ function makeStyles(C) {
       alignItems: 'center',
       gap: scale(4),
       paddingHorizontal: scale(10),
-      paddingVertical: vs(4),
+      paddingVertical: verticalScale(4),
       borderRadius: scale(8),
     },
     thumbnailBadgeText: {
       color: '#FFFFFF',
-      fontSize: sp(11),
+      fontSize: fontScale(11),
       fontWeight: '600',
     },
     thumbnailPlaceholder: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      gap: vs(4),
+      gap: verticalScale(4),
     },
     thumbnailText: {
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '500',
     },
     thumbnailSubtext: {
-      fontSize: sp(11),
+      fontSize: fontScale(11),
     },
 
     // Category
@@ -998,12 +1034,13 @@ function makeStyles(C) {
       alignItems: 'center',
       gap: scale(6),
       paddingHorizontal: scale(14),
-      paddingVertical: vs(8),
+      paddingVertical: verticalScale(8),
       borderRadius: scale(10),
       borderWidth: 1.5,
+      minHeight: verticalScale(40),
     },
     categoryText: {
-      fontSize: sp(13),
+      fontSize: fontScale(13),
       fontWeight: '600',
     },
 
@@ -1015,8 +1052,6 @@ function makeStyles(C) {
       padding: scale(14),
       borderRadius: scale(12),
       borderWidth: 1.5,
-      borderColor: C.border,
-      backgroundColor: C.surface,
     },
     toggleLeft: {
       flexDirection: 'row',
@@ -1030,14 +1065,15 @@ function makeStyles(C) {
       borderRadius: scale(10),
       justifyContent: 'center',
       alignItems: 'center',
+      flexShrink: 0,
     },
     toggleTitle: {
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '600',
     },
     toggleSubtext: {
-      fontSize: sp(12),
-      marginTop: vs(2),
+      fontSize: fontScale(12),
+      marginTop: verticalScale(2),
     },
     toggleSwitch: {
       width: scale(48),
@@ -1061,21 +1097,24 @@ function makeStyles(C) {
     statsRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingVertical: vs(8),
-      marginTop: vs(4),
+      paddingVertical: verticalScale(8),
+      marginTop: verticalScale(4),
+      flexWrap: 'wrap',
+      gap: scale(8),
     },
     statItem: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: scale(6),
+      flex: 1,
     },
     statText: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '500',
     },
 
     bottomSpacer: {
-      height: vs(20),
+      height: verticalScale(20),
     },
   });
 }

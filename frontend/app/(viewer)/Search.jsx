@@ -13,12 +13,38 @@ import ChannelCard from '../../components/ChannelCard';
 import { searchContent } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// ─── Responsive helpers ────────────────────────────────────────────────────────
-const { width: SW, height: SH } = Dimensions.get('window');
-const BASE_W = 390;
-const scale  = (n) => Math.round((SW / BASE_W) * n);
-const vs     = (n) => Math.round((SH / 844) * n);
-const sp     = (n) => n / PixelRatio.getFontScale();
+// ─── Responsive helpers ──────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+// Responsive scaling functions
+const scale = (size) => {
+  const scaleFactor = SCREEN_WIDTH / BASE_WIDTH;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const verticalScale = (size) => {
+  const scaleFactor = SCREEN_HEIGHT / BASE_HEIGHT;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const moderateScale = (size, factor = 0.5) => {
+  return Math.round(size + (scale(size) - size) * factor);
+};
+
+const fontScale = (size) => {
+  const scaleFactor = Math.min(
+    SCREEN_WIDTH / BASE_WIDTH,
+    SCREEN_HEIGHT / BASE_HEIGHT
+  );
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(size * clamped / PixelRatio.getFontScale());
+};
 
 // ─── Theme tokens ──────────────────────────────────────────────────────────────
 const LIGHT = {
@@ -85,13 +111,13 @@ function LiveDot({ C }) {
 // ─── Section header ────────────────────────────────────────────────────────────
 function SectionHeader({ icon, color, title, count, C }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8), marginBottom: vs(10), marginTop: vs(4) }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8), marginBottom: verticalScale(10), marginTop: verticalScale(4) }}>
       <View style={{ width: scale(26), height: scale(26), borderRadius: scale(7), backgroundColor: `${color}22`, justifyContent: 'center', alignItems: 'center' }}>
-        <Ionicons name={`${icon}-outline`} size={scale(14)} color={color} />
+        <Ionicons name={`${icon}-outline`} size={moderateScale(14)} color={color} />
       </View>
-      <Text style={{ flex: 1, fontSize: sp(13.5), fontWeight: '700', color: C.primary, letterSpacing: -0.1 }}>{title}</Text>
-      <View style={{ paddingHorizontal: scale(8), paddingVertical: vs(2), borderRadius: scale(20), backgroundColor: `${color}22` }}>
-        <Text style={{ fontSize: sp(11), fontWeight: '700', color }}>{count}</Text>
+      <Text style={{ flex: 1, fontSize: fontScale(13.5), fontWeight: '700', color: C.primary, letterSpacing: -0.1 }}>{title}</Text>
+      <View style={{ paddingHorizontal: scale(8), paddingVertical: verticalScale(2), borderRadius: scale(20), backgroundColor: `${color}22` }}>
+        <Text style={{ fontSize: fontScale(11), fontWeight: '700', color }}>{count}</Text>
       </View>
     </View>
   );
@@ -103,10 +129,10 @@ function FallbackBanner({ message, C }) {
     <View style={{
       flexDirection: 'row', alignItems: 'flex-start', gap: scale(8),
       backgroundColor: C.fallbackBg, borderLeftWidth: 3, borderLeftColor: C.fallbackBorder,
-      borderRadius: scale(10), padding: scale(12), marginBottom: vs(12),
+      borderRadius: scale(10), padding: scale(12), marginBottom: verticalScale(12),
     }}>
-      <Ionicons name="information-circle-outline" size={scale(17)} color={C.fallbackBorder} />
-      <Text style={{ flex: 1, fontSize: sp(12.5), lineHeight: sp(18), color: C.fallbackText }}>{message}</Text>
+      <Ionicons name="information-circle-outline" size={moderateScale(17)} color={C.fallbackBorder} />
+      <Text style={{ flex: 1, fontSize: fontScale(12.5), lineHeight: fontScale(18), color: C.fallbackText }}>{message}</Text>
     </View>
   );
 }
@@ -117,18 +143,19 @@ const Field = React.memo(({ C, ionicon, placeholder, value, onChange, nextRef, i
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: scale(16),
-    minHeight: vs(50),
+    minHeight: verticalScale(50),
     backgroundColor: C.surface,
   }}>
-    <Ionicons name={ionicon} size={scale(16)} color={C.muted} style={{ marginRight: scale(10) }} />
+    <Ionicons name={ionicon} size={moderateScale(16)} color={C.muted} style={{ marginRight: scale(10) }} />
     <TextInput
       ref={inputRef}
       style={{
         flex: 1,
-        fontSize: sp(14),
+        fontSize: fontScale(14),
         color: C.primary,
-        paddingVertical: vs(8),
+        paddingVertical: verticalScale(8),
         backgroundColor: 'transparent',
+        padding: 0, // Remove default padding on Android
       }}
       placeholder={placeholder}
       placeholderTextColor={C.faint}
@@ -145,8 +172,9 @@ const Field = React.memo(({ C, ionicon, placeholder, value, onChange, nextRef, i
       <TouchableOpacity
         onPress={() => onChange('')}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        activeOpacity={0.7}
       >
-        <Ionicons name="close-circle" size={scale(16)} color={C.faint} />
+        <Ionicons name="close-circle" size={moderateScale(16)} color={C.faint} />
       </TouchableOpacity>
     )}
   </View>
@@ -181,8 +209,8 @@ function LocationForm({ C, onSearch, isLoading, onClear }) {
   return (
     <View style={{
       marginHorizontal: scale(20),
-      marginTop: vs(14),
-      marginBottom: vs(10),
+      marginTop: verticalScale(14),
+      marginBottom: verticalScale(10),
       backgroundColor: C.surface,
       borderRadius: scale(18),
       borderWidth: StyleSheet.hairlineWidth,
@@ -195,9 +223,9 @@ function LocationForm({ C, onSearch, isLoading, onClear }) {
       overflow: 'hidden',
     }}>
       <Text style={{
-        fontSize: sp(9.5), fontWeight: '700', letterSpacing: 1.4,
+        fontSize: fontScale(9.5), fontWeight: '700', letterSpacing: 1.4,
         textTransform: 'uppercase', color: C.faint,
-        paddingHorizontal: scale(16), paddingTop: vs(14), paddingBottom: vs(6),
+        paddingHorizontal: scale(16), paddingTop: verticalScale(14), paddingBottom: verticalScale(6),
       }}>
         SEARCH BY LOCATION
       </Text>
@@ -243,24 +271,27 @@ function LocationForm({ C, onSearch, isLoading, onClear }) {
         flexDirection: 'row', alignItems: 'center', gap: scale(10),
         padding: scale(14),
         borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
-        marginTop: vs(4),
+        marginTop: verticalScale(4),
       }}>
         <TouchableOpacity
           style={{
-            paddingHorizontal: scale(16), paddingVertical: vs(11),
+            paddingHorizontal: scale(16), paddingVertical: verticalScale(11),
             borderRadius: scale(10), borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
+            minHeight: verticalScale(42),
           }}
           onPress={handleClear}
+          activeOpacity={0.7}
         >
-          <Text style={{ fontSize: sp(13.5), color: C.muted, fontWeight: '500' }}>Clear All</Text>
+          <Text style={{ fontSize: fontScale(13.5), color: C.muted, fontWeight: '500' }}>Clear All</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={{
             flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-            gap: scale(6), paddingVertical: vs(11), borderRadius: scale(10),
+            gap: scale(6), paddingVertical: verticalScale(11), borderRadius: scale(10),
             backgroundColor: canSearch ? C.accent : C.inputBg,
             opacity: isLoading ? 0.7 : 1,
+            minHeight: verticalScale(42),
           }}
           onPress={submit}
           disabled={!canSearch || isLoading}
@@ -269,8 +300,8 @@ function LocationForm({ C, onSearch, isLoading, onClear }) {
           {isLoading
             ? <ActivityIndicator size="small" color={canSearch ? '#FFF' : C.muted} />
             : <>
-                <Ionicons name="search" size={scale(15)} color={canSearch ? '#FFF' : C.muted} />
-                <Text style={{ fontSize: sp(14), fontWeight: '700', color: canSearch ? '#FFF' : C.muted }}>
+                <Ionicons name="search" size={moderateScale(15)} color={canSearch ? '#FFF' : C.muted} />
+                <Text style={{ fontSize: fontScale(14), fontWeight: '700', color: canSearch ? '#FFF' : C.muted }}>
                   Find Channels
                 </Text>
               </>
@@ -299,7 +330,6 @@ function LocationResults({ results, router, C, category }) {
   const hasState = stateFallback.length > 0;
   const label    = results.searchedCity || results.searchedDistrict || results.searchedState || 'your location';
 
-  // ── FIX: normalize channel before saving so `name` is always present ────────
   const handleChannelPress = async (channel) => {
     try {
       const stored = await AsyncStorage.getItem('recentlyViewedChannels');
@@ -324,12 +354,12 @@ function LocationResults({ results, router, C, category }) {
 
   if (!hasExact && !hasDist && !hasState) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: scale(40), gap: vs(12), minHeight: 200 }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: scale(40), gap: verticalScale(12), minHeight: 200 }}>
         <View style={{ width: scale(72), height: scale(72), borderRadius: scale(20), backgroundColor: C.accentBg, justifyContent: 'center', alignItems: 'center' }}>
-          <Ionicons name="location-outline" size={scale(32)} color={C.accent} />
+          <Ionicons name="location-outline" size={moderateScale(32)} color={C.accent} />
         </View>
-        <Text style={{ fontSize: sp(17), fontWeight: '700', color: C.primary, textAlign: 'center' }}>No Channels Found</Text>
-        <Text style={{ fontSize: sp(13), lineHeight: sp(20), color: C.muted, textAlign: 'center' }}>
+        <Text style={{ fontSize: fontScale(17), fontWeight: '700', color: C.primary, textAlign: 'center' }}>No Channels Found</Text>
+        <Text style={{ fontSize: fontScale(13), lineHeight: fontScale(20), color: C.muted, textAlign: 'center' }}>
           {category !== 'all'
             ? `No ${category} channels found in ${label}.`
             : `We couldn't find any channels in ${label}.`}
@@ -341,7 +371,7 @@ function LocationResults({ results, router, C, category }) {
 
   return (
     <ScrollView
-      contentContainerStyle={{ paddingHorizontal: scale(20), paddingTop: vs(14), paddingBottom: vs(40) }}
+      contentContainerStyle={{ paddingHorizontal: scale(20), paddingTop: verticalScale(14), paddingBottom: verticalScale(40) }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
@@ -367,7 +397,7 @@ function LocationResults({ results, router, C, category }) {
       )}
       {hasExact && hasDist && (
         <>
-          <View style={{ height: vs(24) }} />
+          <View style={{ height: verticalScale(24) }} />
           <SectionHeader icon="map"      color={C.iconAmber} title={`More in ${results.searchedDistrict} District`}               count={districtFallback.length} C={C} />
           {districtFallback.map(renderCh)}
         </>
@@ -489,7 +519,6 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
     ? recentChannels
     : recentChannels.filter(ch => ch.category?.toLowerCase() === category.toLowerCase());
 
-  // ── FIX: normalize channel before saving so `name` is always present ────────
   const handleChannelPress = async (channel) => {
     try {
       const stored = await AsyncStorage.getItem('recentlyViewedChannels');
@@ -514,7 +543,7 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
   };
 
   return (
-    <View style={{ paddingHorizontal: scale(20), paddingTop: vs(14), paddingBottom: vs(30) }}>
+    <View style={{ paddingHorizontal: scale(20), paddingTop: verticalScale(14), paddingBottom: verticalScale(30) }}>
 
       {/* ── Tab switcher ── */}
       <View style={{
@@ -522,7 +551,7 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
         backgroundColor: C.inputBg,
         borderRadius: scale(12),
         padding: scale(3),
-        marginBottom: vs(16),
+        marginBottom: verticalScale(16),
         position: 'relative',
         overflow: 'hidden',
       }}>
@@ -541,13 +570,13 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
         }} />
 
         <TouchableOpacity
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: scale(5), paddingVertical: vs(9), zIndex: 1 }}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: scale(5), paddingVertical: verticalScale(9), zIndex: 1 }}
           onPress={() => switchTab('locations')}
           activeOpacity={0.8}
         >
-          <Ionicons name="time-outline" size={scale(14)} color={activeTab === 'locations' ? C.accent : C.muted} />
+          <Ionicons name="time-outline" size={moderateScale(14)} color={activeTab === 'locations' ? C.accent : C.muted} />
           <Text style={{
-            fontSize: sp(13),
+            fontSize: fontScale(13),
             fontWeight: activeTab === 'locations' ? '700' : '500',
             color: activeTab === 'locations' ? C.accent : C.muted,
           }}>Locations</Text>
@@ -557,7 +586,7 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
               backgroundColor: activeTab === 'locations' ? C.accentBg : C.border,
               justifyContent: 'center', alignItems: 'center', paddingHorizontal: scale(4),
             }}>
-              <Text style={{ fontSize: sp(10), fontWeight: '700', color: activeTab === 'locations' ? C.accent : C.muted }}>
+              <Text style={{ fontSize: fontScale(10), fontWeight: '700', color: activeTab === 'locations' ? C.accent : C.muted }}>
                 {recentLocations.length}
               </Text>
             </View>
@@ -565,13 +594,13 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: scale(5), paddingVertical: vs(9), zIndex: 1 }}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: scale(5), paddingVertical: verticalScale(9), zIndex: 1 }}
           onPress={() => switchTab('channels')}
           activeOpacity={0.8}
         >
-          <Ionicons name="tv-outline" size={scale(14)} color={activeTab === 'channels' ? C.accent : C.muted} />
+          <Ionicons name="tv-outline" size={moderateScale(14)} color={activeTab === 'channels' ? C.accent : C.muted} />
           <Text style={{
-            fontSize: sp(13),
+            fontSize: fontScale(13),
             fontWeight: activeTab === 'channels' ? '700' : '500',
             color: activeTab === 'channels' ? C.accent : C.muted,
           }}>Channels</Text>
@@ -581,7 +610,7 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
               backgroundColor: activeTab === 'channels' ? C.accentBg : C.border,
               justifyContent: 'center', alignItems: 'center', paddingHorizontal: scale(4),
             }}>
-              <Text style={{ fontSize: sp(10), fontWeight: '700', color: activeTab === 'channels' ? C.accent : C.muted }}>
+              <Text style={{ fontSize: fontScale(10), fontWeight: '700', color: activeTab === 'channels' ? C.accent : C.muted }}>
                 {filteredChannels.length}
               </Text>
             </View>
@@ -597,17 +626,19 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
             alignItems: 'center',
             justifyContent: 'center',
             gap: scale(6),
-            paddingVertical: vs(8),
-            marginBottom: vs(12),
+            paddingVertical: verticalScale(8),
+            marginBottom: verticalScale(12),
             backgroundColor: C.accentBg,
             borderRadius: scale(8),
             borderWidth: StyleSheet.hairlineWidth,
             borderColor: C.accentBorder,
+            minHeight: verticalScale(38),
           }}
           onPress={clearAllHistory}
+          activeOpacity={0.7}
         >
-          <Ionicons name="trash-outline" size={scale(14)} color={C.accent} />
-          <Text style={{ fontSize: sp(12), color: C.accent, fontWeight: '600' }}>
+          <Ionicons name="trash-outline" size={moderateScale(14)} color={C.accent} />
+          <Text style={{ fontSize: fontScale(12), color: C.accent, fontWeight: '600' }}>
             Clear All History
           </Text>
         </TouchableOpacity>
@@ -632,27 +663,28 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
                   activeOpacity={0.7}
                 >
                   <View style={[styles.recentIconWrap, { backgroundColor: C.inputBg }]}>
-                    <Ionicons name="location-outline" size={scale(15)} color={C.accent} />
+                    <Ionicons name="location-outline" size={moderateScale(15)} color={C.accent} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.recentText, { color: C.primary }]}>
                       {getLocationDisplay(item)}
                     </Text>
-                    <Text style={{ fontSize: sp(11), color: C.muted, marginTop: vs(2) }}>
+                    <Text style={{ fontSize: fontScale(11), color: C.muted, marginTop: verticalScale(2) }}>
                       {item.city ? 'City search' : item.district ? 'District search' : 'State search'}
                     </Text>
                   </View>
                   <View style={{ padding: scale(6), borderRadius: scale(8), backgroundColor: C.inputBg }}>
-                    <Ionicons name="arrow-redo-outline" size={scale(13)} color={C.muted} />
+                    <Ionicons name="arrow-redo-outline" size={moderateScale(13)} color={C.muted} />
                   </View>
                 </TouchableOpacity>
               ))}
               <TouchableOpacity
-                style={{ marginTop: vs(14), alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: scale(4) }}
+                style={{ marginTop: verticalScale(14), alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: scale(4) }}
                 onPress={clearLocations}
+                activeOpacity={0.7}
               >
-                <Ionicons name="trash-outline" size={scale(13)} color={C.muted} />
-                <Text style={{ fontSize: sp(12), color: C.muted }}>Clear locations</Text>
+                <Ionicons name="trash-outline" size={moderateScale(13)} color={C.muted} />
+                <Text style={{ fontSize: fontScale(12), color: C.muted }}>Clear locations</Text>
               </TouchableOpacity>
             </>
           )
@@ -691,17 +723,16 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
                   }}>
                     {ch.logo
                       ? <Image source={{ uri: ch.logo }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                      : <Ionicons name="tv-outline" size={scale(18)} color={C.muted} />
+                      : <Ionicons name="tv-outline" size={moderateScale(18)} color={C.muted} />
                     }
                   </View>
 
                   {/* Name + location */}
                   <View style={{ flex: 1 }}>
-                    {/* ── FIX: fall back through all possible name fields ── */}
                     <Text style={[styles.recentText, { color: C.primary }]} numberOfLines={1}>
                       {ch.name || ch.channelName || ch.title || 'Unknown Channel'}
                     </Text>
-                    <Text style={{ fontSize: sp(11), color: C.muted, marginTop: vs(2) }} numberOfLines={1}>
+                    <Text style={{ fontSize: fontScale(11), color: C.muted, marginTop: verticalScale(2) }} numberOfLines={1}>
                       {[ch.city, ch.district, ch.state].filter(Boolean).join(', ') || ch.category || ''}
                     </Text>
                   </View>
@@ -709,20 +740,21 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
                   {/* Category badge + chevron */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(6) }}>
                     {ch.category && (
-                      <View style={{ paddingHorizontal: scale(7), paddingVertical: vs(3), borderRadius: scale(6), backgroundColor: C.inputBg }}>
-                        <Text style={{ fontSize: sp(10), color: C.secondary, fontWeight: '500' }}>{ch.category}</Text>
+                      <View style={{ paddingHorizontal: scale(7), paddingVertical: verticalScale(3), borderRadius: scale(6), backgroundColor: C.inputBg }}>
+                        <Text style={{ fontSize: fontScale(10), color: C.secondary, fontWeight: '500' }}>{ch.category}</Text>
                       </View>
                     )}
-                    <Ionicons name="chevron-forward" size={scale(13)} color={C.faint} />
+                    <Ionicons name="chevron-forward" size={moderateScale(13)} color={C.faint} />
                   </View>
                 </TouchableOpacity>
               ))}
               <TouchableOpacity
-                style={{ marginTop: vs(14), alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: scale(4) }}
+                style={{ marginTop: verticalScale(14), alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: scale(4) }}
                 onPress={clearChannels}
+                activeOpacity={0.7}
               >
-                <Ionicons name="trash-outline" size={scale(13)} color={C.muted} />
-                <Text style={{ fontSize: sp(12), color: C.muted }}>Clear channels</Text>
+                <Ionicons name="trash-outline" size={moderateScale(13)} color={C.muted} />
+                <Text style={{ fontSize: fontScale(12), color: C.muted }}>Clear channels</Text>
               </TouchableOpacity>
             </>
           )
@@ -734,11 +766,11 @@ function RecentSection({ C, onSelectLocation, router, refreshTrigger, category }
 // ─── Empty tab state ───────────────────────────────────────────────────────────
 function EmptyTabState({ icon, message, C }) {
   return (
-    <View style={{ alignItems: 'center', paddingVertical: vs(28), gap: vs(10) }}>
+    <View style={{ alignItems: 'center', paddingVertical: verticalScale(28), gap: verticalScale(10) }}>
       <View style={{ width: scale(52), height: scale(52), borderRadius: scale(14), backgroundColor: C.inputBg, justifyContent: 'center', alignItems: 'center' }}>
-        <Ionicons name={icon} size={scale(24)} color={C.faint} />
+        <Ionicons name={icon} size={moderateScale(24)} color={C.faint} />
       </View>
-      <Text style={{ fontSize: sp(13), color: C.muted, textAlign: 'center', lineHeight: sp(20), maxWidth: scale(240) }}>
+      <Text style={{ fontSize: fontScale(13), color: C.muted, textAlign: 'center', lineHeight: fontScale(20), maxWidth: scale(240) }}>
         {message}
       </Text>
     </View>
@@ -748,9 +780,9 @@ function EmptyTabState({ icon, message, C }) {
 // ─── Loading view ──────────────────────────────────────────────────────────────
 function LoadingView({ C }) {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: vs(12), minHeight: 200 }}>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: verticalScale(12), minHeight: 200 }}>
       <ActivityIndicator size="large" color={C.accent} />
-      <Text style={{ fontSize: sp(14), color: C.muted }}>Searching locations…</Text>
+      <Text style={{ fontSize: fontScale(14), color: C.muted }}>Searching locations…</Text>
     </View>
   );
 }
@@ -782,7 +814,7 @@ export default function Search() {
     ]).start();
   }, []);
 
-  const slideUp = (anim, dy = vs(14)) => ({
+  const slideUp = (anim, dy = verticalScale(14)) => ({
     opacity: anim,
     transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [dy, 0] }) }],
   });
@@ -854,7 +886,7 @@ export default function Search() {
       return (
         <View style={styles.emptyWrap}>
           <View style={[styles.emptyIconWrap, { backgroundColor: C.accentBg }]}>
-            <Ionicons name="location-outline" size={scale(32)} color={C.accent} />
+            <Ionicons name="location-outline" size={moderateScale(32)} color={C.accent} />
           </View>
           <Text style={[styles.emptyTitle, { color: C.primary }]}>No Results</Text>
           <Text style={[styles.emptySub, { color: C.muted }]}>
@@ -865,15 +897,17 @@ export default function Search() {
           </Text>
           <TouchableOpacity
             style={{
-              marginTop: vs(16),
+              marginTop: verticalScale(16),
               paddingHorizontal: scale(20),
-              paddingVertical: vs(10),
+              paddingVertical: verticalScale(10),
               borderRadius: scale(10),
               backgroundColor: C.accent,
+              minHeight: verticalScale(42),
             }}
             onPress={handleClearAll}
+            activeOpacity={0.7}
           >
-            <Text style={{ color: '#FFF', fontWeight: '600', fontSize: sp(14) }}>Clear Search</Text>
+            <Text style={{ color: '#FFF', fontWeight: '600', fontSize: fontScale(14) }}>Clear Search</Text>
           </TouchableOpacity>
         </View>
       );
@@ -891,7 +925,7 @@ export default function Search() {
   };
 
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: C.bg }]} edges={['top']}>
+    <SafeAreaView style={[styles.root, { backgroundColor: C.bg }]} edges={['top', 'bottom']}>
       <StatusBar barStyle={C.statusBar} backgroundColor={C.bg} translucent={false} />
 
       <View style={[styles.topStripe, { backgroundColor: C.accent }]} />
@@ -899,16 +933,17 @@ export default function Search() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: vs(20) }}
+          contentContainerStyle={{ paddingBottom: verticalScale(20) }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          bounces={true}
         >
           {/* ── Header ── */}
-          <Animated.View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }, slideUp(headerAnim, vs(18))]}>
+          <Animated.View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }, slideUp(headerAnim, verticalScale(18))]}>
             <View>
               <Text style={[styles.headerTitle, { color: C.primary }]}>Search</Text>
               <Text style={[styles.headerSub,   { color: C.muted  }]}>Find channels by location</Text>
@@ -920,7 +955,7 @@ export default function Search() {
           </Animated.View>
 
           {/* ── Category chips ── */}
-          <Animated.View style={slideUp(chipAnim, vs(10))}>
+          <Animated.View style={slideUp(chipAnim, verticalScale(10))}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -942,7 +977,7 @@ export default function Search() {
                     onPress={() => handleCategoryChange(id)}
                     activeOpacity={0.78}
                   >
-                    <Ionicons name={icon} size={18} color={active ? C.categoryTextActive : C.categoryText} />
+                    <Ionicons name={icon} size={moderateScale(18)} color={active ? C.categoryTextActive : C.categoryText} />
                     <Text style={[
                       styles.chipLabel,
                       {
@@ -980,25 +1015,25 @@ export default function Search() {
 // ─── Static styles ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root:          { flex: 1 },
-  topStripe:     { height: 3 },
+  topStripe:     { height: verticalScale(3) },
 
-  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(20), paddingVertical: vs(12), borderBottomWidth: StyleSheet.hairlineWidth },
-  headerTitle:   { fontSize: sp(22), fontWeight: '800', letterSpacing: -0.4 },
-  headerSub:     { fontSize: sp(11), marginTop: vs(2), letterSpacing: 0.1 },
-  livePill:      { flexDirection: 'row', alignItems: 'center', gap: scale(5), paddingHorizontal: scale(10), paddingVertical: scale(5), borderRadius: scale(20), borderWidth: 1 },
-  liveText:      { fontSize: sp(10), fontWeight: '700', letterSpacing: 0.9 },
+  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(20), paddingVertical: verticalScale(12), borderBottomWidth: StyleSheet.hairlineWidth, minHeight: verticalScale(60) },
+  headerTitle:   { fontSize: fontScale(22), fontWeight: '800', letterSpacing: -0.4 },
+  headerSub:     { fontSize: fontScale(11), marginTop: verticalScale(2), letterSpacing: 0.1 },
+  livePill:      { flexDirection: 'row', alignItems: 'center', gap: scale(5), paddingHorizontal: scale(10), paddingVertical: verticalScale(5), borderRadius: scale(20), borderWidth: 1, minHeight: verticalScale(30) },
+  liveText:      { fontSize: fontScale(10), fontWeight: '700', letterSpacing: 0.9 },
 
-  chipsRow:      { paddingHorizontal: scale(16), paddingVertical: vs(10), gap: scale(10) },
-  chip:          { flexDirection: 'row', alignItems: 'center', gap: scale(6), paddingHorizontal: scale(14), paddingVertical: vs(7), borderRadius: scale(20), borderWidth: StyleSheet.hairlineWidth },
-  chipLabel:     { fontSize: sp(13) },
+  chipsRow:      { paddingHorizontal: scale(16), paddingVertical: verticalScale(10), gap: scale(10) },
+  chip:          { flexDirection: 'row', alignItems: 'center', gap: scale(6), paddingHorizontal: scale(14), paddingVertical: verticalScale(7), borderRadius: scale(20), borderWidth: StyleSheet.hairlineWidth, minHeight: verticalScale(36) },
+  chipLabel:     { fontSize: fontScale(13) },
 
-  recentHeading: { fontSize: sp(9.5), fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: vs(10) },
-  recentRow:     { flexDirection: 'row', alignItems: 'center', gap: scale(12), paddingVertical: vs(13), borderBottomWidth: StyleSheet.hairlineWidth },
+  recentHeading: { fontSize: fontScale(9.5), fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: verticalScale(10) },
+  recentRow:     { flexDirection: 'row', alignItems: 'center', gap: scale(12), paddingVertical: verticalScale(13), borderBottomWidth: StyleSheet.hairlineWidth, minHeight: verticalScale(50) },
   recentIconWrap:{ width: scale(32), height: scale(32), borderRadius: scale(9), justifyContent: 'center', alignItems: 'center' },
-  recentText:    { fontSize: sp(14), fontWeight: '500' },
+  recentText:    { fontSize: fontScale(14), fontWeight: '500' },
 
-  emptyWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: scale(40), gap: vs(10), minHeight: 200 },
-  emptyIconWrap: { width: scale(72), height: scale(72), borderRadius: scale(20), justifyContent: 'center', alignItems: 'center', marginBottom: vs(4) },
-  emptyTitle:    { fontSize: sp(17), fontWeight: '700', letterSpacing: -0.2, textAlign: 'center' },
-  emptySub:      { fontSize: sp(13), lineHeight: sp(20), textAlign: 'center' },
+  emptyWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: scale(40), gap: verticalScale(10), minHeight: 200 },
+  emptyIconWrap: { width: scale(72), height: scale(72), borderRadius: scale(20), justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(4) },
+  emptyTitle:    { fontSize: fontScale(17), fontWeight: '700', letterSpacing: -0.2, textAlign: 'center' },
+  emptySub:      { fontSize: fontScale(13), lineHeight: fontScale(20), textAlign: 'center' },
 });

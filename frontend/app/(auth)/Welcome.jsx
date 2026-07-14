@@ -21,17 +21,55 @@ import {
   PixelRatio,
   Modal,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SW, height: SH } = Dimensions.get('window');
-const BASE_W = 390;
-const scale  = (n) => Math.round((SW / BASE_W) * n);
-const vs     = (n) => Math.round((SH / 844) * n);
-const sp     = (n) => n / PixelRatio.getFontScale();
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+// Responsive scaling functions
+const scale = (size) => {
+  const scaleFactor = SCREEN_WIDTH / BASE_WIDTH;
+  const newSize = size * scaleFactor;
+  return Math.round(newSize);
+};
+
+const verticalScale = (size) => {
+  const scaleFactor = SCREEN_HEIGHT / BASE_HEIGHT;
+  const newSize = size * scaleFactor;
+  return Math.round(newSize);
+};
+
+const moderateScale = (size, factor = 0.5) => {
+  return size + (scale(size) - size) * factor;
+};
+
+const fontScale = (size) => {
+  const scaleFactor = Math.min(
+    SCREEN_WIDTH / BASE_WIDTH,
+    SCREEN_HEIGHT / BASE_HEIGHT
+  );
+  const newSize = size * scaleFactor;
+  return Math.round(newSize / PixelRatio.getFontScale());
+};
+
+// Responsive spacing
+const spacing = {
+  xs: scale(4),
+  sm: scale(8),
+  md: scale(12),
+  lg: scale(16),
+  xl: scale(20),
+  xxl: scale(24),
+  xxxl: scale(32),
+};
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 const LIGHT = {
@@ -308,11 +346,15 @@ export default function Welcome() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* ── Header ── */}
         <Animated.View style={[styles.header, {
           opacity: headerAnim,
-          transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-vs(20), 0] }) }],
+          transform: [{ translateY: headerAnim.interpolate({ 
+            inputRange: [0, 1], 
+            outputRange: [-verticalScale(20), 0] 
+          }) }],
         }]}>
           <View style={styles.livePill}>
             <View style={styles.liveDot} />
@@ -328,7 +370,7 @@ export default function Welcome() {
           <View style={styles.logoIconWrap}>
             <Ionicons name="newspaper" size={scale(30)} color="#FFFFFF" />
           </View>
-          <View>
+          <View style={styles.logoTextContainer}>
             <Text style={styles.appName}>
               Barta<Text style={styles.appNameAccent}>One</Text>
             </Text>
@@ -354,13 +396,13 @@ export default function Welcome() {
               ]}
             >
               <View style={[styles.featureIconWrap, { backgroundColor: f.bg }]}>
-                <Ionicons name={f.icon} size={scale(19)} color={f.color} />
+                <Ionicons name={f.icon} size={moderateScale(19)} color={f.color} />
               </View>
               <View style={styles.featureTextCol}>
                 <Text style={styles.featureTitle}>{f.title}</Text>
                 <Text style={styles.featureSub}>{f.sub}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={scale(14)} color={C.faint} />
+              <Ionicons name="chevron-forward" size={moderateScale(14)} color={C.faint} />
             </Animated.View>
           ))}
         </Animated.View>
@@ -368,7 +410,7 @@ export default function Welcome() {
         {/* ── Available Languages ── */}
         <Animated.View style={[styles.langCard, { opacity: langAnim }]}>
           <View style={styles.langHeader}>
-            <Ionicons name="globe-outline" size={scale(15)} color={C.secondary} />
+            <Ionicons name="globe-outline" size={moderateScale(15)} color={C.secondary} />
             <Text style={styles.langLabel}>Available in your language</Text>
           </View>
           <View style={styles.langChipRow}>
@@ -381,7 +423,7 @@ export default function Welcome() {
         </Animated.View>
 
         {/* ── Spacer ── */}
-        <View style={{ flex: 1, minHeight: vs(16) }} />
+        <View style={{ flex: 1, minHeight: verticalScale(16) }} />
 
         {/* ── Buttons ── */}
         <Animated.View style={[styles.btnGroup, { opacity: btnAnim, transform: [{ translateY: btnY }] }]}>
@@ -392,7 +434,7 @@ export default function Welcome() {
               onPress={() => router.push('/(auth)/SelectRole')}
             >
               <Text style={styles.btnPrimaryText}>Get started</Text>
-              <Ionicons name="arrow-forward" size={scale(18)} color="#FFFFFF" />
+              <Ionicons name="arrow-forward" size={moderateScale(18)} color="#FFFFFF" />
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -422,7 +464,7 @@ export default function Welcome() {
                 onPress={() => setTermsModalVisible(false)}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={scale(22)} color={C.accent} />
+                <Ionicons name="close" size={moderateScale(22)} color={C.accent} />
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -456,11 +498,11 @@ const makeStyles = (C) => StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: vs(10),
+    paddingBottom: verticalScale(10),
   },
 
   topStripe: {
-    height: 3,
+    height: verticalScale(3),
     backgroundColor: C.accent,
     marginHorizontal: -scale(24),
   },
@@ -470,8 +512,8 @@ const makeStyles = (C) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: vs(14),
-    paddingBottom: vs(6),
+    paddingTop: verticalScale(14),
+    paddingBottom: verticalScale(6),
   },
   livePill: {
     flexDirection: 'row',
@@ -480,7 +522,7 @@ const makeStyles = (C) => StyleSheet.create({
     backgroundColor: C.accentBg,
     borderRadius: scale(20),
     paddingHorizontal: scale(10),
-    paddingVertical: scale(4),
+    paddingVertical: verticalScale(4),
     borderWidth: 1,
     borderColor: C.accentBorder,
   },
@@ -491,13 +533,13 @@ const makeStyles = (C) => StyleSheet.create({
     backgroundColor: C.accent,
   },
   liveText: {
-    fontSize: sp(10),
+    fontSize: fontScale(10),
     fontWeight: '700',
     color: C.accent,
     letterSpacing: 0.9,
   },
   headerDate: {
-    fontSize: sp(12),
+    fontSize: fontScale(12),
     color: C.muted,
     fontWeight: '400',
     letterSpacing: 0.2,
@@ -508,8 +550,8 @@ const makeStyles = (C) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: scale(14),
-    marginTop: vs(28),
-    marginBottom: vs(10),
+    marginTop: verticalScale(28),
+    marginBottom: verticalScale(10),
   },
   logoIconWrap: {
     width: scale(58),
@@ -521,30 +563,33 @@ const makeStyles = (C) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.logoBorder,
   },
+  logoTextContainer: {
+    flex: 1,
+  },
   appName: {
-    fontSize: sp(32),
+    fontSize: fontScale(32),
     fontWeight: '800',
     color: C.primary,
     letterSpacing: -0.5,
-    lineHeight: sp(38),
+    lineHeight: fontScale(38),
   },
   appNameAccent: {
     color: C.accent,
   },
   tagline: {
-    fontSize: sp(11),
+    fontSize: fontScale(11),
     color: C.muted,
     fontWeight: '400',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    marginTop: vs(3),
+    marginTop: verticalScale(3),
   },
 
   // Rule
   rule: {
-    height: 1.5,
+    height: verticalScale(1.5),
     backgroundColor: C.accent,
-    marginBottom: vs(22),
+    marginBottom: verticalScale(22),
     width: '100%',
     transformOrigin: 'left center',
     opacity: 0.7,
@@ -555,8 +600,8 @@ const makeStyles = (C) => StyleSheet.create({
     backgroundColor: C.surface,
     borderRadius: scale(18),
     paddingHorizontal: scale(18),
-    paddingTop: vs(12),
-    paddingBottom: vs(4),
+    paddingTop: verticalScale(12),
+    paddingBottom: verticalScale(4),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
     shadowColor: '#000',
@@ -564,21 +609,21 @@ const makeStyles = (C) => StyleSheet.create({
     shadowOpacity: C.cardShadowOpacity,
     shadowRadius: scale(16),
     elevation: 4,
-    marginBottom: vs(14),
+    marginBottom: verticalScale(14),
   },
   featuresLabel: {
-    fontSize: sp(10),
+    fontSize: fontScale(10),
     fontWeight: '700',
     color: C.faint,
     letterSpacing: 1.3,
     textTransform: 'uppercase',
-    marginBottom: vs(8),
+    marginBottom: verticalScale(8),
   },
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: scale(13),
-    paddingVertical: vs(12),
+    paddingVertical: verticalScale(12),
   },
   featureRowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -596,17 +641,17 @@ const makeStyles = (C) => StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
-    fontSize: sp(13.5),
+    fontSize: fontScale(13.5),
     fontWeight: '600',
     color: C.primary,
     letterSpacing: -0.1,
-    lineHeight: sp(19),
+    lineHeight: fontScale(19),
   },
   featureSub: {
-    fontSize: sp(11.5),
+    fontSize: fontScale(11.5),
     color: C.secondary,
-    marginTop: vs(2),
-    lineHeight: sp(16),
+    marginTop: verticalScale(2),
+    lineHeight: fontScale(16),
   },
 
   // Language card
@@ -614,19 +659,19 @@ const makeStyles = (C) => StyleSheet.create({
     backgroundColor: C.surfaceAlt,
     borderRadius: scale(16),
     paddingHorizontal: scale(16),
-    paddingVertical: vs(14),
+    paddingVertical: verticalScale(14),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
-    marginBottom: vs(8),
+    marginBottom: verticalScale(8),
   },
   langHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: scale(6),
-    marginBottom: vs(10),
+    marginBottom: verticalScale(10),
   },
   langLabel: {
-    fontSize: sp(11.5),
+    fontSize: fontScale(11.5),
     fontWeight: '600',
     color: C.secondary,
     letterSpacing: 0.1,
@@ -640,12 +685,12 @@ const makeStyles = (C) => StyleSheet.create({
     backgroundColor: C.chipBg,
     borderRadius: scale(10),
     paddingHorizontal: scale(12),
-    paddingVertical: vs(6),
+    paddingVertical: verticalScale(6),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
   },
   langChipText: {
-    fontSize: sp(12),
+    fontSize: fontScale(12),
     fontWeight: '600',
     color: C.primary,
   },
@@ -657,7 +702,7 @@ const makeStyles = (C) => StyleSheet.create({
   btnPrimary: {
     backgroundColor: C.accent,
     borderRadius: scale(13),
-    paddingVertical: vs(15),
+    paddingVertical: verticalScale(15),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -667,15 +712,16 @@ const makeStyles = (C) => StyleSheet.create({
     shadowOpacity: 0.32,
     shadowRadius: scale(12),
     elevation: 6,
+    minHeight: verticalScale(54),
   },
   btnPrimaryText: {
-    fontSize: sp(16),
+    fontSize: fontScale(16),
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.1,
   },
   btnSkip: {
-    paddingVertical: vs(13),
+    paddingVertical: verticalScale(13),
     alignItems: 'center',
     borderRadius: scale(13),
     borderWidth: StyleSheet.hairlineWidth,
@@ -683,7 +729,7 @@ const makeStyles = (C) => StyleSheet.create({
     backgroundColor: C.surfaceAlt,
   },
   btnSkipText: {
-    fontSize: sp(14),
+    fontSize: fontScale(14),
     color: C.muted,
     fontWeight: '400',
     letterSpacing: 0.1,
@@ -691,12 +737,12 @@ const makeStyles = (C) => StyleSheet.create({
 
   // Footer
   footer: {
-    fontSize: sp(11),
+    fontSize: fontScale(11),
     color: C.faint,
     textAlign: 'center',
-    marginTop: vs(12),
-    marginBottom: vs(6),
-    lineHeight: sp(16),
+    marginTop: verticalScale(12),
+    marginBottom: verticalScale(6),
+    lineHeight: fontScale(16),
   },
   footerLink: {
     color: C.accent,
@@ -720,11 +766,11 @@ const makeStyles = (C) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: scale(20),
-    paddingVertical: vs(16),
+    paddingVertical: verticalScale(16),
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: sp(18),
+    fontSize: fontScale(18),
     fontWeight: '700',
     letterSpacing: -0.3,
   },
@@ -740,44 +786,45 @@ const makeStyles = (C) => StyleSheet.create({
   },
   modalContent: {
     paddingHorizontal: scale(20),
-    paddingTop: vs(20),
-    paddingBottom: vs(30),
+    paddingTop: verticalScale(20),
+    paddingBottom: verticalScale(30),
   },
 
   // Terms
   termsSectionTitle: {
-    fontSize: sp(16),
+    fontSize: fontScale(16),
     fontWeight: '700',
-    marginTop: vs(18),
-    marginBottom: vs(8),
+    marginTop: verticalScale(18),
+    marginBottom: verticalScale(8),
     letterSpacing: -0.2,
   },
   termsText: {
-    fontSize: sp(13.5),
-    lineHeight: sp(22),
-    marginBottom: vs(4),
+    fontSize: fontScale(13.5),
+    lineHeight: fontScale(22),
+    marginBottom: verticalScale(4),
     fontWeight: '400',
   },
   termsFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: vs(24),
-    paddingTop: vs(16),
+    marginTop: verticalScale(24),
+    paddingTop: verticalScale(16),
     borderTopWidth: 1,
   },
   termsFooterText: {
-    fontSize: sp(11),
+    fontSize: fontScale(11),
     fontWeight: '400',
   },
   acceptBtn: {
-    paddingVertical: vs(14),
+    paddingVertical: verticalScale(14),
     borderRadius: scale(12),
     alignItems: 'center',
-    marginTop: vs(20),
+    marginTop: verticalScale(20),
+    minHeight: verticalScale(50),
   },
   acceptBtnText: {
     color: '#FFFFFF',
-    fontSize: sp(16),
+    fontSize: fontScale(16),
     fontWeight: '700',
     letterSpacing: 0.3,
   },

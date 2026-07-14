@@ -30,8 +30,8 @@ import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../context/AuthContext';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
 const MAX_CONTENT_WIDTH = 480;
 
 const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
@@ -39,16 +39,24 @@ const EASE_OUT_SOFT = Easing.bezier(0.16, 1, 0.3, 1);
 
 // ─── Responsive Helpers ────────────────────────────────────────────────────
 const createScalers = (windowWidth, windowHeight) => {
-  const widthRatio = windowWidth / BASE_WIDTH;
-  const clampedRatio = Math.min(Math.max(widthRatio, 0.85), 1.25);
+  const widthScale = windowWidth / BASE_WIDTH;
+  const heightScale = windowHeight / BASE_HEIGHT;
+  
+  // Clamp to prevent extreme scaling on very small/large devices
+  const clampedWidth = Math.min(Math.max(widthScale, 0.7), 1.3);
+  const clampedHeight = Math.min(Math.max(heightScale, 0.7), 1.3);
 
-  const scale = (size) => Math.round(clampedRatio * size);
-  const verticalScale = (size) =>
-    Math.round((windowHeight / BASE_HEIGHT) * size);
-  const moderateScale = (size, factor = 0.5) =>
-    Math.round(size + (scale(size) - size) * factor);
+  const scale = (size) => Math.round(clampedWidth * size);
+  const verticalScale = (size) => Math.round(clampedHeight * size);
+  const moderateScale = (size, factor = 0.5) => {
+    return Math.round(size + (scale(size) - size) * factor);
+  };
+  const fontScale = (size) => {
+    const baseScale = Math.min(clampedWidth, clampedHeight);
+    return Math.round(size * baseScale);
+  };
 
-  return { scale, verticalScale, moderateScale };
+  return { scale, verticalScale, moderateScale, fontScale };
 };
 
 // ─── Theme Configuration ──────────────────────────────────────────────────
@@ -162,7 +170,7 @@ const AnimatedInput = ({
     >
       <Ionicons
         name={icon}
-        size={S.scale(19)}
+        size={S.moderateScale(19)}
         color={isFocused ? colors.accent : colors.muted}
         style={styles.inputIcon}
       />
@@ -288,7 +296,7 @@ export default function ViewerSignup() {
     () => createScalers(winWidth, winHeight),
     [winWidth, winHeight]
   );
-  const { scale, verticalScale, moderateScale } = S;
+  const { scale, verticalScale, moderateScale, fontScale } = S;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -485,6 +493,7 @@ export default function ViewerSignup() {
       <StatusBar
         barStyle={theme.statusBarStyle}
         backgroundColor={colors.background}
+        translucent={false}
       />
 
       {/* ─── Top Stripe ────────────────────────────────────────────────── */}
@@ -493,7 +502,7 @@ export default function ViewerSignup() {
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
         <ScrollView
           ref={scrollViewRef}
@@ -518,13 +527,14 @@ export default function ViewerSignup() {
                   style={[styles.backBtn, { backgroundColor: colors.background }]}
                   onPress={goBack}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons name="arrow-back" size={scale(20)} color={colors.primary} />
+                  <Ionicons name="arrow-back" size={moderateScale(20)} color={colors.primary} />
                 </TouchableOpacity>
 
                 <View style={styles.headerTextBlock}>
-                  <Text style={styles.headerLabel}>Viewer Signup</Text>
-                  <Text style={styles.headerTitle}>Create Account</Text>
+                  <Text style={[styles.headerLabel, { color: colors.muted }]}>Viewer Signup</Text>
+                  <Text style={[styles.headerTitle, { color: colors.primary }]}>Create Account</Text>
                 </View>
 
                 <View style={styles.headerRight} />
@@ -552,7 +562,7 @@ export default function ViewerSignup() {
                     { opacity: titleFade, transform: [{ translateY: titleSlide }] },
                   ]}
                 >
-                  <Text style={styles.welcomeText}>
+                  <Text style={[styles.welcomeText, { color: colors.primary }]}>
                     Join <Text style={{ color: colors.accent }}>BartaOne!</Text>
                   </Text>
                   <Text style={[styles.subtitle, { color: colors.secondary }]}>
@@ -605,10 +615,11 @@ export default function ViewerSignup() {
                     <TouchableOpacity
                       onPress={() => setShowPassword(!showPassword)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      activeOpacity={0.7}
                     >
                       <Ionicons
                         name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                        size={scale(19)}
+                        size={moderateScale(19)}
                         color={colors.muted}
                       />
                     </TouchableOpacity>
@@ -632,10 +643,11 @@ export default function ViewerSignup() {
                     <TouchableOpacity
                       onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      activeOpacity={0.7}
                     >
                       <Ionicons
                         name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
-                        size={scale(19)}
+                        size={moderateScale(19)}
                         color={colors.muted}
                       />
                     </TouchableOpacity>
@@ -659,7 +671,7 @@ export default function ViewerSignup() {
                       },
                     ]}>
                       {termsAccepted && (
-                        <Ionicons name="checkmark" size={scale(16)} color="#FFFFFF" />
+                        <Ionicons name="checkmark" size={moderateScale(16)} color="#FFFFFF" />
                       )}
                     </View>
                     <Text style={[styles.checkboxText, { color: colors.secondary }]}>
@@ -684,7 +696,11 @@ export default function ViewerSignup() {
                   <TouchableOpacity
                     style={[
                       styles.signupButton,
-                      { backgroundColor: colors.accent, opacity: isLoading ? 0.75 : 1 },
+                      { 
+                        backgroundColor: colors.accent, 
+                        opacity: isLoading ? 0.75 : 1,
+                        shadowColor: colors.accent,
+                      },
                     ]}
                     onPress={handleSignup}
                     onPressIn={handlePressIn}
@@ -693,11 +709,11 @@ export default function ViewerSignup() {
                     activeOpacity={1}
                   >
                     {isLoading ? (
-                      <ActivityIndicator color="#FFFFFF" />
+                      <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
                       <>
                         <Text style={styles.signupButtonText}>Create Account</Text>
-                        <Ionicons name="arrow-forward" size={scale(18)} color="#FFFFFF" />
+                        <Ionicons name="arrow-forward" size={moderateScale(18)} color="#FFFFFF" />
                       </>
                     )}
                   </TouchableOpacity>
@@ -708,7 +724,10 @@ export default function ViewerSignup() {
                   <Text style={[styles.footerText, { color: colors.muted }]}>
                     Already have an account?{' '}
                   </Text>
-                  <TouchableOpacity onPress={() => router.push('/(auth)/ViewerLogin')}>
+                  <TouchableOpacity 
+                    onPress={() => router.push('/(auth)/ViewerLogin')}
+                    activeOpacity={0.7}
+                  >
                     <Text style={[styles.loginText, { color: colors.accent }]}>
                       Log In
                     </Text>
@@ -738,7 +757,7 @@ export default function ViewerSignup() {
                 onPress={() => setTermsModalVisible(false)}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={scale(22)} color={colors.accent} />
+                <Ionicons name="close" size={moderateScale(22)} color={colors.accent} />
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -747,6 +766,16 @@ export default function ViewerSignup() {
               showsVerticalScrollIndicator={true}
             >
               <TermsContent colors={colors} S={S} />
+              <TouchableOpacity
+                style={[styles.acceptBtn, { backgroundColor: colors.accent }]}
+                onPress={() => {
+                  setTermsAccepted(true);
+                  setTermsModalVisible(false);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.acceptBtnText}>I Accept</Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
@@ -757,7 +786,7 @@ export default function ViewerSignup() {
 
 // ─── Styles ──────────────────────────────────────────────────────────────
 const createStyles = (colors, S) => {
-  const { scale, verticalScale, moderateScale } = S;
+  const { scale, verticalScale, moderateScale, fontScale } = S;
 
   return StyleSheet.create({
     root: {
@@ -765,7 +794,7 @@ const createStyles = (colors, S) => {
       backgroundColor: colors.background,
     },
     topStripe: {
-      height: 3,
+      height: verticalScale(3),
     },
     keyboardView: {
       flex: 1,
@@ -781,31 +810,34 @@ const createStyles = (colors, S) => {
       width: '100%',
       maxWidth: MAX_CONTENT_WIDTH,
       alignSelf: 'center',
+      paddingHorizontal: scale(16),
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingTop: verticalScale(28),
+      paddingTop: verticalScale(20),
       paddingBottom: verticalScale(10),
-      paddingHorizontal: scale(20),
+      paddingHorizontal: scale(4),
     },
     backBtn: {
-      width: scale(38),
-      height: scale(38),
+      width: scale(40),
+      height: scale(40),
       borderRadius: scale(10),
       justifyContent: 'center',
       alignItems: 'center',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
     },
     headerTextBlock: {
       flex: 1,
       alignItems: 'center',
     },
     headerRight: {
-      width: scale(38),
+      width: scale(40),
     },
     headerLabel: {
-      fontSize: moderateScale(9),
+      fontSize: fontScale(9),
       fontWeight: '700',
       color: colors.muted,
       letterSpacing: 1.8,
@@ -813,7 +845,7 @@ const createStyles = (colors, S) => {
       marginBottom: verticalScale(3),
     },
     headerTitle: {
-      fontSize: moderateScale(24),
+      fontSize: fontScale(24),
       fontWeight: '800',
       color: colors.primary,
       letterSpacing: -0.4,
@@ -822,35 +854,35 @@ const createStyles = (colors, S) => {
     // ─── Full Width Red Underline ──────────────────────────────────────────
     underlineWrapper: {
       width: '100%',
-      paddingHorizontal: scale(20),
+      paddingHorizontal: scale(4),
       marginBottom: verticalScale(6),
     },
     underline: {
-      height: 2.5,
+      height: verticalScale(2.5),
       width: '100%',
     },
 
     content: {
       flex: 1,
-      paddingHorizontal: scale(22),
-      paddingTop: verticalScale(22),
+      paddingHorizontal: scale(6),
+      paddingTop: verticalScale(18),
     },
     welcomeSection: {
-      marginBottom: verticalScale(26),
+      marginBottom: verticalScale(22),
       alignItems: 'center',
     },
     welcomeText: {
-      fontSize: moderateScale(26),
+      fontSize: fontScale(26),
       fontWeight: '800',
       color: colors.primary,
       letterSpacing: -0.5,
-      lineHeight: moderateScale(34),
+      lineHeight: fontScale(34),
       marginBottom: verticalScale(8),
       textAlign: 'center',
     },
     subtitle: {
-      fontSize: moderateScale(13),
-      lineHeight: moderateScale(19),
+      fontSize: fontScale(13.5),
+      lineHeight: fontScale(19.5),
       fontWeight: '400',
       color: colors.secondary,
       textAlign: 'center',
@@ -864,10 +896,11 @@ const createStyles = (colors, S) => {
       marginBottom: verticalScale(14),
       backgroundColor: colors.inputBackground,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
-      shadowRadius: 6,
-      elevation: 1,
+      shadowOffset: { width: 0, height: verticalScale(2) },
+      shadowOpacity: colors.cardShadowOpacity || 0.06,
+      shadowRadius: scale(6),
+      elevation: 2,
+      minHeight: verticalScale(52),
     },
     inputIcon: {
       marginRight: scale(11),
@@ -875,8 +908,9 @@ const createStyles = (colors, S) => {
     input: {
       flex: 1,
       paddingVertical: verticalScale(14),
-      fontSize: moderateScale(15),
+      fontSize: fontScale(15),
       fontWeight: '400',
+      padding: 0, // Remove default padding on Android
     },
     checkboxContainer: {
       flexDirection: 'row',
@@ -894,7 +928,7 @@ const createStyles = (colors, S) => {
       marginRight: scale(12),
     },
     checkboxText: {
-      fontSize: moderateScale(13),
+      fontSize: fontScale(13),
       fontWeight: '400',
       flex: 1,
       color: colors.secondary,
@@ -907,19 +941,19 @@ const createStyles = (colors, S) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: verticalScale(15),
+      paddingVertical: verticalScale(16),
       borderRadius: scale(14),
       gap: scale(9),
-      shadowColor: colors.accent,
-      shadowOffset: { width: 0, height: scale(5) },
+      shadowOffset: { width: 0, height: verticalScale(5) },
       shadowOpacity: 0.28,
       shadowRadius: scale(14),
       elevation: 5,
       marginTop: verticalScale(8),
+      minHeight: verticalScale(54),
     },
     signupButtonText: {
       color: '#FFFFFF',
-      fontSize: moderateScale(16),
+      fontSize: fontScale(16),
       fontWeight: '700',
       letterSpacing: 0.2,
     },
@@ -927,20 +961,21 @@ const createStyles = (colors, S) => {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: verticalScale(30),
+      marginTop: verticalScale(28),
       paddingVertical: verticalScale(12),
+      flexWrap: 'wrap',
     },
     footerText: {
-      fontSize: moderateScale(13),
+      fontSize: fontScale(13.5),
       color: colors.muted,
     },
     loginText: {
-      fontSize: moderateScale(13),
+      fontSize: fontScale(13.5),
       fontWeight: '700',
       color: colors.accent,
     },
     extraBottomPadding: {
-      height: verticalScale(60),
+      height: verticalScale(40),
     },
 
     // Modal Styles
@@ -961,9 +996,10 @@ const createStyles = (colors, S) => {
       paddingHorizontal: scale(20),
       paddingVertical: verticalScale(16),
       borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
     modalTitle: {
-      fontSize: moderateScale(18),
+      fontSize: fontScale(18),
       fontWeight: '700',
       letterSpacing: -0.3,
       color: colors.primary,
@@ -986,7 +1022,7 @@ const createStyles = (colors, S) => {
 
     // Terms
     termsSectionTitle: {
-      fontSize: moderateScale(16),
+      fontSize: fontScale(16),
       fontWeight: '700',
       marginTop: verticalScale(18),
       marginBottom: verticalScale(8),
@@ -994,8 +1030,8 @@ const createStyles = (colors, S) => {
       color: colors.primary,
     },
     termsText: {
-      fontSize: moderateScale(13.5),
-      lineHeight: moderateScale(22),
+      fontSize: fontScale(13.5),
+      lineHeight: fontScale(22),
       marginBottom: verticalScale(4),
       fontWeight: '400',
       color: colors.secondary,
@@ -1006,11 +1042,25 @@ const createStyles = (colors, S) => {
       marginTop: verticalScale(24),
       paddingTop: verticalScale(16),
       borderTopWidth: 1,
+      borderTopColor: colors.border,
     },
     termsFooterText: {
-      fontSize: moderateScale(11),
+      fontSize: fontScale(11),
       fontWeight: '400',
       color: colors.muted,
+    },
+    acceptBtn: {
+      paddingVertical: verticalScale(14),
+      borderRadius: scale(12),
+      alignItems: 'center',
+      marginTop: verticalScale(20),
+      minHeight: verticalScale(50),
+    },
+    acceptBtnText: {
+      color: '#FFFFFF',
+      fontSize: fontScale(16),
+      fontWeight: '700',
+      letterSpacing: 0.3,
     },
   });
 };

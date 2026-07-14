@@ -16,6 +16,7 @@ import {
   TouchableWithoutFeedback,
   Image,
   Animated,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,11 +29,38 @@ import { getOwnerVideos } from '../../services/videoService';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
 
-const { width: SW, height: SH } = Dimensions.get('window');
-const BASE_W = 390;
-const scale = (n) => Math.round((SW / BASE_W) * n);
-const vs = (n) => Math.round((SH / 844) * n);
-const sp = (n) => n / PixelRatio.getFontScale();
+// ─── Responsive helpers ──────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+// Responsive scaling functions
+const scale = (size) => {
+  const scaleFactor = SCREEN_WIDTH / BASE_WIDTH;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const verticalScale = (size) => {
+  const scaleFactor = SCREEN_HEIGHT / BASE_HEIGHT;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const moderateScale = (size, factor = 0.5) => {
+  return Math.round(size + (scale(size) - size) * factor);
+};
+
+const fontScale = (size) => {
+  const scaleFactor = Math.min(
+    SCREEN_WIDTH / BASE_WIDTH,
+    SCREEN_HEIGHT / BASE_HEIGHT
+  );
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(size * clamped / PixelRatio.getFontScale());
+};
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 const LIGHT = {
@@ -201,7 +229,7 @@ export default function Dashboard() {
           }),
         ]).start();
       });
-    }, 4000); // Change every 4 seconds
+    }, 4000);
 
     return () => clearInterval(interval);
   }, []);
@@ -404,7 +432,7 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.root}>
+      <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={C.accent} />
           <Text style={[styles.loadingText, { color: C.secondary }]}>Loading dashboard…</Text>
@@ -415,7 +443,7 @@ export default function Dashboard() {
 
   if (!channel) {
     return (
-      <SafeAreaView style={styles.root}>
+      <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <EmptyState
           icon="mic-outline"
           title="No Channel Found"
@@ -430,8 +458,8 @@ export default function Dashboard() {
   const currentTip = PRO_TIPS[currentTipIndex];
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topStripe} />
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <View style={[styles.topStripe, { backgroundColor: C.accent }]} />
 
       <ScrollView
         refreshControl={
@@ -444,9 +472,10 @@ export default function Dashboard() {
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        bounces={true}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
           <View style={styles.headerLeft}>
             <Text style={[styles.greeting, { color: C.muted }]}>Welcome back</Text>
             <Text style={[styles.channelName, { color: C.primary }]} numberOfLines={1}>
@@ -454,8 +483,8 @@ export default function Dashboard() {
             </Text>
             {channel.isVerified && (
               <View style={styles.verifiedRow}>
-                <Ionicons name="checkmark-circle" size={14} color="#0E8A5A" />
-                <Text style={styles.verifiedText}>Verified Channel</Text>
+                <Ionicons name="checkmark-circle" size={moderateScale(14)} color="#0E8A5A" />
+                <Text style={[styles.verifiedText, { color: '#0E8A5A' }]}>Verified Channel</Text>
               </View>
             )}
           </View>
@@ -464,6 +493,7 @@ export default function Dashboard() {
           <TouchableOpacity 
             style={[styles.profileBtn, { backgroundColor: C.bg, borderColor: C.border }]} 
             onPress={() => router.push('Profile')}
+            activeOpacity={0.7}
           >
             {channelLogo ? (
               <Image 
@@ -486,7 +516,7 @@ export default function Dashboard() {
           {statCards.map((s) => (
             <View key={s.id} style={[styles.statCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={[styles.statIconBg, { backgroundColor: s.bg }]}>
-                <Ionicons name={s.icon} size={scale(22)} color={s.color} />
+                <Ionicons name={s.icon} size={moderateScale(22)} color={s.color} />
               </View>
               <Text style={[styles.statValue, { color: C.primary }]}>{s.value}</Text>
               <Text style={[styles.statLabel, { color: C.muted }]}>{s.label}</Text>
@@ -507,7 +537,7 @@ export default function Dashboard() {
               onPress={a.onPress}
             >
               <View style={[styles.actionIconBg, { backgroundColor: a.color + '18' }]}>
-                <Ionicons name={a.icon} size={scale(26)} color={a.color} />
+                <Ionicons name={a.icon} size={moderateScale(26)} color={a.color} />
               </View>
               <Text style={[styles.actionTitle, { color: C.primary }]}>{a.title}</Text>
             </TouchableOpacity>
@@ -531,7 +561,7 @@ export default function Dashboard() {
                 activeOpacity={0.7}
               >
                 <View style={[styles.recentIcon, { backgroundColor: activity.bgColor || C.accentBg }]}>
-                  <Ionicons name={activity.icon} size={scale(16)} color={activity.color || C.accent} />
+                  <Ionicons name={activity.icon} size={moderateScale(16)} color={activity.color || C.accent} />
                 </View>
                 <View style={styles.recentContent}>
                   <Text style={[styles.recentTitle, { color: C.primary }]} numberOfLines={1}>
@@ -541,12 +571,12 @@ export default function Dashboard() {
                     {activity.type === 'article' ? '📄 Article' : '🎬 Video'} • {timeAgo(activity.createdAt)}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={scale(18)} color={C.muted} />
+                <Ionicons name="chevron-forward" size={moderateScale(18)} color={C.muted} />
               </TouchableOpacity>
             ))
           ) : (
             <View style={styles.recentEmpty}>
-              <Ionicons name="time-outline" size={scale(32)} color={C.muted} />
+              <Ionicons name="time-outline" size={moderateScale(32)} color={C.muted} />
               <Text style={[styles.recentEmptyTitle, { color: C.secondary }]}>No recent activity</Text>
               <Text style={[styles.recentEmptySub, { color: C.muted }]}>Start publishing to see activity here</Text>
             </View>
@@ -561,7 +591,7 @@ export default function Dashboard() {
         >
           <View style={styles.manageContent}>
             <View style={[styles.manageIconWrap, { backgroundColor: C.accentBg }]}>
-              <Ionicons name="folder-open-outline" size={scale(24)} color={C.accent} />
+              <Ionicons name="folder-open-outline" size={moderateScale(24)} color={C.accent} />
             </View>
             <View style={styles.manageTextWrap}>
               <Text style={[styles.manageTitle, { color: C.primary }]}>Manage Articles & Videos</Text>
@@ -569,7 +599,7 @@ export default function Dashboard() {
                 View, edit, and manage all your published content
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+            <Ionicons name="chevron-forward" size={moderateScale(20)} color={C.muted} />
           </View>
         </TouchableOpacity>
 
@@ -586,7 +616,7 @@ export default function Dashboard() {
           ]}
         >
           <View style={[styles.tipIconWrap, { backgroundColor: C.accent + '18' }]}>
-            <Ionicons name={currentTip.icon} size={scale(22)} color={C.accent} />
+            <Ionicons name={currentTip.icon} size={moderateScale(22)} color={C.accent} />
           </View>
           <View style={styles.tipContent}>
             <Text style={[styles.tipTitle, { color: C.primary }]}>{currentTip.title}</Text>
@@ -625,14 +655,15 @@ export default function Dashboard() {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={[styles.modalContainer, { backgroundColor: C.surface }]}>
-                <View style={styles.modalHandle} />
+                <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
                 <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
                   <Text style={[styles.modalTitle, { color: C.primary }]}>Choose Upload Type</Text>
                   <TouchableOpacity
                     style={[styles.modalCloseBtn, { backgroundColor: C.accentBg }]}
                     onPress={() => setUploadModalVisible(false)}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons name="close" size={scale(22)} color={C.accent} />
+                    <Ionicons name="close" size={moderateScale(22)} color={C.accent} />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.modalContent}>
@@ -642,7 +673,7 @@ export default function Dashboard() {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.optionIconWrap, { backgroundColor: C.accentBg }]}>
-                      <Ionicons name="create-outline" size={scale(32)} color={C.accent} />
+                      <Ionicons name="create-outline" size={moderateScale(32)} color={C.accent} />
                     </View>
                     <View style={styles.optionTextWrap}>
                       <Text style={[styles.optionTitle, { color: C.primary }]}>Upload Article</Text>
@@ -650,7 +681,7 @@ export default function Dashboard() {
                         Write and publish a news article
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                    <Ionicons name="chevron-forward" size={moderateScale(20)} color={C.muted} />
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -659,7 +690,7 @@ export default function Dashboard() {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.optionIconWrap, { backgroundColor: C.iconBlueBg }]}>
-                      <Ionicons name="videocam-outline" size={scale(32)} color={C.iconBlue} />
+                      <Ionicons name="videocam-outline" size={moderateScale(32)} color={C.iconBlue} />
                     </View>
                     <View style={styles.optionTextWrap}>
                       <Text style={[styles.optionTitle, { color: C.primary }]}>Upload Video</Text>
@@ -667,7 +698,7 @@ export default function Dashboard() {
                         Upload and share video content
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                    <Ionicons name="chevron-forward" size={moderateScale(20)} color={C.muted} />
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -695,14 +726,15 @@ export default function Dashboard() {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={[styles.modalContainer, { backgroundColor: C.surface }]}>
-                <View style={styles.modalHandle} />
+                <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
                 <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
                   <Text style={[styles.modalTitle, { color: C.primary }]}>Go Live</Text>
                   <TouchableOpacity
                     style={[styles.modalCloseBtn, { backgroundColor: C.iconGreenBg }]}
                     onPress={() => setGoLiveModalVisible(false)}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons name="close" size={scale(22)} color={C.iconGreen} />
+                    <Ionicons name="close" size={moderateScale(22)} color={C.iconGreen} />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.modalContent}>
@@ -712,7 +744,7 @@ export default function Dashboard() {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.optionIconWrap, { backgroundColor: C.iconGreenBg }]}>
-                      <Ionicons name="radio-outline" size={scale(32)} color={C.iconGreen} />
+                      <Ionicons name="radio-outline" size={moderateScale(32)} color={C.iconGreen} />
                     </View>
                     <View style={styles.optionTextWrap}>
                       <Text style={[styles.optionTitle, { color: C.primary }]}>Start Live Stream</Text>
@@ -720,7 +752,7 @@ export default function Dashboard() {
                         Go live and broadcast to your audience
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                    <Ionicons name="chevron-forward" size={moderateScale(20)} color={C.muted} />
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -729,7 +761,7 @@ export default function Dashboard() {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.optionIconWrap, { backgroundColor: C.iconAmberBg }]}>
-                      <Ionicons name="calendar-outline" size={scale(32)} color={C.iconAmber} />
+                      <Ionicons name="calendar-outline" size={moderateScale(32)} color={C.iconAmber} />
                     </View>
                     <View style={styles.optionTextWrap}>
                       <Text style={[styles.optionTitle, { color: C.primary }]}>Schedule Live</Text>
@@ -737,7 +769,7 @@ export default function Dashboard() {
                         Schedule a live stream for later
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                    <Ionicons name="chevron-forward" size={moderateScale(20)} color={C.muted} />
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -765,14 +797,15 @@ export default function Dashboard() {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={[styles.modalContainer, { backgroundColor: C.surface }]}>
-                <View style={styles.modalHandle} />
+                <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
                 <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
                   <Text style={[styles.modalTitle, { color: C.primary }]}>Subscribers</Text>
                   <TouchableOpacity
                     style={[styles.modalCloseBtn, { backgroundColor: C.iconPurpleBg }]}
                     onPress={() => setSubscribersModalVisible(false)}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons name="close" size={scale(22)} color={C.iconPurple} />
+                    <Ionicons name="close" size={moderateScale(22)} color={C.iconPurple} />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.modalContent}>
@@ -782,7 +815,7 @@ export default function Dashboard() {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.optionIconWrap, { backgroundColor: C.iconPurpleBg }]}>
-                      <Ionicons name="people-outline" size={scale(32)} color={C.iconPurple} />
+                      <Ionicons name="people-outline" size={moderateScale(32)} color={C.iconPurple} />
                     </View>
                     <View style={styles.optionTextWrap}>
                       <Text style={[styles.optionTitle, { color: C.primary }]}>View Subscribers</Text>
@@ -790,7 +823,7 @@ export default function Dashboard() {
                         See all your channel subscribers
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                    <Ionicons name="chevron-forward" size={moderateScale(20)} color={C.muted} />
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -799,7 +832,7 @@ export default function Dashboard() {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.optionIconWrap, { backgroundColor: C.iconAmberBg }]}>
-                      <Ionicons name="analytics-outline" size={scale(32)} color={C.iconAmber} />
+                      <Ionicons name="analytics-outline" size={moderateScale(32)} color={C.iconAmber} />
                     </View>
                     <View style={styles.optionTextWrap}>
                       <Text style={[styles.optionTitle, { color: C.primary }]}>Analytics</Text>
@@ -807,7 +840,7 @@ export default function Dashboard() {
                         View subscriber growth and engagement
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={scale(20)} color={C.muted} />
+                    <Ionicons name="chevron-forward" size={moderateScale(20)} color={C.muted} />
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -834,21 +867,20 @@ function makeStyles(C) {
       backgroundColor: C.bg,
     },
     topStripe: {
-      height: 3,
-      backgroundColor: C.accent,
+      height: verticalScale(3),
     },
     content: {
       flexGrow: 1,
-      paddingBottom: vs(20),
+      paddingBottom: verticalScale(20),
     },
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      gap: vs(12),
+      gap: verticalScale(12),
     },
     loadingText: {
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '500',
     },
 
@@ -858,33 +890,32 @@ function makeStyles(C) {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: scale(20),
-      paddingTop: vs(16),
-      paddingBottom: vs(14),
-      backgroundColor: C.surface,
+      paddingTop: verticalScale(16),
+      paddingBottom: verticalScale(14),
+      borderBottomWidth: StyleSheet.hairlineWidth,
     },
     headerLeft: {
       flex: 1,
     },
     greeting: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '500',
       letterSpacing: 0.2,
     },
     channelName: {
-      fontSize: sp(22),
+      fontSize: fontScale(22),
       fontWeight: '800',
       letterSpacing: -0.5,
-      marginTop: vs(2),
+      marginTop: verticalScale(2),
     },
     verifiedRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: scale(4),
-      marginTop: vs(3),
+      marginTop: verticalScale(3),
     },
     verifiedText: {
-      fontSize: sp(12),
-      color: '#0E8A5A',
+      fontSize: fontScale(12),
       fontWeight: '600',
     },
     profileBtn: {
@@ -909,7 +940,7 @@ function makeStyles(C) {
       alignItems: 'center',
     },
     logoPlaceholderText: {
-      fontSize: sp(20),
+      fontSize: fontScale(20),
       fontWeight: '700',
     },
 
@@ -922,7 +953,7 @@ function makeStyles(C) {
     },
     statCard: {
       flex: 1,
-      minWidth: (SW - scale(52)) / 2,
+      minWidth: (SCREEN_WIDTH - scale(52)) / 2,
       padding: scale(16),
       borderRadius: scale(14),
       alignItems: 'center',
@@ -939,17 +970,17 @@ function makeStyles(C) {
       borderRadius: scale(24),
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: vs(8),
+      marginBottom: verticalScale(8),
     },
     statValue: {
-      fontSize: sp(26),
+      fontSize: fontScale(26),
       fontWeight: '800',
       letterSpacing: -0.5,
     },
     statLabel: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '500',
-      marginTop: vs(2),
+      marginTop: verticalScale(2),
     },
 
     // Section Header
@@ -958,16 +989,16 @@ function makeStyles(C) {
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: scale(20),
-      marginBottom: vs(10),
-      marginTop: vs(4),
+      marginBottom: verticalScale(10),
+      marginTop: verticalScale(4),
     },
     sectionTitle: {
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '700',
       letterSpacing: -0.2,
     },
     seeAll: {
-      fontSize: sp(13),
+      fontSize: fontScale(13),
       fontWeight: '600',
     },
 
@@ -977,11 +1008,11 @@ function makeStyles(C) {
       flexWrap: 'wrap',
       paddingHorizontal: scale(14),
       gap: scale(12),
-      marginBottom: vs(12),
+      marginBottom: verticalScale(12),
     },
     actionCard: {
       flex: 1,
-      minWidth: (SW - scale(52)) / 2,
+      minWidth: (SCREEN_WIDTH - scale(52)) / 2,
       padding: scale(16),
       borderRadius: scale(14),
       alignItems: 'center',
@@ -998,10 +1029,10 @@ function makeStyles(C) {
       borderRadius: scale(28),
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: vs(8),
+      marginBottom: verticalScale(8),
     },
     actionTitle: {
-      fontSize: sp(13),
+      fontSize: fontScale(13),
       fontWeight: '600',
       textAlign: 'center',
     },
@@ -1017,12 +1048,12 @@ function makeStyles(C) {
       shadowOpacity: C.cardShadowOpacity,
       shadowRadius: scale(8),
       elevation: 2,
-      marginBottom: vs(8),
+      marginBottom: verticalScale(8),
     },
     recentRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: vs(10),
+      paddingVertical: verticalScale(10),
       gap: scale(12),
     },
     recentIcon: {
@@ -1037,24 +1068,24 @@ function makeStyles(C) {
       flex: 1,
     },
     recentTitle: {
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '600',
     },
     recentSub: {
-      fontSize: sp(12),
-      marginTop: vs(2),
+      fontSize: fontScale(12),
+      marginTop: verticalScale(2),
     },
     recentEmpty: {
       alignItems: 'center',
-      paddingVertical: vs(20),
-      gap: vs(6),
+      paddingVertical: verticalScale(20),
+      gap: verticalScale(6),
     },
     recentEmptyTitle: {
-      fontSize: sp(15),
+      fontSize: fontScale(15),
       fontWeight: '600',
     },
     recentEmptySub: {
-      fontSize: sp(13),
+      fontSize: fontScale(13),
     },
 
     // Manage Card
@@ -1068,7 +1099,7 @@ function makeStyles(C) {
       shadowOpacity: C.cardShadowOpacity,
       shadowRadius: scale(8),
       elevation: 2,
-      marginBottom: vs(16),
+      marginBottom: verticalScale(16),
     },
     manageContent: {
       flexDirection: 'row',
@@ -1086,12 +1117,12 @@ function makeStyles(C) {
       flex: 1,
     },
     manageTitle: {
-      fontSize: sp(15),
+      fontSize: fontScale(15),
       fontWeight: '600',
     },
     manageSubtext: {
-      fontSize: sp(12),
-      marginTop: vs(2),
+      fontSize: fontScale(12),
+      marginTop: verticalScale(2),
     },
 
     // Pro Tip Card
@@ -1102,7 +1133,7 @@ function makeStyles(C) {
       borderRadius: scale(14),
       gap: scale(12),
       borderWidth: 1,
-      marginBottom: vs(4),
+      marginBottom: verticalScale(4),
     },
     tipIconWrap: {
       width: scale(44),
@@ -1116,13 +1147,13 @@ function makeStyles(C) {
       flex: 1,
     },
     tipTitle: {
-      fontSize: sp(13),
+      fontSize: fontScale(13),
       fontWeight: '700',
-      marginBottom: vs(2),
+      marginBottom: verticalScale(2),
     },
     tipText: {
-      fontSize: sp(13),
-      lineHeight: sp(19),
+      fontSize: fontScale(13),
+      lineHeight: fontScale(19),
     },
 
     // Dots Indicator
@@ -1130,8 +1161,8 @@ function makeStyles(C) {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: vs(8),
-      marginBottom: vs(8),
+      paddingVertical: verticalScale(8),
+      marginBottom: verticalScale(8),
       gap: scale(6),
     },
     dot: {
@@ -1141,7 +1172,7 @@ function makeStyles(C) {
     },
 
     bottomSpacer: {
-      height: vs(20),
+      height: verticalScale(20),
     },
 
     // ─── Modal Styles ──────────────────────────────────────────────────────
@@ -1153,28 +1184,27 @@ function makeStyles(C) {
     modalContainer: {
       borderTopLeftRadius: scale(24),
       borderTopRightRadius: scale(24),
-      paddingBottom: vs(20),
-      maxHeight: SH * 0.6,
+      paddingBottom: verticalScale(20),
+      maxHeight: SCREEN_HEIGHT * 0.6,
     },
     modalHandle: {
       width: scale(40),
       height: scale(4),
       borderRadius: scale(2),
-      backgroundColor: C.border,
       alignSelf: 'center',
-      marginTop: vs(10),
-      marginBottom: vs(6),
+      marginTop: verticalScale(10),
+      marginBottom: verticalScale(6),
     },
     modalHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: scale(20),
-      paddingVertical: vs(12),
+      paddingVertical: verticalScale(12),
       borderBottomWidth: 1,
     },
     modalTitle: {
-      fontSize: sp(18),
+      fontSize: fontScale(18),
       fontWeight: '700',
       letterSpacing: -0.3,
     },
@@ -1187,7 +1217,7 @@ function makeStyles(C) {
     },
     modalContent: {
       padding: scale(20),
-      gap: vs(12),
+      gap: verticalScale(12),
     },
     uploadOption: {
       flexDirection: 'row',
@@ -1208,22 +1238,22 @@ function makeStyles(C) {
       flex: 1,
     },
     optionTitle: {
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '600',
     },
     optionSubtext: {
-      fontSize: sp(13),
-      marginTop: vs(2),
+      fontSize: fontScale(13),
+      marginTop: verticalScale(2),
     },
     cancelBtn: {
-      paddingVertical: vs(14),
+      paddingVertical: verticalScale(14),
       borderRadius: scale(12),
       alignItems: 'center',
       borderWidth: 1,
-      marginTop: vs(4),
+      marginTop: verticalScale(4),
     },
     cancelBtnText: {
-      fontSize: sp(15),
+      fontSize: fontScale(15),
       fontWeight: '600',
     },
   });

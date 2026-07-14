@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { useAuth } from '../../hooks/useAuth';
 import { getChannelByOwner } from '../../services/channelService';
 import { getOwnerArticles, deleteArticle } from '../../services/articleService';
@@ -28,11 +28,38 @@ import { getOwnerVideos, deleteVideo } from '../../services/videoService';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
 
-const { width: SW, height: SH } = Dimensions.get('window');
-const BASE_W = 390;
-const scale = (n) => Math.round((SW / BASE_W) * n);
-const vs = (n) => Math.round((SH / 844) * n);
-const sp = (n) => n / PixelRatio.getFontScale();
+// ─── Responsive helpers ──────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+// Responsive scaling functions
+const scale = (size) => {
+  const scaleFactor = SCREEN_WIDTH / BASE_WIDTH;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const verticalScale = (size) => {
+  const scaleFactor = SCREEN_HEIGHT / BASE_HEIGHT;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const moderateScale = (size, factor = 0.5) => {
+  return Math.round(size + (scale(size) - size) * factor);
+};
+
+const fontScale = (size) => {
+  const scaleFactor = Math.min(
+    SCREEN_WIDTH / BASE_WIDTH,
+    SCREEN_HEIGHT / BASE_HEIGHT
+  );
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(size * clamped / PixelRatio.getFontScale());
+};
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 const LIGHT = {
@@ -238,7 +265,6 @@ export default function ManagePosts() {
       setIsVideoLoading(false);
     }
     if (status.didJustFinish) {
-      // Video finished playing
       console.log('Video finished playing');
     }
   };
@@ -275,7 +301,7 @@ export default function ManagePosts() {
         <View style={styles.postHeader}>
           <View style={styles.postIconWrap}>
             <View style={[styles.postIconBg, { backgroundColor: C.accentBg }]}>
-              <Ionicons name="newspaper-outline" size={scale(18)} color={C.accent} />
+              <Ionicons name="newspaper-outline" size={moderateScale(18)} color={C.accent} />
             </View>
             <View style={styles.postTitleWrap}>
               <Text style={[styles.postTitle, { color: C.primary }]} numberOfLines={2}>
@@ -297,15 +323,15 @@ export default function ManagePosts() {
         
         <View style={styles.postStats}>
           <View style={styles.stat}>
-            <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
+            <Ionicons name="eye-outline" size={moderateScale(14)} color={C.muted} />
             <Text style={[styles.statText, { color: C.muted }]}>{article.views || 0}</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
+            <Ionicons name="heart-outline" size={moderateScale(14)} color={C.muted} />
             <Text style={[styles.statText, { color: C.muted }]}>{article.likes || 0}</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="chatbubble-outline" size={scale(14)} color={C.muted} />
+            <Ionicons name="chatbubble-outline" size={moderateScale(14)} color={C.muted} />
             <Text style={[styles.statText, { color: C.muted }]}>{article.comments || 0}</Text>
           </View>
           <View style={[styles.stat, styles.statCategory]}>
@@ -319,8 +345,9 @@ export default function ManagePosts() {
           <TouchableOpacity
             style={[styles.actionBtn, styles.seeMoreBtn, { backgroundColor: C.accentBg }]}
             onPress={() => handleSeeMore(article, 'article')}
+            activeOpacity={0.7}
           >
-            <Ionicons name="eye-outline" size={scale(16)} color={C.accent} />
+            <Ionicons name="eye-outline" size={moderateScale(16)} color={C.accent} />
             <Text style={[styles.actionBtnText, { color: C.accent }]}>See More</Text>
           </TouchableOpacity>
           
@@ -328,16 +355,18 @@ export default function ManagePosts() {
             <TouchableOpacity
               style={[styles.actionBtn, styles.editBtn, { backgroundColor: C.iconBlueBg }]}
               onPress={() => handleEdit(article, 'article')}
+              activeOpacity={0.7}
             >
-              <Ionicons name="create-outline" size={scale(16)} color={C.iconBlue} />
+              <Ionicons name="create-outline" size={moderateScale(16)} color={C.iconBlue} />
               <Text style={[styles.actionBtnText, { color: C.iconBlue }]}>Edit</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
               style={[styles.actionBtn, styles.deleteBtn, { backgroundColor: C.accentBg }]}
               onPress={() => handleDelete(article, 'article')}
+              activeOpacity={0.7}
             >
-              <Ionicons name="trash-outline" size={scale(16)} color={C.accent} />
+              <Ionicons name="trash-outline" size={moderateScale(16)} color={C.accent} />
               <Text style={[styles.actionBtnText, { color: C.accent }]}>Delete</Text>
             </TouchableOpacity>
           </View>
@@ -360,7 +389,7 @@ export default function ManagePosts() {
         />
       ) : (
         <View style={[styles.thumbnailPlaceholder, { backgroundColor: C.bg }]}>
-          <Ionicons name="videocam" size={scale(40)} color={C.muted} />
+          <Ionicons name="videocam" size={moderateScale(40)} color={C.muted} />
         </View>
       )}
       
@@ -368,7 +397,7 @@ export default function ManagePosts() {
         <View style={styles.postHeader}>
           <View style={styles.postIconWrap}>
             <View style={[styles.postIconBg, { backgroundColor: C.iconBlueBg }]}>
-              <Ionicons name="videocam-outline" size={scale(18)} color={C.iconBlue} />
+              <Ionicons name="videocam-outline" size={moderateScale(18)} color={C.iconBlue} />
             </View>
             <View style={styles.postTitleWrap}>
               <Text style={[styles.postTitle, { color: C.primary }]} numberOfLines={2}>
@@ -390,11 +419,11 @@ export default function ManagePosts() {
         
         <View style={styles.postStats}>
           <View style={styles.stat}>
-            <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
+            <Ionicons name="eye-outline" size={moderateScale(14)} color={C.muted} />
             <Text style={[styles.statText, { color: C.muted }]}>{video.views || 0}</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
+            <Ionicons name="heart-outline" size={moderateScale(14)} color={C.muted} />
             <Text style={[styles.statText, { color: C.muted }]}>{video.likes || 0}</Text>
           </View>
           <View style={[styles.stat, styles.statCategory]}>
@@ -408,8 +437,9 @@ export default function ManagePosts() {
           <TouchableOpacity
             style={[styles.actionBtn, styles.seeMoreBtn, { backgroundColor: C.accentBg }]}
             onPress={() => handleSeeMore(video, 'video')}
+            activeOpacity={0.7}
           >
-            <Ionicons name="eye-outline" size={scale(16)} color={C.accent} />
+            <Ionicons name="eye-outline" size={moderateScale(16)} color={C.accent} />
             <Text style={[styles.actionBtnText, { color: C.accent }]}>See More</Text>
           </TouchableOpacity>
           
@@ -417,16 +447,18 @@ export default function ManagePosts() {
             <TouchableOpacity
               style={[styles.actionBtn, styles.editBtn, { backgroundColor: C.iconBlueBg }]}
               onPress={() => handleEdit(video, 'video')}
+              activeOpacity={0.7}
             >
-              <Ionicons name="create-outline" size={scale(16)} color={C.iconBlue} />
+              <Ionicons name="create-outline" size={moderateScale(16)} color={C.iconBlue} />
               <Text style={[styles.actionBtnText, { color: C.iconBlue }]}>Edit</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
               style={[styles.actionBtn, styles.deleteBtn, { backgroundColor: C.accentBg }]}
               onPress={() => handleDelete(video, 'video')}
+              activeOpacity={0.7}
             >
-              <Ionicons name="trash-outline" size={scale(16)} color={C.accent} />
+              <Ionicons name="trash-outline" size={moderateScale(16)} color={C.accent} />
               <Text style={[styles.actionBtnText, { color: C.accent }]}>Delete</Text>
             </TouchableOpacity>
           </View>
@@ -493,19 +525,19 @@ export default function ManagePosts() {
             <View style={[styles.previewFooter, { borderTopColor: C.border }]}>
               <View style={styles.previewStats}>
                 <View style={styles.previewStat}>
-                  <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
+                  <Ionicons name="eye-outline" size={moderateScale(14)} color={C.muted} />
                   <Text style={[styles.previewStatText, { color: C.muted }]}>
                     {article.views || 0}
                   </Text>
                 </View>
                 <View style={styles.previewStat}>
-                  <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
+                  <Ionicons name="heart-outline" size={moderateScale(14)} color={C.muted} />
                   <Text style={[styles.previewStatText, { color: C.muted }]}>
                     {article.likes || 0}
                   </Text>
                 </View>
                 <View style={styles.previewStat}>
-                  <Ionicons name="chatbubble-outline" size={scale(14)} color={C.muted} />
+                  <Ionicons name="chatbubble-outline" size={moderateScale(14)} color={C.muted} />
                   <Text style={[styles.previewStatText, { color: C.muted }]}>
                     {article.comments || 0}
                   </Text>
@@ -552,11 +584,11 @@ export default function ManagePosts() {
               />
             ) : (
               <View style={[styles.previewVideoPlaceholder, { backgroundColor: C.bg }]}>
-                <Ionicons name="videocam" size={scale(48)} color={C.muted} />
+                <Ionicons name="videocam" size={moderateScale(48)} color={C.muted} />
               </View>
             )}
             <View style={styles.previewPlayButton}>
-              <Ionicons name="play-circle" size={scale(64)} color={C.accent} />
+              <Ionicons name="play-circle" size={moderateScale(64)} color={C.accent} />
             </View>
           </TouchableOpacity>
 
@@ -594,21 +626,22 @@ export default function ManagePosts() {
                   openVideoPlayer(video.videoUrl, video.title);
                 }
               }}
+              activeOpacity={0.7}
             >
-              <Ionicons name="play-circle" size={scale(24)} color="#FFF" />
+              <Ionicons name="play-circle" size={moderateScale(24)} color="#FFF" />
               <Text style={styles.watchVideoText}>Play Video</Text>
             </TouchableOpacity>
 
             <View style={[styles.previewFooter, { borderTopColor: C.border }]}>
               <View style={styles.previewStats}>
                 <View style={styles.previewStat}>
-                  <Ionicons name="eye-outline" size={scale(14)} color={C.muted} />
+                  <Ionicons name="eye-outline" size={moderateScale(14)} color={C.muted} />
                   <Text style={[styles.previewStatText, { color: C.muted }]}>
                     {video.views || 0}
                   </Text>
                 </View>
                 <View style={styles.previewStat}>
-                  <Ionicons name="heart-outline" size={scale(14)} color={C.muted} />
+                  <Ionicons name="heart-outline" size={moderateScale(14)} color={C.muted} />
                   <Text style={[styles.previewStatText, { color: C.muted }]}>
                     {video.likes || 0}
                   </Text>
@@ -625,7 +658,7 @@ export default function ManagePosts() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.root}>
+      <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={C.accent} />
           <Text style={[styles.loadingText, { color: C.secondary }]}>Loading posts...</Text>
@@ -638,22 +671,24 @@ export default function ManagePosts() {
   const hasData = currentData && currentData.length > 0;
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topStripe} />
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <View style={[styles.topStripe, { backgroundColor: C.accent }]} />
 
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity 
           style={[styles.backBtn, { backgroundColor: C.bg }]} 
           onPress={() => router.back()}
+          activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={scale(20)} color={C.primary} />
+          <Ionicons name="arrow-back" size={moderateScale(20)} color={C.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: C.primary }]}>Manage Posts</Text>
         <TouchableOpacity 
           style={[styles.createBtn, { backgroundColor: C.accent }]}
           onPress={() => router.push(activeTab === 'articles' ? '/(owner)/UploadArticle' : '/(owner)/UploadVideo')}
+          activeOpacity={0.7}
         >
-          <Ionicons name="add" size={scale(22)} color="#FFFFFF" />
+          <Ionicons name="add" size={moderateScale(22)} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -661,9 +696,10 @@ export default function ManagePosts() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'articles' && styles.tabActive]}
           onPress={() => setActiveTab('articles')}
+          activeOpacity={0.7}
         >
           <View style={styles.tabContent}>
-            <Ionicons name="newspaper-outline" size={scale(16)} color={activeTab === 'articles' ? C.accent : C.muted} />
+            <Ionicons name="newspaper-outline" size={moderateScale(16)} color={activeTab === 'articles' ? C.accent : C.muted} />
             <Text
               style={[
                 styles.tabText,
@@ -679,9 +715,10 @@ export default function ManagePosts() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'videos' && styles.tabActive]}
           onPress={() => setActiveTab('videos')}
+          activeOpacity={0.7}
         >
           <View style={styles.tabContent}>
-            <Ionicons name="videocam-outline" size={scale(16)} color={activeTab === 'videos' ? C.accent : C.muted} />
+            <Ionicons name="videocam-outline" size={moderateScale(16)} color={activeTab === 'videos' ? C.accent : C.muted} />
             <Text
               style={[
                 styles.tabText,
@@ -707,6 +744,7 @@ export default function ManagePosts() {
         }
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        bounces={true}
       >
         {hasData ? (
           activeTab === 'articles'
@@ -723,6 +761,9 @@ export default function ManagePosts() {
             />
           </View>
         )}
+        
+        {/* Bottom padding for scroll */}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
 
       {/* ─── Preview Modal ────────────────────────────────────────────────────── */}
@@ -737,15 +778,17 @@ export default function ManagePosts() {
             <TouchableOpacity 
               onPress={() => setPreviewModalVisible(false)}
               style={styles.previewCloseBtn}
+              activeOpacity={0.7}
             >
-              <Ionicons name="close" size={scale(24)} color={C.primary} />
+              <Ionicons name="close" size={moderateScale(24)} color={C.primary} />
             </TouchableOpacity>
             <Text style={[styles.previewModalTitle, { color: C.primary }]}>Preview</Text>
             <TouchableOpacity 
               onPress={() => handleEdit(previewItem, previewType)}
               style={[styles.previewEditBtn, { backgroundColor: C.accent }]}
+              activeOpacity={0.7}
             >
-              <Ionicons name="create-outline" size={scale(18)} color="#FFF" />
+              <Ionicons name="create-outline" size={moderateScale(18)} color="#FFF" />
               <Text style={styles.previewEditBtnText}>Edit</Text>
             </TouchableOpacity>
           </View>
@@ -769,9 +812,9 @@ export default function ManagePosts() {
       >
         <SafeAreaViewRN style={[styles.videoPlayerContainer, { backgroundColor: '#000' }]}>
           {/* Video Player Header */}
-          <View style={styles.videoPlayerHeader}>
-            <TouchableOpacity onPress={closeVideoPlayer} style={styles.videoPlayerCloseBtn}>
-              <Ionicons name="arrow-back" size={scale(28)} color="#FFFFFF" />
+          <View style={[styles.videoPlayerHeader, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+            <TouchableOpacity onPress={closeVideoPlayer} style={styles.videoPlayerCloseBtn} activeOpacity={0.7}>
+              <Ionicons name="arrow-back" size={moderateScale(28)} color="#FFFFFF" />
             </TouchableOpacity>
             <Text style={styles.videoPlayerTitle} numberOfLines={1}>
               {videoTitle || 'Video'}
@@ -824,17 +867,16 @@ function makeStyles(C) {
       backgroundColor: C.bg,
     },
     topStripe: {
-      height: 3,
-      backgroundColor: C.accent,
+      height: verticalScale(3),
     },
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      gap: vs(12),
+      gap: verticalScale(12),
     },
     loadingText: {
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '500',
     },
     header: {
@@ -842,8 +884,9 @@ function makeStyles(C) {
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: scale(16),
-      paddingVertical: vs(12),
-      borderBottomWidth: 1,
+      paddingVertical: verticalScale(12),
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      minHeight: verticalScale(56),
     },
     backBtn: {
       width: scale(38),
@@ -853,7 +896,7 @@ function makeStyles(C) {
       alignItems: 'center',
     },
     headerTitle: {
-      fontSize: sp(18),
+      fontSize: fontScale(18),
       fontWeight: '700',
       letterSpacing: -0.3,
     },
@@ -871,12 +914,12 @@ function makeStyles(C) {
     },
     tabContainer: {
       flexDirection: 'row',
-      borderBottomWidth: 1,
+      borderBottomWidth: StyleSheet.hairlineWidth,
       paddingHorizontal: scale(16),
     },
     tab: {
       flex: 1,
-      paddingVertical: vs(12),
+      paddingVertical: verticalScale(12),
       alignItems: 'center',
       position: 'relative',
     },
@@ -886,7 +929,7 @@ function makeStyles(C) {
       gap: scale(6),
     },
     tabText: {
-      fontSize: sp(13),
+      fontSize: fontScale(13),
       fontWeight: '600',
     },
     tabTextActive: {
@@ -897,7 +940,7 @@ function makeStyles(C) {
       bottom: 0,
       left: 0,
       right: 0,
-      height: 2.5,
+      height: verticalScale(2.5),
       borderRadius: scale(2),
     },
     content: {
@@ -907,11 +950,14 @@ function makeStyles(C) {
     emptyContainer: {
       flex: 1,
       justifyContent: 'center',
-      paddingTop: vs(40),
+      paddingTop: verticalScale(40),
+    },
+    bottomSpacer: {
+      height: verticalScale(20),
     },
     postCard: {
       borderRadius: scale(14),
-      marginBottom: vs(12),
+      marginBottom: verticalScale(12),
       borderWidth: StyleSheet.hairlineWidth,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: scale(2) },
@@ -922,12 +968,12 @@ function makeStyles(C) {
     },
     thumbnailImage: {
       width: '100%',
-      height: vs(180),
+      height: verticalScale(180),
       backgroundColor: C.bg,
     },
     thumbnailPlaceholder: {
       width: '100%',
-      height: vs(180),
+      height: verticalScale(180),
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -956,33 +1002,35 @@ function makeStyles(C) {
       flex: 1,
     },
     postTitle: {
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '600',
-      marginBottom: vs(4),
-      lineHeight: sp(22),
+      marginBottom: verticalScale(4),
+      lineHeight: fontScale(22),
     },
     postMeta: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: scale(8),
+      flexWrap: 'wrap',
     },
     statusBadge: {
       paddingHorizontal: scale(8),
-      paddingVertical: vs(2),
+      paddingVertical: verticalScale(2),
       borderRadius: scale(6),
     },
     statusText: {
-      fontSize: sp(10),
+      fontSize: fontScale(10),
       fontWeight: '600',
     },
     postDate: {
-      fontSize: sp(11),
+      fontSize: fontScale(11),
     },
     postStats: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: scale(14),
-      marginTop: vs(6),
+      marginTop: verticalScale(6),
+      flexWrap: 'wrap',
     },
     stat: {
       flexDirection: 'row',
@@ -993,14 +1041,14 @@ function makeStyles(C) {
       marginLeft: 'auto',
     },
     statText: {
-      fontSize: sp(11),
+      fontSize: fontScale(11),
       fontWeight: '500',
     },
     categoryText: {
-      fontSize: sp(10),
+      fontSize: fontScale(10),
       fontWeight: '600',
       paddingHorizontal: scale(8),
-      paddingVertical: vs(2),
+      paddingVertical: verticalScale(2),
       borderRadius: scale(6),
       overflow: 'hidden',
     },
@@ -1008,9 +1056,11 @@ function makeStyles(C) {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingTop: vs(10),
-      marginTop: vs(8),
-      borderTopWidth: 1,
+      paddingTop: verticalScale(10),
+      marginTop: verticalScale(8),
+      borderTopWidth: StyleSheet.hairlineWidth,
+      flexWrap: 'wrap',
+      gap: scale(6),
     },
     actionRight: {
       flexDirection: 'row',
@@ -1021,19 +1071,17 @@ function makeStyles(C) {
       alignItems: 'center',
       gap: scale(4),
       paddingHorizontal: scale(12),
-      paddingVertical: vs(6),
+      paddingVertical: verticalScale(6),
       borderRadius: scale(8),
     },
     actionBtnText: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '600',
     },
     seeMoreBtn: {
       flex: 1,
       justifyContent: 'center',
     },
-    editBtn: {},
-    deleteBtn: {},
     previewModalContainer: {
       flex: 1,
     },
@@ -1042,8 +1090,9 @@ function makeStyles(C) {
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: scale(16),
-      paddingVertical: vs(12),
-      borderBottomWidth: 1,
+      paddingVertical: verticalScale(12),
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      minHeight: verticalScale(56),
     },
     previewCloseBtn: {
       width: scale(38),
@@ -1053,7 +1102,7 @@ function makeStyles(C) {
       alignItems: 'center',
     },
     previewModalTitle: {
-      fontSize: sp(17),
+      fontSize: fontScale(17),
       fontWeight: '700',
       letterSpacing: -0.3,
     },
@@ -1062,12 +1111,12 @@ function makeStyles(C) {
       alignItems: 'center',
       gap: scale(4),
       paddingHorizontal: scale(12),
-      paddingVertical: vs(6),
+      paddingVertical: verticalScale(6),
       borderRadius: scale(8),
     },
     previewEditBtnText: {
       color: '#FFF',
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '600',
     },
     previewScrollContainer: {
@@ -1089,20 +1138,20 @@ function makeStyles(C) {
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: scale(16),
-      paddingVertical: vs(12),
-      borderBottomWidth: 1,
+      paddingVertical: verticalScale(12),
+      borderBottomWidth: StyleSheet.hairlineWidth,
     },
     previewBadge: {
-      fontSize: sp(10),
+      fontSize: fontScale(10),
       fontWeight: '700',
       paddingHorizontal: scale(8),
-      paddingVertical: vs(2),
+      paddingVertical: verticalScale(2),
       borderRadius: scale(4),
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
     previewChannel: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '500',
     },
     previewScroll: {
@@ -1110,11 +1159,11 @@ function makeStyles(C) {
     },
     previewImage: {
       width: '100%',
-      height: vs(220),
+      height: verticalScale(220),
     },
     previewVideoContainer: {
       width: '100%',
-      height: vs(220),
+      height: verticalScale(220),
       position: 'relative',
       backgroundColor: '#000',
       borderRadius: scale(8),
@@ -1148,62 +1197,64 @@ function makeStyles(C) {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: vs(8),
+      marginBottom: verticalScale(8),
+      flexWrap: 'wrap',
+      gap: scale(4),
     },
     previewCategory: {
-      fontSize: sp(11),
+      fontSize: fontScale(11),
       fontWeight: '600',
       paddingHorizontal: scale(8),
-      paddingVertical: vs(2),
+      paddingVertical: verticalScale(2),
       borderRadius: scale(4),
       textTransform: 'uppercase',
       letterSpacing: 0.3,
     },
     previewDate: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
     },
     previewTitle: {
-      fontSize: sp(22),
+      fontSize: fontScale(22),
       fontWeight: '800',
-      lineHeight: sp(28),
-      marginBottom: vs(8),
+      lineHeight: fontScale(28),
+      marginBottom: verticalScale(8),
       letterSpacing: -0.3,
     },
     previewSummary: {
-      fontSize: sp(15),
-      lineHeight: sp(22),
-      marginBottom: vs(12),
+      fontSize: fontScale(15),
+      lineHeight: fontScale(22),
+      marginBottom: verticalScale(12),
       fontStyle: 'italic',
     },
     previewDivider: {
-      height: 1,
-      marginVertical: vs(12),
+      height: StyleSheet.hairlineWidth,
+      marginVertical: verticalScale(12),
     },
     previewBodyText: {
-      fontSize: sp(15),
-      lineHeight: sp(24),
+      fontSize: fontScale(15),
+      lineHeight: fontScale(24),
     },
     watchVideoBtn: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: scale(8),
-      paddingVertical: vs(14),
+      paddingVertical: verticalScale(14),
       borderRadius: scale(10),
-      marginVertical: vs(12),
+      marginVertical: verticalScale(12),
     },
     watchVideoText: {
       color: '#FFFFFF',
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '700',
     },
     previewFooter: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingTop: vs(12),
-      marginTop: vs(12),
-      borderTopWidth: 1,
+      paddingTop: verticalScale(12),
+      marginTop: verticalScale(12),
+      borderTopWidth: StyleSheet.hairlineWidth,
     },
     previewStats: {
       flexDirection: 'row',
@@ -1215,10 +1266,10 @@ function makeStyles(C) {
       gap: scale(4),
     },
     previewStatText: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
     },
     previewReadingTime: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
     },
 
     // ─── Video Player Styles ──────────────────────────────────────────────────
@@ -1231,9 +1282,8 @@ function makeStyles(C) {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: scale(16),
-      paddingTop: Platform.OS === 'ios' ? vs(10) : vs(16),
-      paddingBottom: vs(12),
-      backgroundColor: 'rgba(0,0,0,0.8)',
+      paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(16),
+      paddingBottom: verticalScale(12),
       zIndex: 10,
     },
     videoPlayerCloseBtn: {
@@ -1244,7 +1294,7 @@ function makeStyles(C) {
     },
     videoPlayerTitle: {
       flex: 1,
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '600',
       color: '#FFFFFF',
       marginHorizontal: scale(12),
@@ -1257,14 +1307,14 @@ function makeStyles(C) {
       backgroundColor: '#000',
     },
     videoPlayer: {
-      width: SW,
-      height: SW * 0.5625,
+      width: SCREEN_WIDTH,
+      height: SCREEN_WIDTH * 0.5625,
       backgroundColor: '#000',
     },
     videoPlayerLoading: {
       justifyContent: 'center',
       alignItems: 'center',
-      gap: vs(12),
+      gap: verticalScale(12),
     },
     videoPlayerLoadingOverlay: {
       position: 'absolute',
@@ -1275,11 +1325,11 @@ function makeStyles(C) {
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: 'rgba(0,0,0,0.6)',
-      gap: vs(12),
+      gap: verticalScale(12),
     },
     videoPlayerLoadingText: {
       color: '#FFFFFF',
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '500',
     },
   });

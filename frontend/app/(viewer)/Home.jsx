@@ -12,6 +12,7 @@ import {
   Dimensions,
   Alert,
   Platform,
+  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,7 +27,38 @@ import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
 import { useRouter, useFocusEffect } from 'expo-router';
 
-const { width, height } = Dimensions.get('window');
+// ─── Responsive helpers ──────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+// Responsive scaling functions
+const scale = (size) => {
+  const scaleFactor = SCREEN_WIDTH / BASE_WIDTH;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const verticalScale = (size) => {
+  const scaleFactor = SCREEN_HEIGHT / BASE_HEIGHT;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const moderateScale = (size, factor = 0.5) => {
+  return Math.round(size + (scale(size) - size) * factor);
+};
+
+const fontScale = (size) => {
+  const scaleFactor = Math.min(
+    SCREEN_WIDTH / BASE_WIDTH,
+    SCREEN_HEIGHT / BASE_HEIGHT
+  );
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(size * clamped);
+};
 
 // ─── Theme Colors ──────────────────────────────────────────────────────────
 const COLORS = {
@@ -45,6 +77,7 @@ const COLORS = {
     categoryText: '#666666',
     categoryTextActive: '#FFFFFF',
     notificationDot: '#FF4444',
+    statusBar: 'dark-content',
   },
   dark: {
     background: '#0D1117',
@@ -61,21 +94,25 @@ const COLORS = {
     categoryText: '#8B9BAB',
     categoryTextActive: '#FFFFFF',
     notificationDot: '#FF4444',
+    statusBar: 'light-content',
   },
 };
 
 export default function Home() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
   const { user } = useAuth();
   const { articles = [], loading: articlesLoading, fetchArticles } = useArticles();
   const { channels = [], loading: channelsLoading, fetchChannels } = useChannels();
   const { videos = [], loading: videosLoading, fetchVideos } = useVideos();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
+
+  const isDarkMode = colorScheme === 'dark';
+  const COL = isDarkMode ? COLORS.dark : COLORS.light;
 
   const categories = [
     { id: 'all', label: 'All', icon: 'apps-outline' },
@@ -86,8 +123,6 @@ export default function Home() {
     { id: 'technology', label: 'Tech', icon: 'hardware-chip-outline' },
     { id: 'lifestyle', label: 'Lifestyle', icon: 'leaf-outline' },
   ];
-
-  const COL = COLORS.light;
 
   // ─── Navigation Handlers ────────────────────────────────────────────────
   const handleArticlePress = (articleId) => {
@@ -180,8 +215,9 @@ export default function Home() {
         <TouchableOpacity
           style={styles.notificationButton}
           onPress={() => router.push('/(viewer)/Notifications')}
+          activeOpacity={0.7}
         >
-          <Ionicons name="notifications-outline" size={24} color={COL.text} />
+          <Ionicons name="notifications-outline" size={moderateScale(24)} color={COL.text} />
           {notificationCount > 0 && (
             <View style={[styles.notificationBadge, { backgroundColor: COL.notificationDot }]}>
               <Text style={styles.badgeText}>{notificationCount > 9 ? '9+' : notificationCount}</Text>
@@ -201,17 +237,17 @@ export default function Home() {
             key={category.id}
             style={[
               styles.categoryButton,
-              { backgroundColor: COL.categoryBg },
-              selectedCategory === category.id && { backgroundColor: COL.categoryActive },
+              { backgroundColor: selectedCategory === category.id ? COL.categoryActive : COL.categoryBg },
             ]}
             onPress={() => {
               setSelectedCategory(category.id);
               loadDataWithCategory(category.id);
             }}
+            activeOpacity={0.7}
           >
             <Ionicons
               name={category.icon}
-              size={18}
+              size={moderateScale(18)}
               color={selectedCategory === category.id ? COL.categoryTextActive : COL.categoryText}
             />
             <Text
@@ -260,7 +296,7 @@ export default function Home() {
       <View style={styles.featuredSection}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: COL.text }]}>Featured News</Text>
-          <TouchableOpacity>
+          <TouchableOpacity activeOpacity={0.7}>
             <Text style={[styles.seeAllText, { color: COL.accent }]}>See All</Text>
           </TouchableOpacity>
         </View>
@@ -269,16 +305,19 @@ export default function Home() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.featuredContainer}
           nestedScrollEnabled={true}
+          decelerationRate="fast"
         >
           {featuredArticles.map((article) => (
             <TouchableOpacity
               key={article._id || article.id}
               style={[styles.featuredCard, { backgroundColor: COL.surface }]}
               onPress={() => handleArticlePress(article._id || article.id)}
+              activeOpacity={0.9}
             >
               <Image
                 source={{ uri: article.image || 'https://via.placeholder.com/300x200' }}
                 style={styles.featuredImage}
+                resizeMode="cover"
               />
               <View style={[styles.featuredOverlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
                 <View style={[styles.featuredBadge, { backgroundColor: COL.accent }]}>
@@ -301,14 +340,13 @@ export default function Home() {
   const renderChannels = () => {
     if (!channels || channels.length === 0) return null;
     
-    // Sort channels by followers count (most popular first)
     const sortedChannels = [...channels].sort((a, b) => (b.followers || 0) - (a.followers || 0));
     
     return (
       <View style={styles.channelsSection}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: COL.text }]}>Popular Channels</Text>
-          <TouchableOpacity onPress={() => router.push('/(viewer)/Search')}>
+          <TouchableOpacity onPress={() => router.push('/(viewer)/Search')} activeOpacity={0.7}>
             <Text style={[styles.seeAllText, { color: COL.accent }]}>View All</Text>
           </TouchableOpacity>
         </View>
@@ -391,8 +429,10 @@ export default function Home() {
     return <Loader message="Loading news..." />;
   }
 
+  const styles = createStyles(COL);
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: COL.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COL.background }]} edges={['top', 'bottom']}>
       <FlatList
         data={feedData}
         keyExtractor={(item) => item.id || `${item.type}-${Math.random()}`}
@@ -415,7 +455,12 @@ export default function Home() {
           />
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COL.accent} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor={COL.accent}
+            colors={[COL.accent]}
+          />
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
@@ -426,112 +471,114 @@ export default function Home() {
   );
 }
 
-const styles = StyleSheet.create({
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const createStyles = (COL) => StyleSheet.create({
   container: {
     flex: 1,
   },
   listContent: {
-    paddingBottom: Platform.OS === 'ios' ? 20 : 30,
+    paddingBottom: verticalScale(20),
     paddingTop: Platform.OS === 'android' ? 0 : 0,
   },
   header: {
-    paddingHorizontal: width * 0.05,
-    paddingTop: Platform.OS === 'ios' ? 10 : 16,
-    paddingBottom: 16,
+    paddingHorizontal: scale(16),
+    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(16),
+    paddingBottom: verticalScale(16),
     borderBottomWidth: 1,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   greetingContainer: {
     flex: 1,
-    marginRight: 10,
+    marginRight: scale(10),
   },
   greeting: {
-    fontSize: width * 0.055,
+    fontSize: fontScale(18),
     fontWeight: 'bold',
   },
   subGreeting: {
-    fontSize: width * 0.035,
-    marginTop: 2,
+    fontSize: fontScale(12),
+    marginTop: verticalScale(2),
   },
   notificationButton: {
     position: 'relative',
-    padding: 8,
+    padding: scale(8),
   },
   notificationBadge: {
     position: 'absolute',
     top: 0,
     right: 0,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    borderRadius: scale(10),
+    minWidth: scale(20),
+    height: scale(20),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#FFF',
-    paddingHorizontal: 4,
+    paddingHorizontal: scale(4),
   },
   badgeText: {
     color: '#FFF',
-    fontSize: 10,
+    fontSize: fontScale(10),
     fontWeight: 'bold',
   },
   categoryScroll: {
     flexGrow: 0,
   },
   categoryContainer: {
-    paddingVertical: 4,
-    gap: 10,
-    paddingRight: width * 0.05,
+    paddingVertical: verticalScale(4),
+    gap: scale(10),
+    paddingRight: scale(16),
   },
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    gap: 6,
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(7),
+    borderRadius: scale(20),
+    gap: scale(6),
   },
   categoryText: {
-    fontSize: 13,
+    fontSize: fontScale(13),
     fontWeight: '500',
   },
   featuredSection: {
-    marginTop: 20,
-    paddingLeft: width * 0.05,
+    marginTop: verticalScale(20),
+    paddingLeft: scale(16),
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingRight: width * 0.05,
-    marginBottom: 12,
+    paddingRight: scale(16),
+    marginBottom: verticalScale(12),
   },
   sectionTitle: {
-    fontSize: width * 0.045,
+    fontSize: fontScale(16),
     fontWeight: 'bold',
   },
   seeAllText: {
-    fontSize: width * 0.035,
+    fontSize: fontScale(12),
     fontWeight: '500',
   },
   featuredContainer: {
-    paddingRight: width * 0.05,
-    gap: 12,
+    paddingRight: scale(16),
+    gap: scale(12),
+    paddingVertical: verticalScale(4),
   },
   featuredCard: {
-    width: width * 0.7,
-    height: width * 0.5,
-    borderRadius: 12,
+    width: SCREEN_WIDTH * 0.7,
+    height: SCREEN_WIDTH * 0.5,
+    borderRadius: scale(12),
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: scale(8),
     elevation: 3,
   },
   featuredImage: {
@@ -544,46 +591,47 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 12,
+    padding: scale(12),
   },
   featuredBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(2),
+    borderRadius: scale(4),
     alignSelf: 'flex-start',
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   featuredBadgeText: {
     color: '#FFF',
-    fontSize: 10,
+    fontSize: fontScale(10),
     fontWeight: 'bold',
   },
   featuredTitle: {
     color: '#FFF',
-    fontSize: width * 0.04,
+    fontSize: fontScale(14),
     fontWeight: 'bold',
   },
   featuredSource: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: width * 0.03,
-    marginTop: 4,
+    fontSize: fontScale(11),
+    marginTop: verticalScale(4),
   },
   channelsSection: {
-    marginTop: 24,
-    paddingLeft: width * 0.05,
+    marginTop: verticalScale(24),
+    paddingLeft: scale(16),
   },
   channelsContainer: {
-    paddingRight: width * 0.05,
-    gap: 12,
+    paddingRight: scale(16),
+    gap: scale(12),
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: verticalScale(4),
   },
   channelItemWrapper: {
-    marginRight: 12,
+    marginRight: scale(12),
   },
   latestSection: {
-    paddingHorizontal: width * 0.05,
-    marginTop: 20,
-    marginBottom: 12,
+    paddingHorizontal: scale(16),
+    marginTop: verticalScale(20),
+    marginBottom: verticalScale(12),
   },
 });

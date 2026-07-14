@@ -27,13 +27,40 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { getChannelByOwner, channelService } from '../../services/channelService';
 import Loader from '../../components/Loader';
-import { useRouter } from 'expo-router'; // Import useRouter
+import { useRouter } from 'expo-router';
 
-const { width: SW, height: SH } = Dimensions.get('window');
-const BASE_W = 390;
-const scale = (n) => Math.round((SW / BASE_W) * n);
-const vs = (n) => Math.round((SH / 844) * n);
-const sp = (n) => n / PixelRatio.getFontScale();
+// ─── Responsive helpers ──────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+// Responsive scaling functions
+const scale = (size) => {
+  const scaleFactor = SCREEN_WIDTH / BASE_WIDTH;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const verticalScale = (size) => {
+  const scaleFactor = SCREEN_HEIGHT / BASE_HEIGHT;
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(clamped * size);
+};
+
+const moderateScale = (size, factor = 0.5) => {
+  return Math.round(size + (scale(size) - size) * factor);
+};
+
+const fontScale = (size) => {
+  const scaleFactor = Math.min(
+    SCREEN_WIDTH / BASE_WIDTH,
+    SCREEN_HEIGHT / BASE_HEIGHT
+  );
+  const clamped = Math.min(Math.max(scaleFactor, 0.7), 1.3);
+  return Math.round(size * clamped / PixelRatio.getFontScale());
+};
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 const LIGHT = {
@@ -83,7 +110,7 @@ const DARK = {
 };
 
 export default function OwnerProfile() {
-  const router = useRouter(); // Use router instead of navigation
+  const router = useRouter();
   const scheme = useColorScheme();
   const C = scheme === 'dark' ? DARK : LIGHT;
   const { isLoading: authLoading } = useAuth();
@@ -164,12 +191,10 @@ export default function OwnerProfile() {
 
   const goToDashboard = () => {
     try {
-      // Try multiple navigation methods
       router.replace('/(owner)/Dashboard');
     } catch (error) {
       console.error('Navigation to dashboard failed:', error);
       try {
-        // Fallback to owner index
         router.replace('/(owner)');
       } catch (e) {
         console.error('Fallback navigation failed:', e);
@@ -180,12 +205,10 @@ export default function OwnerProfile() {
 
   const goToWelcome = () => {
     try {
-      // Navigate to welcome screen after logout
       router.replace('/(auth)/Welcome');
     } catch (error) {
       console.error('Navigation to welcome failed:', error);
       try {
-        // Fallback to auth index
         router.replace('/(auth)');
       } catch (e) {
         console.error('Fallback navigation failed:', e);
@@ -317,7 +340,6 @@ export default function OwnerProfile() {
         onPress: async () => {
           try {
             await signOut(auth);
-            // Navigate to welcome screen after successful logout
             goToWelcome();
           } catch (error) {
             console.error('Logout error:', error);
@@ -451,19 +473,20 @@ export default function OwnerProfile() {
 
   if (!channel) {
     return (
-      <SafeAreaView style={[s.container, { backgroundColor: C.bg }]}>
+      <SafeAreaView style={[s.container, { backgroundColor: C.bg }]} edges={['top', 'bottom']}>
         <View style={s.errorBox}>
           <View style={s.errorIconWrap}>
-            <Ionicons name="newspaper-outline" size={scale(48)} color={C.muted} />
+            <Ionicons name="newspaper-outline" size={moderateScale(48)} color={C.muted} />
           </View>
           <Text style={[s.errorTitle, { color: C.primary }]}>No Channel Found</Text>
           <Text style={[s.errorSub, { color: C.muted }]}>Create a channel to get started</Text>
           <TouchableOpacity
             style={[s.createBtn, { backgroundColor: C.accent }]}
             onPress={() => router.push('/(owner)/CreateChannel')}
+            activeOpacity={0.8}
           >
             <Text style={s.createBtnText}>Create Channel</Text>
-            <Ionicons name="arrow-forward" size={scale(18)} color="#FFFFFF" />
+            <Ionicons name="arrow-forward" size={moderateScale(18)} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -473,16 +496,16 @@ export default function OwnerProfile() {
   const s = makeStyles(C);
 
   return (
-    <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.topStripe} />
+    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
+      <View style={[s.topStripe, { backgroundColor: C.accent }]} />
 
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={goToDashboard}>
-          <Ionicons name="arrow-back" size={scale(20)} color={C.primary} />
+      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+        <TouchableOpacity style={s.backBtn} onPress={goToDashboard} activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={moderateScale(20)} color={C.primary} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Channel Profile</Text>
-        <TouchableOpacity onPress={handleEditPress}>
+        <Text style={[s.headerTitle, { color: C.primary }]}>Channel Profile</Text>
+        <TouchableOpacity onPress={handleEditPress} activeOpacity={0.7}>
           <Text style={[s.editBtn, { color: C.accent }]}>
             {isEditing ? 'Cancel' : 'Edit'}
           </Text>
@@ -499,6 +522,7 @@ export default function OwnerProfile() {
         extraScrollHeight={Platform.OS === 'ios' ? 50 : 30}
         enableResetScrollToCoords={false}
         keyboardOpeningTime={0}
+        bounces={true}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View>
@@ -522,7 +546,7 @@ export default function OwnerProfile() {
                     <ActivityIndicator color="#FFF" size="large" />
                   ) : (
                     <View style={s.bannerUploadBtn}>
-                      <Ionicons name="camera-outline" size={scale(28)} color="#FFF" />
+                      <Ionicons name="camera-outline" size={moderateScale(28)} color="#FFF" />
                       <Text style={s.bannerUploadText}>Update Banner</Text>
                     </View>
                   )}
@@ -551,7 +575,7 @@ export default function OwnerProfile() {
                     {uploadingLogo ? (
                       <ActivityIndicator color="#FFF" size="small" />
                     ) : (
-                      <Ionicons name="camera" size={scale(20)} color="#FFF" />
+                      <Ionicons name="camera" size={moderateScale(20)} color="#FFF" />
                     )}
                   </View>
                 )}
@@ -567,19 +591,19 @@ export default function OwnerProfile() {
                 // ─── EDIT MODE ────────────────────────────────────────────────
                 <>
                   <View style={s.cardHeader}>
-                    <Ionicons name="create-outline" size={scale(18)} color={C.accent} />
+                    <Ionicons name="create-outline" size={moderateScale(18)} color={C.accent} />
                     <Text style={[s.cardHeaderText, { color: C.primary }]}>Edit Channel Details</Text>
                   </View>
 
-                  <View style={s.cardDivider} />
+                  <View style={[s.cardDivider, { backgroundColor: C.border }]} />
 
                   {/* Channel Name */}
                   <View style={s.fieldGroup}>
                     <Text style={[s.fieldLabel, { color: C.secondary }]}>
                       Channel Name <Text style={{ color: C.accent }}>*</Text>
                     </Text>
-                    <View style={[s.inputWrap, { borderColor: C.inputBorder }]}>
-                      <Ionicons name="pencil-outline" size={scale(18)} color={C.muted} style={s.inputIcon} />
+                    <View style={[s.inputWrap, { borderColor: C.inputBorder, backgroundColor: C.inputBg }]}>
+                      <Ionicons name="pencil-outline" size={moderateScale(18)} color={C.muted} style={s.inputIcon} />
                       <TextInput
                         ref={nameInputRef}
                         style={[s.input, { color: C.primary }]}
@@ -596,7 +620,7 @@ export default function OwnerProfile() {
                   {/* Description */}
                   <View style={s.fieldGroup}>
                     <Text style={[s.fieldLabel, { color: C.secondary }]}>Description</Text>
-                    <View style={[s.inputWrap, s.textAreaWrap, { borderColor: C.inputBorder }]}>
+                    <View style={[s.inputWrap, s.textAreaWrap, { borderColor: C.inputBorder, backgroundColor: C.inputBg }]}>
                       <TextInput
                         ref={descriptionInputRef}
                         style={[s.input, s.textAreaInput, { color: C.primary }]}
@@ -616,8 +640,8 @@ export default function OwnerProfile() {
                   {/* Language */}
                   <View style={s.fieldGroup}>
                     <Text style={[s.fieldLabel, { color: C.secondary }]}>Language</Text>
-                    <View style={[s.inputWrap, { borderColor: C.inputBorder }]}>
-                      <Ionicons name="language-outline" size={scale(18)} color={C.muted} style={s.inputIcon} />
+                    <View style={[s.inputWrap, { borderColor: C.inputBorder, backgroundColor: C.inputBg }]}>
+                      <Ionicons name="language-outline" size={moderateScale(18)} color={C.muted} style={s.inputIcon} />
                       <TextInput
                         ref={languageInputRef}
                         style={[s.input, { color: C.primary }]}
@@ -634,8 +658,8 @@ export default function OwnerProfile() {
                   {/* Category */}
                   <View style={s.fieldGroup}>
                     <Text style={[s.fieldLabel, { color: C.secondary }]}>Category</Text>
-                    <View style={[s.inputWrap, { borderColor: C.inputBorder }]}>
-                      <Ionicons name="pricetag-outline" size={scale(18)} color={C.muted} style={s.inputIcon} />
+                    <View style={[s.inputWrap, { borderColor: C.inputBorder, backgroundColor: C.inputBg }]}>
+                      <Ionicons name="pricetag-outline" size={moderateScale(18)} color={C.muted} style={s.inputIcon} />
                       <TextInput
                         ref={categoryInputRef}
                         style={[s.input, { color: C.primary }]}
@@ -655,8 +679,8 @@ export default function OwnerProfile() {
                   {/* City */}
                   <View style={s.fieldGroup}>
                     <Text style={[s.fieldLabel, { color: C.secondary }]}>City</Text>
-                    <View style={[s.inputWrap, { borderColor: C.inputBorder }]}>
-                      <Ionicons name="location-outline" size={scale(18)} color={C.muted} style={s.inputIcon} />
+                    <View style={[s.inputWrap, { borderColor: C.inputBorder, backgroundColor: C.inputBg }]}>
+                      <Ionicons name="location-outline" size={moderateScale(18)} color={C.muted} style={s.inputIcon} />
                       <TextInput
                         ref={cityInputRef}
                         style={[s.input, { color: C.primary }]}
@@ -673,8 +697,8 @@ export default function OwnerProfile() {
                   {/* District */}
                   <View style={s.fieldGroup}>
                     <Text style={[s.fieldLabel, { color: C.secondary }]}>District</Text>
-                    <View style={[s.inputWrap, { borderColor: C.inputBorder }]}>
-                      <Ionicons name="map-outline" size={scale(18)} color={C.muted} style={s.inputIcon} />
+                    <View style={[s.inputWrap, { borderColor: C.inputBorder, backgroundColor: C.inputBg }]}>
+                      <Ionicons name="map-outline" size={moderateScale(18)} color={C.muted} style={s.inputIcon} />
                       <TextInput
                         ref={districtInputRef}
                         style={[s.input, { color: C.primary }]}
@@ -691,8 +715,8 @@ export default function OwnerProfile() {
                   {/* State */}
                   <View style={s.fieldGroup}>
                     <Text style={[s.fieldLabel, { color: C.secondary }]}>State</Text>
-                    <View style={[s.inputWrap, { borderColor: C.inputBorder }]}>
-                      <Ionicons name="flag-outline" size={scale(18)} color={C.muted} style={s.inputIcon} />
+                    <View style={[s.inputWrap, { borderColor: C.inputBorder, backgroundColor: C.inputBg }]}>
+                      <Ionicons name="flag-outline" size={moderateScale(18)} color={C.muted} style={s.inputIcon} />
                       <TextInput
                         ref={stateInputRef}
                         style={[s.input, { color: C.primary }]}
@@ -709,8 +733,8 @@ export default function OwnerProfile() {
                   {/* Area */}
                   <View style={s.fieldGroup}>
                     <Text style={[s.fieldLabel, { color: C.secondary }]}>Area (Optional)</Text>
-                    <View style={[s.inputWrap, { borderColor: C.inputBorder }]}>
-                      <Ionicons name="home-outline" size={scale(18)} color={C.muted} style={s.inputIcon} />
+                    <View style={[s.inputWrap, { borderColor: C.inputBorder, backgroundColor: C.inputBg }]}>
+                      <Ionicons name="home-outline" size={moderateScale(18)} color={C.muted} style={s.inputIcon} />
                       <TextInput
                         ref={areaInputRef}
                         style={[s.input, { color: C.primary }]}
@@ -729,13 +753,14 @@ export default function OwnerProfile() {
                     style={[s.saveBtn, { backgroundColor: C.accent, opacity: isSaving ? 0.7 : 1 }]}
                     onPress={handleSave}
                     disabled={isSaving}
+                    activeOpacity={0.8}
                   >
                     {isSaving ? (
                       <ActivityIndicator color="#FFFFFF" />
                     ) : (
                       <>
                         <Text style={s.saveBtnText}>Save Changes</Text>
-                        <Ionicons name="checkmark-circle" size={scale(20)} color="#FFFFFF" />
+                        <Ionicons name="checkmark-circle" size={moderateScale(20)} color="#FFFFFF" />
                       </>
                     )}
                   </TouchableOpacity>
@@ -747,7 +772,7 @@ export default function OwnerProfile() {
 
                   {channel.isVerified && (
                     <View style={s.verifiedRow}>
-                      <Ionicons name="checkmark-circle" size={14} color="#0E8A5A" />
+                      <Ionicons name="checkmark-circle" size={moderateScale(14)} color="#0E8A5A" />
                       <Text style={s.verifiedText}>Verified Channel</Text>
                     </View>
                   )}
@@ -770,9 +795,9 @@ export default function OwnerProfile() {
                         index < 3 && s.detailRowBorder
                       ]}>
                         <View style={[s.detailIconWrap, { backgroundColor: C.accentBg }]}>
-                          <Ionicons name={icon} size={scale(16)} color={C.accent} />
+                          <Ionicons name={icon} size={moderateScale(16)} color={C.accent} />
                         </View>
-                        <Text style={[s.detailText, { color: C.secondary }]}>{text}</Text>
+                        <Text style={[s.detailText, { color: C.secondary }]} numberOfLines={1}>{text}</Text>
                       </View>
                     ))}
                   </View>
@@ -780,8 +805,8 @@ export default function OwnerProfile() {
                   <View style={[s.divider, { backgroundColor: C.border }]} />
 
                   {/* Logout Button */}
-                  <TouchableOpacity style={[s.logoutBtn, { borderColor: C.accent }]} onPress={handleLogout}>
-                    <Ionicons name="log-out-outline" size={scale(20)} color={C.accent} />
+                  <TouchableOpacity style={[s.logoutBtn, { borderColor: C.accent }]} onPress={handleLogout} activeOpacity={0.7}>
+                    <Ionicons name="log-out-outline" size={moderateScale(20)} color={C.accent} />
                     <Text style={[s.logoutText, { color: C.accent }]}>Logout</Text>
                   </TouchableOpacity>
 
@@ -789,11 +814,12 @@ export default function OwnerProfile() {
                   <TouchableOpacity
                     style={s.termsLink}
                     onPress={() => setTermsModalVisible(true)}
+                    activeOpacity={0.7}
                   >
                     <Text style={[s.termsLinkText, { color: C.muted }]}>
                       Terms & Conditions
                     </Text>
-                    <Ionicons name="chevron-forward" size={scale(14)} color={C.muted} />
+                    <Ionicons name="chevron-forward" size={moderateScale(14)} color={C.muted} />
                   </TouchableOpacity>
                 </>
               )}
@@ -818,7 +844,7 @@ export default function OwnerProfile() {
                 onPress={() => setTermsModalVisible(false)}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={scale(22)} color={C.accent} />
+                <Ionicons name="close" size={moderateScale(22)} color={C.accent} />
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -859,16 +885,18 @@ function makeStyles(C) {
       flex: 1,
       backgroundColor: C.bg,
     },
+    container: {
+      flex: 1,
+    },
     topStripe: {
-      height: 3,
-      backgroundColor: C.accent,
+      height: verticalScale(3),
     },
     keyboardAwareScrollView: {
       flex: 1,
     },
     scrollContent: {
       flexGrow: 1,
-      paddingBottom: vs(20),
+      paddingBottom: verticalScale(20),
     },
 
     // Error State
@@ -877,7 +905,7 @@ function makeStyles(C) {
       justifyContent: 'center',
       alignItems: 'center',
       padding: scale(32),
-      gap: vs(12),
+      gap: verticalScale(12),
     },
     errorIconWrap: {
       width: scale(80),
@@ -890,11 +918,11 @@ function makeStyles(C) {
       borderColor: C.border,
     },
     errorTitle: {
-      fontSize: sp(20),
+      fontSize: fontScale(20),
       fontWeight: '700',
     },
     errorSub: {
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       textAlign: 'center',
     },
     createBtn: {
@@ -902,18 +930,19 @@ function makeStyles(C) {
       alignItems: 'center',
       gap: scale(8),
       paddingHorizontal: scale(24),
-      paddingVertical: vs(14),
+      paddingVertical: verticalScale(14),
       borderRadius: scale(12),
-      marginTop: vs(8),
+      marginTop: verticalScale(8),
       shadowColor: C.accent,
       shadowOffset: { width: 0, height: scale(4) },
       shadowOpacity: 0.3,
       shadowRadius: scale(12),
       elevation: 4,
+      minHeight: verticalScale(50),
     },
     createBtnText: {
       color: '#FFF',
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '700',
     },
 
@@ -923,38 +952,37 @@ function makeStyles(C) {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: scale(20),
-      paddingVertical: vs(14),
-      backgroundColor: C.surface,
+      paddingVertical: verticalScale(14),
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: C.border,
+      minHeight: verticalScale(56),
     },
     backBtn: {
-      width: scale(36),
-      height: scale(36),
+      width: scale(38),
+      height: scale(38),
       borderRadius: scale(10),
       backgroundColor: C.bg,
       justifyContent: 'center',
       alignItems: 'center',
     },
     headerTitle: {
-      fontSize: sp(17),
+      fontSize: fontScale(17),
       fontWeight: '700',
       color: C.primary,
     },
     editBtn: {
-      fontSize: sp(15),
+      fontSize: fontScale(15),
       fontWeight: '600',
     },
 
     // Banner
     bannerContainer: {
       width: '100%',
-      height: vs(160),
+      height: verticalScale(160),
       position: 'relative',
     },
     banner: {
       width: '100%',
-      height: vs(160),
+      height: verticalScale(160),
       resizeMode: 'cover',
     },
     bannerOverlay: {
@@ -968,19 +996,19 @@ function makeStyles(C) {
     },
     bannerUploadBtn: {
       alignItems: 'center',
-      gap: vs(8),
+      gap: verticalScale(8),
     },
     bannerUploadText: {
       color: '#FFF',
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '600',
     },
 
     // Logo
     logoWrap: {
       alignItems: 'center',
-      marginTop: -vs(50),
-      marginBottom: vs(8),
+      marginTop: -verticalScale(50),
+      marginBottom: verticalScale(8),
     },
     logoContainer: {
       position: 'relative',
@@ -1005,14 +1033,14 @@ function makeStyles(C) {
       alignItems: 'center',
     },
     logoHint: {
-      fontSize: sp(11),
-      marginTop: vs(4),
+      fontSize: fontScale(11),
+      marginTop: verticalScale(4),
     },
 
     // Card
     card: {
       marginHorizontal: scale(16),
-      marginTop: vs(4),
+      marginTop: verticalScale(4),
       padding: scale(20),
       borderRadius: scale(16),
       borderWidth: StyleSheet.hairlineWidth,
@@ -1028,18 +1056,17 @@ function makeStyles(C) {
       gap: scale(8),
     },
     cardHeaderText: {
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '700',
     },
     cardDivider: {
       height: StyleSheet.hairlineWidth,
-      backgroundColor: C.border,
-      marginVertical: vs(14),
+      marginVertical: verticalScale(14),
     },
 
     // View Mode
     channelName: {
-      fontSize: sp(24),
+      fontSize: fontScale(24),
       fontWeight: '800',
       textAlign: 'center',
       letterSpacing: -0.4,
@@ -1049,27 +1076,27 @@ function makeStyles(C) {
       justifyContent: 'center',
       alignItems: 'center',
       gap: scale(4),
-      marginTop: vs(4),
+      marginTop: verticalScale(4),
     },
     verifiedText: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       color: '#0E8A5A',
       fontWeight: '600',
     },
     description: {
-      fontSize: sp(14),
-      lineHeight: sp(21),
-      marginTop: vs(10),
+      fontSize: fontScale(14),
+      lineHeight: fontScale(21),
+      marginTop: verticalScale(10),
       textAlign: 'center',
     },
     detailsGrid: {
-      marginTop: vs(4),
+      marginTop: verticalScale(4),
     },
     detailRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: scale(12),
-      paddingVertical: vs(10),
+      paddingVertical: verticalScale(10),
     },
     detailRowBorder: {
       borderBottomWidth: StyleSheet.hairlineWidth,
@@ -1081,16 +1108,17 @@ function makeStyles(C) {
       borderRadius: scale(8),
       justifyContent: 'center',
       alignItems: 'center',
+      flexShrink: 0,
     },
     detailText: {
-      fontSize: sp(14),
+      fontSize: fontScale(14),
       fontWeight: '500',
       flex: 1,
     },
 
     divider: {
       height: StyleSheet.hairlineWidth,
-      marginVertical: vs(14),
+      marginVertical: verticalScale(14),
     },
 
     // Logout
@@ -1099,12 +1127,13 @@ function makeStyles(C) {
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1.5,
-      paddingVertical: vs(12),
+      paddingVertical: verticalScale(12),
       borderRadius: scale(12),
       gap: scale(8),
+      minHeight: verticalScale(48),
     },
     logoutText: {
-      fontSize: sp(15),
+      fontSize: fontScale(15),
       fontWeight: '600',
     },
 
@@ -1114,22 +1143,22 @@ function makeStyles(C) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: scale(4),
-      marginTop: vs(12),
-      paddingVertical: vs(8),
+      marginTop: verticalScale(12),
+      paddingVertical: verticalScale(8),
     },
     termsLinkText: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '500',
     },
 
     // Edit Mode - Inputs
     fieldGroup: {
-      marginBottom: vs(14),
+      marginBottom: verticalScale(14),
     },
     fieldLabel: {
-      fontSize: sp(12),
+      fontSize: fontScale(12),
       fontWeight: '600',
-      marginBottom: vs(6),
+      marginBottom: verticalScale(6),
       letterSpacing: 0.2,
     },
     inputWrap: {
@@ -1138,30 +1167,31 @@ function makeStyles(C) {
       borderWidth: 1.5,
       borderRadius: scale(11),
       paddingHorizontal: scale(14),
-      backgroundColor: C.inputBg,
+      minHeight: verticalScale(48),
     },
     inputIcon: {
       marginRight: scale(10),
     },
     input: {
       flex: 1,
-      paddingVertical: vs(12),
-      fontSize: sp(14),
+      paddingVertical: verticalScale(12),
+      fontSize: fontScale(14),
       fontWeight: '400',
+      padding: 0, // Remove default padding on Android
     },
     textAreaWrap: {
       alignItems: 'flex-start',
-      paddingTop: vs(10),
+      paddingTop: verticalScale(10),
     },
     textAreaInput: {
-      minHeight: vs(80),
-      paddingVertical: vs(4),
+      minHeight: verticalScale(80),
+      paddingVertical: verticalScale(4),
     },
     sectionLabel: {
-      fontSize: sp(13),
+      fontSize: fontScale(13),
       fontWeight: '700',
-      marginBottom: vs(10),
-      marginTop: vs(4),
+      marginBottom: verticalScale(10),
+      marginTop: verticalScale(4),
       letterSpacing: 0.2,
     },
 
@@ -1170,19 +1200,20 @@ function makeStyles(C) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: vs(14),
+      paddingVertical: verticalScale(14),
       borderRadius: scale(12),
       gap: scale(8),
-      marginTop: vs(8),
+      marginTop: verticalScale(8),
       shadowColor: C.accent,
       shadowOffset: { width: 0, height: scale(4) },
       shadowOpacity: 0.3,
       shadowRadius: scale(12),
       elevation: 4,
+      minHeight: verticalScale(50),
     },
     saveBtnText: {
       color: '#FFFFFF',
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '700',
     },
 
@@ -1202,11 +1233,12 @@ function makeStyles(C) {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: scale(20),
-      paddingVertical: vs(16),
+      paddingVertical: verticalScale(16),
       borderBottomWidth: 1,
+      borderBottomColor: C.border,
     },
     modalTitle: {
-      fontSize: sp(18),
+      fontSize: fontScale(18),
       fontWeight: '700',
       letterSpacing: -0.3,
     },
@@ -1222,44 +1254,46 @@ function makeStyles(C) {
     },
     modalContent: {
       paddingHorizontal: scale(20),
-      paddingTop: vs(20),
-      paddingBottom: vs(30),
+      paddingTop: verticalScale(20),
+      paddingBottom: verticalScale(30),
     },
 
     // Terms
     termsSectionTitle: {
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '700',
-      marginTop: vs(18),
-      marginBottom: vs(8),
+      marginTop: verticalScale(18),
+      marginBottom: verticalScale(8),
       letterSpacing: -0.2,
     },
     termsText: {
-      fontSize: sp(13.5),
-      lineHeight: sp(22),
-      marginBottom: vs(4),
+      fontSize: fontScale(13.5),
+      lineHeight: fontScale(22),
+      marginBottom: verticalScale(4),
       fontWeight: '400',
     },
     termsFooter: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginTop: vs(24),
-      paddingTop: vs(16),
+      marginTop: verticalScale(24),
+      paddingTop: verticalScale(16),
       borderTopWidth: 1,
+      borderTopColor: C.border,
     },
     termsFooterText: {
-      fontSize: sp(11),
+      fontSize: fontScale(11),
       fontWeight: '400',
     },
     acceptBtn: {
-      paddingVertical: vs(14),
+      paddingVertical: verticalScale(14),
       borderRadius: scale(12),
       alignItems: 'center',
-      marginTop: vs(20),
+      marginTop: verticalScale(20),
+      minHeight: verticalScale(50),
     },
     acceptBtnText: {
       color: '#FFFFFF',
-      fontSize: sp(16),
+      fontSize: fontScale(16),
       fontWeight: '700',
       letterSpacing: 0.3,
     },

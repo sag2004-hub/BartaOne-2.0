@@ -1,6 +1,7 @@
 /**
  * BartaOne — SelectRole Screen
  * Professional, scrollable design with smooth left-to-right animation
+ * Fully responsive for all screen sizes
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -16,17 +17,44 @@ import {
   useColorScheme,
   PixelRatio,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 // ─── Responsive helpers ─────────────────────────────────────────────────────
-const { width: SW, height: SH } = Dimensions.get('window');
-const BASE_W = 390;
-const scale = (n) => Math.round((SW / BASE_W) * n);
-const vs = (n) => Math.round((SH / 844) * n);
-const sp = (n) => n / PixelRatio.getFontScale();
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+// Responsive scaling functions
+const scale = (size) => {
+  const scaleFactor = SCREEN_WIDTH / BASE_WIDTH;
+  const newSize = size * scaleFactor;
+  return Math.round(newSize);
+};
+
+const verticalScale = (size) => {
+  const scaleFactor = SCREEN_HEIGHT / BASE_HEIGHT;
+  const newSize = size * scaleFactor;
+  return Math.round(newSize);
+};
+
+const moderateScale = (size, factor = 0.5) => {
+  return size + (scale(size) - size) * factor;
+};
+
+const fontScale = (size) => {
+  const scaleFactor = Math.min(
+    SCREEN_WIDTH / BASE_WIDTH,
+    SCREEN_HEIGHT / BASE_HEIGHT
+  );
+  const newSize = size * scaleFactor;
+  return Math.round(newSize / PixelRatio.getFontScale());
+};
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
 const LIGHT = {
@@ -146,7 +174,7 @@ function RoleCard({ role, isSelected, onSelect, C }) {
             borderWidth: isSelected ? 2.5 : 1,
             backgroundColor: isSelected ? role.bg : C.surface,
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: vs(3) },
+            shadowOffset: { width: 0, height: verticalScale(3) },
             shadowOpacity: isSelected ? 0.1 : C.cardShadowOpacity,
             shadowRadius: scale(14),
             elevation: isSelected ? 5 : 2,
@@ -164,7 +192,7 @@ function RoleCard({ role, isSelected, onSelect, C }) {
         <View style={[styles.iconWrap, { backgroundColor: isSelected ? role.color : role.bg }]}>
           <Ionicons
             name={isSelected ? role.iconFilled : role.icon}
-            size={scale(25)}
+            size={moderateScale(25)}
             color={isSelected ? '#FFFFFF' : role.color}
           />
         </View>
@@ -239,16 +267,20 @@ export default function SelectRole() {
   const styles = makeStyles(C);
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
-      <StatusBar barStyle={C.statusBar} backgroundColor={C.bg} />
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <StatusBar barStyle={C.statusBar} backgroundColor={C.bg} translucent={false} />
 
       {/* ─── Top Stripe ─────────────────────────────────────────────────────── */}
       <View style={[styles.topStripe, { backgroundColor: C.accent }]} />
 
       {/* ─── Header ─────────────────────────────────────────────────────────── */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <TouchableOpacity style={[styles.backBtn, { backgroundColor: C.bg }]} onPress={goBack}>
-          <Ionicons name="arrow-back" size={scale(20)} color={C.primary} />
+        <TouchableOpacity 
+          style={[styles.backBtn, { backgroundColor: C.bg }]} 
+          onPress={goBack}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={moderateScale(20)} color={C.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: C.primary }]}>Select Role</Text>
         <View style={styles.headerRight} />
@@ -260,6 +292,7 @@ export default function SelectRole() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        bounces={false}
       >
         <Animated.View
           style={[
@@ -327,7 +360,7 @@ export default function SelectRole() {
               : 'Select a role to continue'}
           </Text>
           {selectedRole && (
-            <Ionicons name="arrow-forward" size={scale(20)} color="#FFFFFF" />
+            <Ionicons name="arrow-forward" size={moderateScale(20)} color="#FFFFFF" />
           )}
         </TouchableOpacity>
       </Animated.View>
@@ -345,7 +378,7 @@ const makeStyles = (C) =>
 
     // ─── Top Stripe ─────────────────────────────────────────────────────────
     topStripe: {
-      height: 3,
+      height: verticalScale(3),
     },
 
     // ─── Header ─────────────────────────────────────────────────────────────
@@ -354,8 +387,10 @@ const makeStyles = (C) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: scale(16),
-      paddingVertical: vs(12),
+      paddingVertical: verticalScale(12),
       borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: C.border,
+      minHeight: verticalScale(56),
     },
     backBtn: {
       width: scale(38),
@@ -365,7 +400,7 @@ const makeStyles = (C) =>
       alignItems: 'center',
     },
     headerTitle: {
-      fontSize: sp(18),
+      fontSize: fontScale(18),
       fontWeight: '700',
       letterSpacing: -0.3,
       color: C.primary,
@@ -380,7 +415,8 @@ const makeStyles = (C) =>
     },
     scrollContent: {
       flexGrow: 1,
-      paddingBottom: vs(8),
+      paddingBottom: verticalScale(8),
+      paddingTop: verticalScale(4),
     },
 
     // ─── Content ────────────────────────────────────────────────────────────
@@ -391,20 +427,20 @@ const makeStyles = (C) =>
     // Title Section
     titleSection: {
       paddingHorizontal: scale(22),
-      paddingTop: vs(12),
-      paddingBottom: vs(8),
+      paddingTop: verticalScale(12),
+      paddingBottom: verticalScale(8),
     },
     title: {
-      fontSize: sp(25),
+      fontSize: fontScale(25),
       fontWeight: '800',
       letterSpacing: -0.5,
-      lineHeight: sp(32),
-      marginBottom: vs(5),
+      lineHeight: fontScale(32),
+      marginBottom: verticalScale(5),
       color: C.primary,
     },
     subtitle: {
-      fontSize: sp(13.5),
-      lineHeight: sp(19.5),
+      fontSize: fontScale(13.5),
+      lineHeight: fontScale(19.5),
       fontWeight: '400',
       color: C.secondary,
     },
@@ -420,18 +456,19 @@ const makeStyles = (C) =>
       paddingTop: scale(20),
       position: 'relative',
       borderWidth: 1,
+      minHeight: verticalScale(180),
     },
     tagBadge: {
       position: 'absolute',
       top: scale(12),
       right: scale(13),
       paddingHorizontal: scale(9),
-      paddingVertical: scale(3),
+      paddingVertical: verticalScale(3),
       borderRadius: scale(7),
       borderWidth: 1,
     },
     tagText: {
-      fontSize: sp(8.5),
+      fontSize: fontScale(8.5),
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
@@ -442,31 +479,31 @@ const makeStyles = (C) =>
       borderRadius: scale(14),
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: vs(8),
+      marginBottom: verticalScale(8),
     },
     roleTitle: {
-      fontSize: sp(17.5),
+      fontSize: fontScale(17.5),
       fontWeight: '700',
       letterSpacing: -0.2,
-      marginBottom: vs(3),
+      marginBottom: verticalScale(3),
       color: C.primary,
     },
     roleDesc: {
-      fontSize: sp(12.5),
+      fontSize: fontScale(12.5),
       fontWeight: '500',
-      lineHeight: sp(17),
-      marginBottom: vs(2.5),
+      lineHeight: fontScale(17),
+      marginBottom: verticalScale(2.5),
       color: C.secondary,
     },
     roleSub: {
-      fontSize: sp(11),
-      lineHeight: sp(15),
+      fontSize: fontScale(11),
+      lineHeight: fontScale(15),
       fontWeight: '400',
       color: C.muted,
     },
     divider: {
       height: StyleSheet.hairlineWidth,
-      marginVertical: vs(8),
+      marginVertical: verticalScale(8),
       backgroundColor: C.border,
     },
     featuresContainer: {
@@ -476,45 +513,46 @@ const makeStyles = (C) =>
     },
     featureItem: {
       paddingHorizontal: scale(9),
-      paddingVertical: vs(3.5),
+      paddingVertical: verticalScale(3.5),
       borderRadius: scale(5.5),
       borderWidth: StyleSheet.hairlineWidth,
       backgroundColor: C.surfaceAlt,
       borderColor: C.border,
     },
     featureText: {
-      fontSize: sp(10),
+      fontSize: fontScale(10),
       fontWeight: '500',
       color: C.secondary,
     },
 
     bottomSpacer: {
-      height: vs(14),
+      height: verticalScale(14),
     },
 
     // ─── Footer ─────────────────────────────────────────────────────────────
     footer: {
       paddingHorizontal: scale(20),
-      paddingBottom: vs(12),
-      paddingTop: vs(10),
+      paddingBottom: verticalScale(12),
+      paddingTop: verticalScale(10),
       borderTopWidth: 1,
       borderTopColor: C.border,
       backgroundColor: C.bg,
     },
     continueBtn: {
       borderRadius: scale(14),
-      paddingVertical: vs(14.5),
+      paddingVertical: verticalScale(14.5),
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: scale(10),
-      shadowOffset: { width: 0, height: vs(6) },
+      shadowOffset: { width: 0, height: verticalScale(6) },
       shadowOpacity: 0.3,
       shadowRadius: scale(14),
       elevation: 6,
+      minHeight: verticalScale(54),
     },
     continueBtnText: {
-      fontSize: sp(15.5),
+      fontSize: fontScale(15.5),
       fontWeight: '700',
       color: '#FFFFFF',
       letterSpacing: 0.2,
