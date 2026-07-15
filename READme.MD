@@ -55,22 +55,161 @@ BartaOne 2.0 is designed around three core experiences:
 ## 📁 Project Structure
 
 ```text
+README.MD
+
 backend/
-  config/         # Database, Firebase, and Cloudinary setup
-  controllers/    # Request handlers for each feature area
-  middleware/     # Auth, upload, and error middleware
-  models/         # Mongoose schemas and models
-  routes/         # API endpoints
-  services/       # Business logic and external integrations
-  server.js       # Application entry point
+  .env
+  .gitignore
+  cleanAllIndexes.js
+  cleanIndexes.js
+  cleanLikesIndexes.js
+  config/
+    cloudinary.js
+    db.js
+    firebaseAdmin.js
+  controllers/
+    articleController.js
+    authController.js
+    channelController.js
+    newspaperController.js
+    translateController.js
+    userController.js
+    videoController.js
+  firebase-test.js
+  logs/
+    combined.log
+    error.log
+  middleware/
+    checkRole.js
+    errorHandler.js
+    uploadMiddleware.js
+    verifyFirebaseToken.js
+  models/
+    Article.js
+    Channel.js
+    Comment.js
+    Like.js
+    Newspaper.js
+    Subscription.js
+    User.js
+    Video.js
+  package.json
+  package-lock.json
+  routes/
+    articleRoutes.js
+    authRoutes.js
+    channelRoutes.js
+    newspaperRoutes.js
+    translateRoutes.js
+    uploadRoutes.js
+    userRoutes.js
+    videoRoutes.js
+  scripts/
+  server.js
+  services/
+    cloudinaryService.js
+    newspaperService.js
+    notificationService.js
+    translationService.js
+  test.js
+  test-mongo.js
+  utils/
+    constants.js
+    logger.js
+    response.js
+  verifyIndexes.js
 
 frontend/
-  app/            # Screens and navigation structure
-  components/     # Reusable UI components
-  context/        # Auth and app state providers
-  hooks/          # Custom hooks for data access
-  services/       # API and Firebase integration helpers
-  utils/          # Shared helpers and validators
+  .env
+  .expo/
+    devices.json
+    README.md
+  .gitignore
+  AGENTS.md
+  app/
+    (auth)/
+      _layout.jsx
+      ForgotPassword.jsx
+      OwnerLogin.jsx
+      OwnerSignup.jsx
+      SelectRole.jsx
+      VerifyEmail.jsx
+      ViewerLogin.jsx
+      ViewerSignup.jsx
+      Welcome.jsx
+    (owner)/
+      _layout.jsx
+      CreateChannel.jsx
+      CreateNewspaper.jsx
+      Dashboard.jsx
+      ManagePosts.jsx
+      NewspaperHistory.jsx
+      newspaper-placeholder.jsx
+      Profile.jsx
+      Subscribers.jsx
+      UploadArticle.jsx
+      upload-placeholder.jsx
+      UploadVideo.jsx
+    (viewer)/
+      _layout.jsx
+      ArticleDetails.jsx
+      ChannelDetails.jsx
+      Home.jsx
+      NewspaperDetails.jsx
+      NewspaperViewer.jsx
+      Profile.jsx
+      Search.jsx
+      Settings.jsx
+      VideoPlayer.jsx
+    _layout.jsx
+  app.json
+  assets/
+    icon.png
+  babel.config.js
+  CLAUDE.md
+  components/
+    AreaSelector.jsx
+    ChannelCard.jsx
+    EmptyState.jsx
+    Footer.jsx
+    Header.jsx
+    LanguageSelector.jsx
+    Loader.jsx
+    NewsCard.jsx
+    NewspaperCard.jsx
+    NewspaperControls.jsx
+    NewspaperFilters.jsx
+    NewspaperPage.jsx
+    SearchBar.jsx
+    VideoCard.jsx
+  context/
+    AuthContext.js
+    ThemeContext.js
+    UserContext.js
+  hooks/
+    useArticles.js
+    useAuth.js
+    useChannels.js
+    useNewspaper.js
+    useTranslation.js
+    useVideos.js
+  package.json
+  package.json.backup
+  package-lock.json
+  services/
+    api.js
+    articleService.js
+    channelService.js
+    firebase.js
+    liveService.js
+    newspaperService.js
+    translateService.js
+    videoService.js
+  utils/
+    constants.js
+    helpers.js
+    newspaperUtils.js
+    validators.js
 ```
 
 ## 🆕 Recent Improvements
