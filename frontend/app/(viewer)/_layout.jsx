@@ -54,7 +54,7 @@ function ViewerTabs() {
 
   const [activeTab, setActiveTab] = useState(() => {
     if (pathname.includes('Search')) return 'search';
-    if (pathname.includes('LiveTV')) return 'live';
+    if (pathname.includes('NewspaperViewer')) return 'newspaper'; // ✅ Changed from LiveTV
     if (pathname.includes('Profile')) return 'profile';
     return 'home';
   });
@@ -98,14 +98,14 @@ function ViewerTabs() {
               if (nestedRoute) {
                 const name = nestedRoute.name;
                 if (name.includes('Search')) setActiveTab('search');
-                else if (name.includes('LiveTV')) setActiveTab('live');
+                else if (name.includes('NewspaperViewer')) setActiveTab('newspaper'); // ✅ Changed
                 else if (name.includes('Profile')) setActiveTab('profile');
                 else setActiveTab('home');
               }
             } else {
               const name = route.name;
               if (name.includes('Search')) setActiveTab('search');
-              else if (name.includes('LiveTV')) setActiveTab('live');
+              else if (name.includes('NewspaperViewer')) setActiveTab('newspaper'); // ✅ Changed
               else if (name.includes('Profile')) setActiveTab('profile');
               else setActiveTab('home');
             }
@@ -148,15 +148,15 @@ function ViewerTabs() {
           }}
         />
 
-        {/* ─── Live TV Tab ── */}
+        {/* ─── Newspaper Tab ── */}
         <Tabs.Screen
-          name="LiveTV"
+          name="NewspaperViewer"
           options={{
-            tabBarLabel: 'Live',
+            tabBarLabel: 'Newspaper',
             tabBarIcon: ({ focused, color }) => (
               <View style={styles.tabIconWrapper}>
                 <Ionicons
-                  name={focused ? 'tv' : 'tv-outline'}
+                  name={focused ? 'newspaper' : 'newspaper-outline'}
                   size={iconSize}
                   color={color}
                 />
@@ -188,6 +188,7 @@ function ViewerTabs() {
         <Tabs.Screen name="ChannelDetails" options={{ href: null }} />
         <Tabs.Screen name="ArticleDetails" options={{ href: null }} />
         <Tabs.Screen name="VideoPlayer" options={{ href: null, headerShown: false }} />
+        <Tabs.Screen name="NewspaperDetails" options={{ href: null }} /> {/* ✅ Added */}
         <Tabs.Screen name="Settings" options={{ href: null }} />
         <Tabs.Screen name="Notifications" options={{ href: null }} />
       </Tabs>

@@ -3,10 +3,54 @@ export const APP_NAME = 'BartaOne';
 export const APP_VERSION = '1.0.0';
 export const APP_DESCRIPTION = 'Hyperlocal Multilingual News Broadcasting Platform';
 
+// Colors
+export const COLORS = {
+  primary: '#C8001A',
+  secondary: '#1A2733',
+  background: '#F2F0EB',
+  white: '#FFFFFF',
+  black: '#000000',
+  gray: '#8A97A5',
+  lightGray: '#E4E0D8',
+  text: '#1A2733',
+  error: '#DC3545',
+  success: '#28A745',
+  warning: '#FFC107',
+  lightPrimary: '#FFF0F2',
+  border: '#E4E0D8',
+  surface: '#FFFFFF',
+  muted: '#8A97A5',
+  faint: '#B8C0C8',
+};
+
+// Sizes
+export const SIZES = {
+  // Font sizes
+  h1: 28,
+  h2: 24,
+  h3: 20,
+  h4: 18,
+  body1: 16,
+  body2: 14,
+  body3: 12,
+  body4: 10,
+  caption: 12,
+  
+  // Spacing
+  padding: 16,
+  margin: 16,
+  radius: 8,
+  
+  // Icon sizes
+  icon: 24,
+  iconSmall: 16,
+  iconLarge: 32,
+};
+
 // API Constants
-export const API_TIMEOUT = 30000; // 30 seconds
+export const API_TIMEOUT = 30000;
 export const MAX_RETRY_ATTEMPTS = 3;
-export const RETRY_DELAY = 1000; // 1 second
+export const RETRY_DELAY = 1000;
 
 // User Roles
 export const USER_ROLES = {
@@ -20,6 +64,7 @@ export const CONTENT_TYPES = {
   ARTICLE: 'article',
   VIDEO: 'video',
   LIVE: 'live',
+  NEWSPAPER: 'newspaper',
 };
 
 // Categories
@@ -34,8 +79,6 @@ export const CATEGORIES = [
 ];
 
 // Languages
-// All 22 languages of the Eighth Schedule of the Constitution of India,
-// plus English (official) and a few widely-used international languages.
 export const LANGUAGES = [
   { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
   { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
@@ -49,7 +92,7 @@ export const LANGUAGES = [
   { code: 'kok', name: 'Konkani', nativeName: 'कोंकणी', flag: '🇮🇳' },
   { code: 'mai', name: 'Maithili', nativeName: 'मैथिली', flag: '🇮🇳' },
   { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം', flag: '🇮🇳' },
-  { code: 'mni', name: 'Manipuri (Meitei)', nativeName: 'ꯃꯤꯇꯩꯂꯣꯟ', flag: '🇮🇳' },
+  { code: 'mni', name: 'Manipuri', nativeName: 'ꯃꯤꯇꯩꯂꯣꯟ', flag: '🇮🇳' },
   { code: 'mr', name: 'Marathi', nativeName: 'मराठी', flag: '🇮🇳' },
   { code: 'ne', name: 'Nepali', nativeName: 'नेपाली', flag: '🇮🇳' },
   { code: 'or', name: 'Odia', nativeName: 'ଓଡ଼ିଆ', flag: '🇮🇳' },
@@ -60,7 +103,6 @@ export const LANGUAGES = [
   { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', flag: '🇮🇳' },
   { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', flag: '🇮🇳' },
   { code: 'ur', name: 'Urdu', nativeName: 'اردو', flag: '🇮🇳' },
-  // Additional international languages
   { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
   { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
   { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
@@ -69,13 +111,24 @@ export const LANGUAGES = [
   { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' },
 ];
 
-// Indian States & Union Territories with Districts and Major Cities
-// NOTE: District boundaries in India change periodically (states occasionally
-// create, merge, or rename districts). This list reflects the standard/stable
-// administrative division and is a strong reference baseline, but treat very
-// recently created districts (e.g. post-2023 splits in some states) as subject
-// to change. "cities" is populated for the largest district(s) in each state/UT
-// following the same pattern as the original file — extend as needed.
+// Helper functions for locations
+function toDistrict(name) {
+  return { id: slugify(name), name };
+}
+
+function cityList(names) {
+  return names.map((name) => ({ id: slugify(name), name }));
+}
+
+function slugify(name) {
+  return name
+    .toLowerCase()
+    .replace(/[().]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+// LOCATIONS
 export const LOCATIONS = {
   states: [
     { id: 'andhra_pradesh', name: 'Andhra Pradesh', code: 'AP', capital: 'Amaravati' },
@@ -343,21 +396,6 @@ export const LOCATIONS = {
   },
 };
 
-// Helper utilities used only during construction of the objects above.
-function toDistrict(name) {
-  return { id: slugify(name), name };
-}
-function cityList(names) {
-  return names.map((name) => ({ id: slugify(name), name }));
-}
-function slugify(name) {
-  return name
-    .toLowerCase()
-    .replace(/[().]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
-
 // Storage Keys
 export const STORAGE_KEYS = {
   AUTH_TOKEN: 'authToken',
@@ -381,6 +419,7 @@ export const FIREBASE_COLLECTIONS = {
   ARTICLES: 'articles',
   VIDEOS: 'videos',
   LIVE: 'live',
+  NEWSPAPERS: 'newspapers',
   COMMENTS: 'comments',
   LIKES: 'likes',
   SUBSCRIPTIONS: 'subscriptions',
@@ -417,6 +456,10 @@ export const ERROR_MESSAGES = {
   ARTICLE_NOT_FOUND: 'Article not found.',
   VIDEO_NOT_FOUND: 'Video not found.',
   USER_NOT_FOUND: 'User not found.',
+  NEWSPAPER_NOT_FOUND: 'Newspaper not found.',
+  NEWSPAPER_EXPIRED: 'This newspaper has expired.',
+  NEWSPAPER_PAGE_LIMIT: 'Newspaper cannot have more than 20 pages.',
+  NEWSPAPER_CONTENT_EMPTY: 'Page content cannot be empty.',
 };
 
 // Success Messages
@@ -437,6 +480,8 @@ export const SUCCESS_MESSAGES = {
   COMMENT_ADDED: 'Your comment has been added.',
   SAVED: 'Content saved successfully.',
   UNSAVED: 'Content unsaved.',
+  NEWSPAPER_PUBLISHED: 'Newspaper published successfully! It will expire in 24 hours.',
+  NEWSPAPER_DELETED: 'Newspaper deleted successfully.',
 };
 
 // Validation Patterns
@@ -455,14 +500,14 @@ export const IMAGE_CONFIG = {
   MAX_HEIGHT: 1080,
   QUALITY: 0.8,
   ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-  MAX_SIZE: 5 * 1024 * 1024, // 5MB
+  MAX_SIZE: 5 * 1024 * 1024,
 };
 
 // Video Constants
 export const VIDEO_CONFIG = {
-  MAX_SIZE: 100 * 1024 * 1024, // 100MB
+  MAX_SIZE: 100 * 1024 * 1024,
   ALLOWED_TYPES: ['video/mp4', 'video/mov', 'video/avi', 'video/mkv'],
-  MAX_DURATION: 600, // 10 minutes in seconds
+  MAX_DURATION: 600,
 };
 
 // Pagination Constants
@@ -486,6 +531,7 @@ export const NOTIFICATION_TYPES = {
   NEW_ARTICLE: 'new_article',
   NEW_VIDEO: 'new_video',
   LIVE_STARTED: 'live_started',
+  NEW_NEWSPAPER: 'new_newspaper',
   COMMENT: 'comment',
   LIKE: 'like',
   SUBSCRIPTION: 'subscription',
@@ -504,10 +550,36 @@ export const PERMISSIONS = {
   STORAGE: 'storage',
 };
 
+// Newspaper Constants
+export const NEWSPAPER_LAYOUTS = {
+  FULL: 'full',
+  SPLIT: 'split',
+  GRID: 'grid',
+};
+
+export const NEWSPAPER_FILTERS = {
+  ALL: 'all',
+  TODAY: 'today',
+  EXPIRING: 'expiring',
+  CHANNELS: 'channels',
+};
+
+export const NEWSPAPER_EXPIRY_HOURS = 24;
+export const NEWSPAPER_PAGE_LIMIT = 20;
+
+export const NEWSPAPER_STATUS = {
+  ACTIVE: 'active',
+  EXPIRED: 'expired',
+  DRAFT: 'draft',
+};
+
+// Default export
 export default {
   APP_NAME,
   APP_VERSION,
   APP_DESCRIPTION,
+  COLORS,
+  SIZES,
   API_TIMEOUT,
   MAX_RETRY_ATTEMPTS,
   RETRY_DELAY,
@@ -528,4 +600,9 @@ export default {
   SORT_OPTIONS,
   NOTIFICATION_TYPES,
   PERMISSIONS,
+  NEWSPAPER_LAYOUTS,
+  NEWSPAPER_FILTERS,
+  NEWSPAPER_EXPIRY_HOURS,
+  NEWSPAPER_PAGE_LIMIT,
+  NEWSPAPER_STATUS,
 };

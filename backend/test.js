@@ -134,12 +134,12 @@ async function testFirebase() {
     // Check if already initialized
     if (!admin.getApps().length) {
       admin.initializeApp({
-  credential: admin.cert({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: privateKey,
-  }),
-});
+        credential: admin.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: privateKey,
+        }),
+      });
     }
     
     console.log('✅ Firebase Admin: Initialized');
@@ -201,6 +201,7 @@ async function testDependencies() {
     'axios',
     'winston',
     'streamifier',
+    'node-cron', // ✅ ADDED for newspaper auto-expiry
   ];
 
   let passed = 0;
@@ -262,8 +263,9 @@ function testRoutes() {
     './routes/channelRoutes',
     './routes/articleRoutes',
     './routes/videoRoutes',
-    './routes/liveRoutes',
+    // './routes/liveRoutes', // ❌ REMOVED - replaced by newspaper
     './routes/translateRoutes',
+    './routes/newspaperRoutes', // ✅ ADDED
   ];
 
   let passed = 0;
@@ -302,8 +304,9 @@ function testControllers() {
     './controllers/channelController',
     './controllers/articleController',
     './controllers/videoController',
-    './controllers/liveController',
+    // './controllers/liveController', // ❌ REMOVED - replaced by newspaper
     './controllers/translateController',
+    './controllers/newspaperController', // ✅ ADDED
   ];
 
   let passed = 0;
@@ -340,10 +343,11 @@ function testModels() {
     './models/Channel',
     './models/Article',
     './models/Video',
-    './models/Live',
+    // './models/Live', // ❌ REMOVED - replaced by newspaper
     './models/Comment',
     './models/Like',
     './models/Subscription',
+    './models/Newspaper', // ✅ ADDED
   ];
 
   let passed = 0;
@@ -382,6 +386,7 @@ function testMiddleware() {
     './middleware/verifyFirebaseToken',
     './middleware/uploadMiddleware',
     './middleware/errorHandler',
+    './middleware/checkRole', // ✅ ADDED for role-based access
   ];
 
   let passed = 0;
@@ -447,6 +452,7 @@ function testServices() {
     './services/cloudinaryService',
     './services/translationService',
     './services/notificationService',
+    './services/newspaperService', // ✅ ADDED
   ];
 
   let passed = 0;
@@ -559,6 +565,7 @@ async function runAllTests() {
     console.log('');
     console.log('🌐 API URL: http://localhost:5000/api');
     console.log('🩺 Health Check: http://localhost:5000/api/health');
+    console.log('📰 Newspapers API: http://localhost:5000/api/newspapers');
   } else {
     console.log('');
     console.log('⚠️ Some tests failed. Please check the errors above.');
@@ -569,6 +576,7 @@ async function runAllTests() {
     console.log('   3. Verify Firebase service account credentials');
     console.log('   4. Check Cloudinary credentials');
     console.log('   5. Run npm install to install missing dependencies');
+    console.log('   6. Make sure all newspaper files are created');
   }
 }
 

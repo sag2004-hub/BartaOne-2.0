@@ -161,12 +161,12 @@ export default function Dashboard() {
   const C = scheme === 'dark' ? DARK : LIGHT;
   const { isLoading: authLoading } = useAuth();
   const [channel, setChannel] = useState(null);
-  const [stats, setStats] = useState({ articles: 0, videos: 0, live: 0, followers: 0 });
+  const [stats, setStats] = useState({ articles: 0, videos: 0, newspapers: 0, followers: 0 });
   const [recentActivities, setRecentActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
-  const [goLiveModalVisible, setGoLiveModalVisible] = useState(false);
+  const [newspaperModalVisible, setNewspaperModalVisible] = useState(false);
   const [subscribersModalVisible, setSubscribersModalVisible] = useState(false);
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   
@@ -345,17 +345,17 @@ export default function Dashboard() {
     router.push(route);
   };
 
-  // ─── Go Live Modal Handlers ─────────────────────────────────────────────
-  const handleGoLivePress = () => {
+  // ─── Newspaper Modal Handlers ─────────────────────────────────────────────
+  const handleNewspaperPress = () => {
     if (!channel) {
       Alert.alert('No Channel', 'Create a channel first');
       return;
     }
-    setGoLiveModalVisible(true);
+    setNewspaperModalVisible(true);
   };
 
-  const handleGoLiveOption = (route) => {
-    setGoLiveModalVisible(false);
+  const handleNewspaperOption = (route) => {
+    setNewspaperModalVisible(false);
     router.push(route);
   };
 
@@ -405,10 +405,10 @@ export default function Dashboard() {
     },
     { 
       id: '2', 
-      icon: 'radio-outline', 
-      title: 'Go Live', 
+      icon: 'newspaper-outline', // ✅ Changed from radio-outline
+      title: 'Newspaper', // ✅ Changed from Go Live
       color: C.iconGreen, 
-      onPress: handleGoLivePress 
+      onPress: handleNewspaperPress 
     },
     { 
       id: '3', 
@@ -422,7 +422,7 @@ export default function Dashboard() {
   const statCards = [
     { id: '1', label: 'Articles', value: stats.articles || 0, icon: 'newspaper-outline', color: C.accent, bg: C.accentBg },
     { id: '2', label: 'Videos', value: stats.videos || 0, icon: 'videocam-outline', color: C.iconBlue, bg: C.iconBlueBg },
-    { id: '3', label: 'Live', value: stats.live || 0, icon: 'radio-outline', color: C.iconGreen, bg: C.iconGreenBg },
+    { id: '3', label: 'Newspapers', value: stats.newspapers || 0, icon: 'newspaper-outline', color: C.iconGreen, bg: C.iconGreenBg }, // ✅ Changed from Live
     { id: '4', label: 'Followers', value: stats.followers || 0, icon: 'people-outline', color: C.iconPurple, bg: C.iconPurpleBg },
   ];
 
@@ -715,23 +715,23 @@ export default function Dashboard() {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* ─── Go Live Selection Modal ────────────────────────────────────── */}
+      {/* ─── Newspaper Selection Modal ────────────────────────────────────── */}
       <Modal
-        visible={goLiveModalVisible}
+        visible={newspaperModalVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setGoLiveModalVisible(false)}
+        onRequestClose={() => setNewspaperModalVisible(false)}
       >
-        <TouchableWithoutFeedback onPress={() => setGoLiveModalVisible(false)}>
+        <TouchableWithoutFeedback onPress={() => setNewspaperModalVisible(false)}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={[styles.modalContainer, { backgroundColor: C.surface }]}>
                 <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
                 <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
-                  <Text style={[styles.modalTitle, { color: C.primary }]}>Go Live</Text>
+                  <Text style={[styles.modalTitle, { color: C.primary }]}>Newspaper</Text>
                   <TouchableOpacity
                     style={[styles.modalCloseBtn, { backgroundColor: C.iconGreenBg }]}
-                    onPress={() => setGoLiveModalVisible(false)}
+                    onPress={() => setNewspaperModalVisible(false)}
                     activeOpacity={0.7}
                   >
                     <Ionicons name="close" size={moderateScale(22)} color={C.iconGreen} />
@@ -740,16 +740,16 @@ export default function Dashboard() {
                 <View style={styles.modalContent}>
                   <TouchableOpacity
                     style={[styles.uploadOption, { backgroundColor: C.surfaceAlt, borderColor: C.border }]}
-                    onPress={() => handleGoLiveOption('GoLive')}
+                    onPress={() => handleNewspaperOption('CreateNewspaper')}
                     activeOpacity={0.7}
                   >
                     <View style={[styles.optionIconWrap, { backgroundColor: C.iconGreenBg }]}>
-                      <Ionicons name="radio-outline" size={moderateScale(32)} color={C.iconGreen} />
+                      <Ionicons name="newspaper-outline" size={moderateScale(32)} color={C.iconGreen} />
                     </View>
                     <View style={styles.optionTextWrap}>
-                      <Text style={[styles.optionTitle, { color: C.primary }]}>Start Live Stream</Text>
+                      <Text style={[styles.optionTitle, { color: C.primary }]}>Create Newspaper</Text>
                       <Text style={[styles.optionSubtext, { color: C.muted }]}>
-                        Go live and broadcast to your audience
+                        Create a daily newspaper with multiple pages
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={moderateScale(20)} color={C.muted} />
@@ -757,16 +757,16 @@ export default function Dashboard() {
 
                   <TouchableOpacity
                     style={[styles.uploadOption, { backgroundColor: C.surfaceAlt, borderColor: C.border }]}
-                    onPress={() => handleGoLiveOption('GoLive')}
+                    onPress={() => handleNewspaperOption('NewspaperHistory')}
                     activeOpacity={0.7}
                   >
                     <View style={[styles.optionIconWrap, { backgroundColor: C.iconAmberBg }]}>
-                      <Ionicons name="calendar-outline" size={moderateScale(32)} color={C.iconAmber} />
+                      <Ionicons name="time-outline" size={moderateScale(32)} color={C.iconAmber} />
                     </View>
                     <View style={styles.optionTextWrap}>
-                      <Text style={[styles.optionTitle, { color: C.primary }]}>Schedule Live</Text>
+                      <Text style={[styles.optionTitle, { color: C.primary }]}>Newspaper History</Text>
                       <Text style={[styles.optionSubtext, { color: C.muted }]}>
-                        Schedule a live stream for later
+                        View your published newspapers
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={moderateScale(20)} color={C.muted} />
@@ -774,7 +774,7 @@ export default function Dashboard() {
 
                   <TouchableOpacity
                     style={[styles.cancelBtn, { borderColor: C.border }]}
-                    onPress={() => setGoLiveModalVisible(false)}
+                    onPress={() => setNewspaperModalVisible(false)}
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.cancelBtnText, { color: C.secondary }]}>Cancel</Text>

@@ -102,7 +102,7 @@ exports.getChannelByOwner = async (req, res) => {
   }
 };
 
-// ─── FIXED: Create channel ────────────────────────────────────────────────────
+// Create channel
 exports.createChannel = async (req, res) => {
   try {
     console.log('📥 Create channel request received');
@@ -125,14 +125,11 @@ exports.createChannel = async (req, res) => {
       return sendError(res, 400, 'You already have a channel. Only one channel per owner is allowed.');
     }
 
-    // ─── FIXED: Extract location from req.body ──────────────────────────────
-    // The location is sent as an object from the frontend
+    // Extract location from req.body
     let location = {};
     
-    // Check if location is in req.body
     if (req.body.location) {
       try {
-        // If location is a string, parse it
         if (typeof req.body.location === 'string') {
           location = JSON.parse(req.body.location);
         } else {
@@ -198,7 +195,7 @@ exports.createChannel = async (req, res) => {
       }
     }
 
-    // ─── Create channel ──────────────────────────────────────────────────────
+    // Create channel
     const channelData = {
       ownerId: user._id,
       channelName: channelName.trim(),
@@ -270,7 +267,6 @@ exports.updateChannel = async (req, res) => {
     if (description) channel.description = description.trim();
     if (language) channel.language = language;
     if (location) {
-      // Handle location update
       if (typeof location === 'string') {
         try {
           const parsedLocation = JSON.parse(location);
@@ -461,7 +457,7 @@ exports.getSubscribers = async (req, res) => {
   }
 };
 
-// Get channel stats
+// ✅ FIXED: Get channel stats (removed Live reference)
 exports.getChannelStats = async (req, res) => {
   try {
     const { id } = req.params;
@@ -482,14 +478,15 @@ exports.getChannelStats = async (req, res) => {
     const Video = require('../models/Video');
     const videoCount = await Video.countDocuments({ channelId: channel._id });
 
-    const Live = require('../models/Live');
-    const liveCount = await Live.countDocuments({ channelId: channel._id });
+    // ✅ REMOVED: Live model reference
+    // const Live = require('../models/Live');
+    // const liveCount = await Live.countDocuments({ channelId: channel._id });
 
     return sendResponse(res, 200, true, 'Channel stats fetched successfully', {
       followers: subscriptionCount,
       articles: articleCount,
       videos: videoCount,
-      live: liveCount,
+      // live: liveCount, // ❌ REMOVED
     });
   } catch (error) {
     console.error('Get channel stats error:', error);

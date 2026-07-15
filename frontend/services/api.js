@@ -4,30 +4,53 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 import { auth } from './firebase';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 // ─── Determine Base URL ──────────────────────────────────────────────────────
 const getBaseURL = () => {
+  // 1. Use environment variable if set
   if (API_URL) {
     console.log('🔗 Using API_URL from env:', API_URL);
     return API_URL;
   }
 
-  if (__DEV__) {
-    const DEV_IP = '192.168.29.16';
-    const PORT = '5000';
-    
-    if (Platform.OS === 'android') {
-      return `http://10.0.2.2:${PORT}/api`;
-    }
-    return `http://${DEV_IP}:${PORT}/api`;
+  // 2. Production
+  if (!__DEV__) {
+    return 'https://your-production-url.com/api';
   }
 
-  return 'https://your-production-url.com/api';
+  // 3. Development - detect platform
+  const PORT = '5000';
+  
+  // Android Emulator
+  if (Platform.OS === 'android' && !Constants?.expoConfig?.hostUri) {
+    console.log('📱 Using Android emulator: 10.0.2.2');
+    return `http://10.0.2.2:${PORT}/api`;
+  }
+  
+  // iOS Simulator
+  if (Platform.OS === 'ios' && !Constants?.expoConfig?.hostUri) {
+    console.log('📱 Using iOS simulator: localhost');
+    return `http://localhost:${PORT}/api`;
+  }
+  
+  // Physical device - try to get the host IP from Expo
+  if (Constants?.expoConfig?.hostUri) {
+    const host = Constants.expoConfig.hostUri.split(':')[0];
+    console.log('📱 Using Expo host:', host);
+    return `http://${host}:${PORT}/api`;
+  }
+  
+  // Fallback - your computer's IP (update this to match your network)
+  const DEV_IP = '192.168.29.16';
+  console.log(`📱 Using fallback IP: ${DEV_IP}`);
+  return `http://${DEV_IP}:${PORT}/api`;
 };
 
 const BASE_URL = getBaseURL();
 console.log('🌐 [api.js] Base URL:', BASE_URL);
 
+// ─── Create Axios Instance ──────────────────────────────────────────────────
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -62,9 +85,6 @@ api.interceptors.request.use(
         console.warn('⚠️ [api.js] No token available for request');
       }
       
-      // ─── IMPORTANT: Don't override Content-Type for FormData ──────────────
-      // If the config already has a Content-Type header, keep it
-      // For FormData, axios will set the correct Content-Type with boundary
       if (!config.headers['Content-Type'] && !config.headers['content-type']) {
         config.headers['Content-Type'] = 'application/json';
       }
@@ -128,13 +148,10 @@ api.interceptors.response.use(
   }
 );
 
-// ─── Export ──────────────────────────────────────────────────────────────────
-export { api };
-
 // ─── API Methods ──────────────────────────────────────────────────────────────
 
 // Auth APIs
-export const authAPI = {
+const authAPI = {
   login: (userData, config = {}) =>
     api.post('/auth/login', userData, config),
   register: (userData, config = {}) =>
@@ -146,7 +163,7 @@ export const authAPI = {
 };
 
 // User APIs
-export const userAPI = {
+const userAPI = {
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data) => api.put('/users/profile', data),
   updatePreferences: (preferences) => api.put('/users/preferences', preferences),
@@ -158,10 +175,7 @@ export const userAPI = {
 };
 
 // Channel APIs
-// services/api.js - Channel APIs section
-
-// Channel APIs
-export const channelAPI = {
+const channelAPI = {
   getAll: (params) => api.get('/channels', { params }),
   getById: (id) => api.get(`/channels/${id}`),
   getByOwner: () => api.get('/channels/owner'),
@@ -176,7 +190,7 @@ export const channelAPI = {
 };
 
 // Article APIs
-export const articleAPI = {
+const articleAPI = {
   getAll: (params) => api.get('/articles', { params }),
   getById: (id) => api.get(`/articles/${id}`),
   getByChannel: (channelId) => api.get(`/articles/channel/${channelId}`),
@@ -194,7 +208,7 @@ export const articleAPI = {
 };
 
 // Video APIs
-export const videoAPI = {
+const videoAPI = {
   getAll: (params) => api.get('/videos', { params }),
   getById: (id) => api.get(`/videos/${id}`),
   getByChannel: (channelId) => api.get(`/videos/channel/${channelId}`),
@@ -209,7 +223,7 @@ export const videoAPI = {
 };
 
 // Live APIs
-export const liveAPI = {
+const liveAPI = {
   getAll: (params) => api.get('/live', { params }),
   getById: (id) => api.get(`/live/${id}`),
   getByChannel: (channelId) => api.get(`/live/channel/${channelId}`),
@@ -220,7 +234,7 @@ export const liveAPI = {
 };
 
 // Translation APIs
-export const translateAPI = {
+const translateAPI = {
   translate: (text, targetLang, sourceLang) =>
     api.post('/translate', { text, targetLang, sourceLang }),
   translateBatch: (texts, targetLang) =>
@@ -234,7 +248,7 @@ export const translateAPI = {
 };
 
 // Location APIs
-export const locationAPI = {
+const locationAPI = {
   getStates: () => api.get('/locations/states'),
   getDistricts: (stateId) => api.get(`/locations/${stateId}/districts`),
   getCities: (districtId) => api.get(`/locations/${districtId}/cities`),
@@ -242,7 +256,7 @@ export const locationAPI = {
 };
 
 // Notification APIs
-export const notificationAPI = {
+const notificationAPI = {
   getAll: () => api.get('/notifications'),
   getUnread: () => api.get('/notifications/unread'),
   markAsRead: (id) => api.put(`/notifications/${id}/read`),
@@ -251,21 +265,22 @@ export const notificationAPI = {
   registerToken: (token) => api.post('/notifications/register', { token }),
 };
 
-// Search API
-export const searchAPI = {
+// Search APIs
+const searchAPI = {
   search: (query, type = 'all') =>
     api.get(`/search?q=${query}&type=${type}`),
   getSuggestions: (query) =>
     api.get(`/search/suggestions?q=${query}`),
 };
 
-// File Upload API
-export const uploadAPI = {
+// Upload APIs
+const uploadAPI = {
   uploadImage: (file) => {
     const formData = new FormData();
     formData.append('image', file);
     return api.post('/upload/image', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000, // 60 seconds for image upload
     });
   },
   uploadVideo: (file) => {
@@ -273,6 +288,7 @@ export const uploadAPI = {
     formData.append('video', file);
     return api.post('/upload/video', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000, // 2 minutes for video
     });
   },
   uploadMultiple: (files) => {
@@ -282,12 +298,28 @@ export const uploadAPI = {
     });
     return api.post('/upload/multiple', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000,
     });
   },
 };
 
+// Newspaper APIs
+const newspaperAPI = {
+  getAll: (params) => api.get('/newspapers', { params }),
+  getById: (id) => api.get(`/newspapers/${id}`),
+  getByChannel: (channelId) => api.get(`/newspapers/channel/${channelId}`),
+  getActive: () => api.get('/newspapers/active'),
+  create: (data) => api.post('/newspapers', data),
+  update: (id, data) => api.put(`/newspapers/${id}`, data),
+  delete: (id) => api.delete(`/newspapers/${id}`),
+  getByOwner: () => api.get('/newspapers/user'),
+  getStats: (channelId) => api.get(`/newspapers/stats/${channelId}`),
+   getStats: (channelId) => api.get(`/newspapers/stats/${channelId}`),
+  search: (query) => api.get(`/newspapers/search?q=${query}`),
+};
+
 // ─── Live Service Functions ──────────────────────────────────────────────────
-export const startLiveStream = async (data) => {
+const startLiveStream = async (data) => {
   try {
     console.log('📡 Starting live stream...', data);
     const response = await liveAPI.start(data);
@@ -299,7 +331,7 @@ export const startLiveStream = async (data) => {
   }
 };
 
-export const scheduleLiveStream = async (data) => {
+const scheduleLiveStream = async (data) => {
   try {
     console.log('📡 Scheduling live stream...', data);
     const response = await api.post('/live/schedule', data);
@@ -311,7 +343,7 @@ export const scheduleLiveStream = async (data) => {
   }
 };
 
-export const endLiveStream = async (streamId) => {
+const endLiveStream = async (streamId) => {
   try {
     console.log('📡 Ending live stream...', streamId);
     const response = await liveAPI.end(streamId);
@@ -322,36 +354,29 @@ export const endLiveStream = async (streamId) => {
     throw error;
   }
 };
-// services/api.js - Add this after the existing code
 
-// ─── Search Content (Combined Search) ──────────────────────────────────────
-export const searchContent = async (query, type = 'all', category = 'all', location = {}) => {
+// ─── Search Content ──────────────────────────────────────────────────────────
+const searchContent = async (query, type = 'all', category = 'all', location = {}) => {
   try {
     console.log('🔍 Searching for:', query, 'Type:', type, 'Category:', category);
     
-    // If searching by location
     if (type === 'location' || location.mode === 'location') {
       const { state, district, city } = location;
       
-      // Get all channels
       const channelsResponse = await channelAPI.getAll({ limit: 100, isActive: true });
       let allChannels = channelsResponse?.data?.data?.channels || channelsResponse?.data?.channels || [];
       
-      // Filter by category if specified
       if (category !== 'all') {
         allChannels = allChannels.filter(ch => ch.category?.toLowerCase() === category.toLowerCase());
       }
 
-      // Search by location
       const searchLower = query.toLowerCase().trim();
       
-      // Exact city match
       const exactCity = allChannels.filter(ch => {
         const cityName = ch.location?.city?.toLowerCase() || '';
         return cityName === searchLower || cityName.includes(searchLower);
       });
 
-      // District fallback (if no exact city match)
       let districtFallback = [];
       if (exactCity.length === 0 && district) {
         const districtLower = district.toLowerCase().trim();
@@ -361,7 +386,6 @@ export const searchContent = async (query, type = 'all', category = 'all', locat
         });
       }
 
-      // State fallback (if no district match)
       let stateFallback = [];
       if (exactCity.length === 0 && districtFallback.length === 0 && state) {
         const stateLower = state.toLowerCase().trim();
@@ -381,7 +405,6 @@ export const searchContent = async (query, type = 'all', category = 'all', locat
       };
     }
 
-    // Regular search (articles, videos, channels)
     let searchResults = [];
 
     if (type === 'all' || type === 'articles') {
@@ -414,7 +437,6 @@ export const searchContent = async (query, type = 'all', category = 'all', locat
       }
     }
 
-    // Filter by category
     if (category !== 'all') {
       searchResults = searchResults.filter(item => 
         item.category?.toLowerCase() === category.toLowerCase()
@@ -429,18 +451,30 @@ export const searchContent = async (query, type = 'all', category = 'all', locat
   }
 };
 
-// ─── Default Export ──────────────────────────────────────────────────────────
-export default {
-  auth: authAPI,
-  user: userAPI,
-  channel: channelAPI,
-  article: articleAPI,
-  video: videoAPI,
-  live: liveAPI,
-  translate: translateAPI,
-  location: locationAPI,
-  notification: notificationAPI,
-  search: searchAPI,
-  upload: uploadAPI,
-  searchContent, // Add this line
+// ─── ✅ EXPORTS ──────────────────────────────────────────────────────────────
+
+// 1. Default export - the api instance
+export default api;
+
+// 2. Named export - the api instance
+export { api };
+
+// 3. Named exports - all API groups
+export {
+  authAPI,
+  userAPI,
+  channelAPI,
+  articleAPI,
+  videoAPI,
+  liveAPI,
+  translateAPI,
+  locationAPI,
+  notificationAPI,
+  searchAPI,
+  uploadAPI,
+  newspaperAPI,
+  startLiveStream,
+  scheduleLiveStream,
+  endLiveStream,
+  searchContent,
 };

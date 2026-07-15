@@ -10,6 +10,7 @@ const CONTENT_TYPES = {
   ARTICLE: 'article',
   VIDEO: 'video',
   LIVE: 'live',
+  NEWSPAPER: 'newspaper', // ✅ ADDED
 };
 
 // Categories
@@ -113,6 +114,14 @@ const ERROR_MESSAGES = {
   FILE_TOO_LARGE: 'File too large',
   INVALID_FILE_TYPE: 'Invalid file type',
   UPLOAD_FAILED: 'Upload failed',
+
+  // ✅ NEWSPAPER ERRORS
+  NEWSPAPER_NOT_FOUND: 'Newspaper not found',
+  NEWSPAPER_EXPIRED: 'This newspaper has expired',
+  NEWSPAPER_PAGE_LIMIT: 'Newspaper cannot have more than 20 pages',
+  NEWSPAPER_CONTENT_EMPTY: 'Page content cannot be empty',
+  NEWSPAPER_ALREADY_EXISTS: 'Newspaper already exists',
+  NEWSPAPER_DELETE_FAILED: 'Failed to delete newspaper',
 };
 
 // Success Messages
@@ -157,6 +166,12 @@ const SUCCESS_MESSAGES = {
   // User
   PROFILE_UPDATED: 'Profile updated successfully',
   PREFERENCES_UPDATED: 'Preferences updated successfully',
+
+  // ✅ NEWSPAPER SUCCESS MESSAGES
+  NEWSPAPER_PUBLISHED: 'Newspaper published successfully! It will expire in 24 hours',
+  NEWSPAPER_UPDATED: 'Newspaper updated successfully',
+  NEWSPAPER_DELETED: 'Newspaper deleted successfully',
+  NEWSPAPER_VIEWED: 'Newspaper view recorded',
 };
 
 // Collection Names
@@ -166,6 +181,7 @@ const COLLECTIONS = {
   ARTICLES: 'articles',
   VIDEOS: 'videos',
   LIVE: 'lives',
+  NEWSPAPERS: 'newspapers', // ✅ ADDED
   COMMENTS: 'comments',
   LIKES: 'likes',
   SUBSCRIPTIONS: 'subscriptions',
@@ -202,6 +218,7 @@ const CACHE_KEYS = {
   CHANNELS: 'channels',
   VIDEOS: 'videos',
   LIVE: 'live',
+  NEWSPAPERS: 'newspapers', // ✅ ADDED
   USER: 'user',
   PREFERENCES: 'preferences',
 };
@@ -219,12 +236,36 @@ const NOTIFICATION_TYPES = {
   NEW_ARTICLE: 'new_article',
   NEW_VIDEO: 'new_video',
   LIVE_STARTED: 'live_started',
+  NEW_NEWSPAPER: 'new_newspaper', // ✅ ADDED
   COMMENT: 'comment',
   LIKE: 'like',
   SUBSCRIPTION: 'subscription',
   FOLLOW: 'follow',
   MENTION: 'mention',
   SYSTEM: 'system',
+};
+
+// ✅ NEWSPAPER CONSTANTS
+const NEWSPAPER_LAYOUTS = {
+  FULL: 'full',
+  SPLIT: 'split',
+  GRID: 'grid',
+};
+
+const NEWSPAPER_FILTERS = {
+  ALL: 'all',
+  TODAY: 'today',
+  EXPIRING: 'expiring',
+  CHANNELS: 'channels',
+};
+
+const NEWSPAPER_EXPIRY_HOURS = 24; // 24 hours expiry
+const NEWSPAPER_PAGE_LIMIT = 20; // Max pages per newspaper
+
+const NEWSPAPER_STATUS = {
+  ACTIVE: 'active',
+  EXPIRED: 'expired',
+  DRAFT: 'draft',
 };
 
 // Environment
@@ -267,4 +308,10 @@ module.exports = {
   ENVIRONMENTS,
   GENDER,
   DEVICE_TYPES,
+  // ✅ NEWSPAPER EXPORTS
+  NEWSPAPER_LAYOUTS,
+  NEWSPAPER_FILTERS,
+  NEWSPAPER_EXPIRY_HOURS,
+  NEWSPAPER_PAGE_LIMIT,
+  NEWSPAPER_STATUS,
 };

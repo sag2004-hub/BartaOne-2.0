@@ -40,23 +40,27 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Import routes
+// ─── Import routes ──────────────────────────────────────────────────────────
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const channelRoutes = require('./routes/channelRoutes');
 const articleRoutes = require('./routes/articleRoutes');
 const videoRoutes = require('./routes/videoRoutes');
-const liveRoutes = require('./routes/liveRoutes');
+// const liveRoutes = require('./routes/liveRoutes'); // ❌ REMOVED (replaced by newspaper)
 const translateRoutes = require('./routes/translateRoutes');
+const newspaperRoutes = require('./routes/newspaperRoutes');
+const uploadRoutes = require('./routes/uploadRoutes'); // ✅ ADDED
 
-// Use routes
+// ─── Use routes ─────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/channels', channelRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/videos', videoRoutes);
-app.use('/api/live', liveRoutes);
+// app.use('/api/live', liveRoutes); // ❌ REMOVED (replaced by newspaper)
 app.use('/api/translate', translateRoutes);
+app.use('/api/newspapers', newspaperRoutes);
+app.use('/api/upload', uploadRoutes); // ✅ ADDED
 
 // 404 handler
 app.use(notFoundHandler);
@@ -64,26 +68,27 @@ app.use(notFoundHandler);
 // Error handling middleware
 app.use(errorHandler);
 
-// Start server
+// ─── Start server ──────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 API URL: http://localhost:${PORT}/api`);
   console.log(`🩺 Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`📰 Newspapers API: http://localhost:${PORT}/api/newspapers`);
+  console.log(`📤 Upload API: http://localhost:${PORT}/api/upload`);
 });
 
+// ─── Error handling ────────────────────────────────────────────────────────
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error('💥 Unhandled Rejection:', err);
-  // Close server & exit process
   server.close(() => process.exit(1));
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err);
-  // Close server & exit process
   server.close(() => process.exit(1));
 });
 
@@ -94,6 +99,5 @@ process.on('SIGTERM', () => {
     console.log('💤 Process terminated!');
   });
 });
-
 
 module.exports = app;

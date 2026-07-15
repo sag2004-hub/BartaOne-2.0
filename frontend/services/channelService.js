@@ -1,26 +1,22 @@
-// services/channelService.js
-import { channelAPI } from './api';
+// frontend/services/channelService.js
 
-// Export individual functions
+import api, { newspaperAPI } from './api';
+
+// ─── Channel APIs ────────────────────────────────────────────────────────────
+
 export const getChannelByOwner = async () => {
   try {
     console.log('📡 Fetching channel by owner...');
-    const response = await channelAPI.getByOwner();
+    const response = await api.get('/channels/owner');
     console.log('📡 Channel response status:', response.status);
-    console.log('📡 Channel response data:', response.data);
     
-    if (response.data?.data) {
+    if (response.data?.success && response.data?.data) {
+      console.log('✅ Channel found:', response.data.data.channelName || response.data.data._id);
       return response.data.data;
     }
-    if (response.data?.channel) {
-      return response.data.channel;
-    }
-    return response.data || null;
+    console.log('⚠️ No channel found');
+    return null;
   } catch (error) {
-    if (error.response?.status === 404) {
-      console.log('📡 No channel found for this owner (404)');
-      return null;
-    }
     console.error('❌ Error fetching channel by owner:', error);
     throw error;
   }
@@ -29,30 +25,46 @@ export const getChannelByOwner = async () => {
 export const getChannelStats = async (channelId) => {
   try {
     console.log('📡 Fetching channel stats for:', channelId);
-    const response = await channelAPI.getStats(channelId);
-    console.log('📡 Stats response:', response.data);
     
-    if (response.data?.data) {
-      return response.data.data;
+    // Get existing stats (articles, videos, followers)
+    const response = await api.get(`/channels/${channelId}/stats`);
+    const stats = response.data?.data || {};
+    console.log('📊 Base stats:', stats);
+    
+    // ✅ Get newspaper count - use direct API call
+    let newspaperCount = 0;
+    try {
+      console.log('📤 Calling newspaper stats API...');
+      const newspaperResponse = await api.get(`/newspapers/stats/${channelId}`);
+      console.log('📊 Newspaper API response:', JSON.stringify(newspaperResponse.data, null, 2));
+      
+      // Extract the active count
+      if (newspaperResponse.data?.success && newspaperResponse.data?.data) {
+        newspaperCount = newspaperResponse.data.data.active || 0;
+      }
+      console.log('📊 Newspaper count:', newspaperCount);
+    } catch (err) {
+      console.warn('⚠️ Newspaper stats not available:', err.message);
     }
-    if (response.data?.stats) {
-      return response.data.stats;
-    }
-    return response.data || {
-      articles: 0,
-      videos: 0,
-      live: 0,
-      followers: 0,
-      views: 0,
+    
+    // Combine stats
+    const combinedStats = {
+      articles: stats.articles || 0,
+      videos: stats.videos || 0,
+      newspapers: newspaperCount || 0,
+      followers: stats.followers || 0,
     };
+    
+    console.log('📊 Combined stats:', combinedStats);
+    return combinedStats;
   } catch (error) {
     console.error('❌ Error fetching channel stats:', error);
-    return {
-      articles: 0,
-      videos: 0,
-      live: 0,
-      followers: 0,
-      views: 0,
+    // Return default stats if error
+    return { 
+      articles: 0, 
+      videos: 0, 
+      newspapers: 0, 
+      followers: 0 
     };
   }
 };
@@ -61,7 +73,7 @@ export const getChannelStats = async (channelId) => {
 export const channelService = {
   getAll: async (params = {}) => {
     try {
-      const response = await channelAPI.getAll(params);
+      const response = await api.get('/channels', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching channels:', error);
@@ -71,7 +83,7 @@ export const channelService = {
 
   getById: async (id) => {
     try {
-      const response = await channelAPI.getById(id);
+      const response = await api.get(`/channels/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching channel:', error);
@@ -81,12 +93,10 @@ export const channelService = {
 
   getByOwner: getChannelByOwner,
 
-  // ─── FIXED: Create channel with location ──────────────────────────────
   create: async (data) => {
     try {
       console.log('📤 Creating channel with data:', JSON.stringify(data, null, 2));
       
-      // Ensure location is properly structured
       const payload = {
         channelName: data.channelName,
         description: data.description,
@@ -102,7 +112,7 @@ export const channelService = {
       
       console.log('📤 Final payload:', JSON.stringify(payload, null, 2));
       
-      const response = await channelAPI.create(payload);
+      const response = await api.post('/channels', payload);
       console.log('✅ Channel created:', response.data);
       return response.data;
     } catch (error) {
@@ -114,8 +124,8 @@ export const channelService = {
   update: async (id, data, config = {}) => {
     try {
       const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
-      const response = await channelAPI.update(
-        id,
+      const response = await api.put(
+        `/channels/${id}`,
         data,
         isFormData ? { headers: { 'Content-Type': 'multipart/form-data' }, ...config } : config
       );
@@ -128,7 +138,7 @@ export const channelService = {
 
   delete: async (id) => {
     try {
-      const response = await channelAPI.delete(id);
+      const response = await api.delete(`/channels/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting channel:', error);
@@ -138,7 +148,7 @@ export const channelService = {
 
   subscribe: async (id) => {
     try {
-      const response = await channelAPI.subscribe(id);
+      const response = await api.post(`/channels/${id}/subscribe`);
       return response.data;
     } catch (error) {
       console.error('Error subscribing to channel:', error);
@@ -148,7 +158,7 @@ export const channelService = {
 
   unsubscribe: async (id) => {
     try {
-      const response = await channelAPI.unsubscribe(id);
+      const response = await api.delete(`/channels/${id}/subscribe`);
       return response.data;
     } catch (error) {
       console.error('Error unsubscribing from channel:', error);
@@ -158,7 +168,7 @@ export const channelService = {
 
   getSubscribers: async () => {
     try {
-      const response = await channelAPI.getSubscribers();
+      const response = await api.get('/channels/subscribers');
       return response.data;
     } catch (error) {
       console.error('Error fetching subscribers:', error);
@@ -170,7 +180,7 @@ export const channelService = {
 
   search: async (query) => {
     try {
-      const response = await channelAPI.search(query);
+      const response = await api.get(`/channels/search?q=${query}`);
       return response.data;
     } catch (error) {
       console.error('Error searching channels:', error);
