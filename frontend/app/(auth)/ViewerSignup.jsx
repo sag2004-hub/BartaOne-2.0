@@ -42,7 +42,6 @@ const createScalers = (windowWidth, windowHeight) => {
   const widthScale = windowWidth / BASE_WIDTH;
   const heightScale = windowHeight / BASE_HEIGHT;
   
-  // Clamp to prevent extreme scaling on very small/large devices
   const clampedWidth = Math.min(Math.max(widthScale, 0.7), 1.3);
   const clampedHeight = Math.min(Math.max(heightScale, 0.7), 1.3);
 
@@ -126,6 +125,7 @@ const AnimatedInput = ({
   onSubmitEditing,
   returnKeyType,
   inputRef,
+  error,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const slideAnim = useRef(new Animated.Value(16)).current;
@@ -152,8 +152,8 @@ const AnimatedInput = ({
   }, [delay, slideAnim, fadeAnim]);
 
   useEffect(() => {
-    setBorderColor(isFocused ? colors.inputFocusBorder : colors.inputBorder);
-  }, [isFocused, colors.inputFocusBorder, colors.inputBorder]);
+    setBorderColor(error ? colors.accent : (isFocused ? colors.inputFocusBorder : colors.inputBorder));
+  }, [isFocused, colors.inputFocusBorder, colors.inputBorder, error]);
 
   const styles = createStyles(colors, S);
 
@@ -307,6 +307,11 @@ export default function ViewerSignup() {
   const [isLoading, setIsLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsModalVisible, setTermsModalVisible] = useState(false);
+  
+  // ── Email validation states ──
+  const [emailError, setEmailError] = useState('');
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const emailCheckTimeout = useRef(null);
 
   const emailInputRef = useRef(null);
   const passwordInputRef = useRef(null);
@@ -326,6 +331,43 @@ export default function ViewerSignup() {
 
   const { setSigningUp } = useAuth();
   const { suppressNextProfileLoad, resumeProfileLoad } = useUser();
+
+  // ── Email Validation Function ──
+  const checkEmailOwnership = async (email) => {
+    if (!email || email.length < 5 || !email.includes('@')) {
+      setEmailError('');
+      return;
+    }
+
+    setIsCheckingEmail(true);
+    try {
+      const response = await authAPI.checkEmail(email);
+      if (response.data?.data?.isOwner) {
+        setEmailError('⚠️ This email is already registered as a channel owner. Please login to your owner account.');
+      } else {
+        setEmailError('');
+      }
+    } catch (error) {
+      console.log('Email check error:', error);
+      // Don't show error for failed check - we'll validate on submit
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  // ── Email Change Handler with Debounce ──
+  const handleEmailChange = (text) => {
+    setEmail(text);
+    
+    // Debounce the email check
+    if (emailCheckTimeout.current) {
+      clearTimeout(emailCheckTimeout.current);
+    }
+    
+    emailCheckTimeout.current = setTimeout(() => {
+      checkEmailOwnership(text);
+    }, 500);
+  };
 
   // ── Animation Effects ──
   useEffect(() => {
@@ -395,6 +437,13 @@ export default function ViewerSignup() {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (emailCheckTimeout.current) {
+        clearTimeout(emailCheckTimeout.current);
+      }
+    };
   }, []);
 
   // ── Handlers ──
@@ -438,7 +487,32 @@ export default function ViewerSignup() {
       return;
     }
 
+    // ✅ Check if email is an owner before proceeding
+    if (emailError) {
+      Alert.alert('Error', emailError);
+      return;
+    }
+
+    // Double-check with the server
     setIsLoading(true);
+    try {
+      const checkResponse = await authAPI.checkEmail(email);
+      if (checkResponse.data?.data?.isOwner) {
+        Alert.alert(
+          'Email Already Registered',
+          'This email is already registered as a channel owner. Please login to your owner account.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Login as Owner', onPress: () => router.push('/(auth)/OwnerLogin') }
+          ]
+        );
+        setIsLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.log('Email check failed, proceeding with signup:', error);
+    }
+
     setSigningUp(true);
     suppressNextProfileLoad();
 
@@ -476,11 +550,26 @@ export default function ViewerSignup() {
 
       let errorMessage = 'Something went wrong. Please try again.';
       if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
+        errorMessage = typeof error.response.data.message === 'string' 
+          ? error.response.data.message 
+          : error.response.data.message?.message || 'Something went wrong';
       } else if (error.message) {
         errorMessage = error.message;
       }
-      Alert.alert('Signup Failed', errorMessage);
+      
+      // Check if it's the owner error from backend
+      if (errorMessage.includes('owner') || errorMessage.includes('channel owner')) {
+        Alert.alert(
+          'Email Already Registered',
+          errorMessage,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Login as Owner', onPress: () => router.push('/(auth)/OwnerLogin') }
+          ]
+        );
+      } else {
+        Alert.alert('Signup Failed', errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -589,14 +678,36 @@ export default function ViewerSignup() {
                   icon="mail-outline"
                   placeholder="Email Address"
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={handleEmailChange}
                   keyboardType="email-address"
                   delay={320}
                   colors={colors}
                   S={S}
                   returnKeyType="next"
                   onSubmitEditing={() => passwordInputRef.current?.focus()}
+                  error={!!emailError}
                 />
+
+                {/* Email Error Message */}
+                {emailError ? (
+                  <View style={{ 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    marginBottom: verticalScale(10),
+                    marginTop: -verticalScale(6),
+                    paddingHorizontal: scale(6),
+                  }}>
+                    <Ionicons name="warning-outline" size={moderateScale(14)} color={colors.accent} />
+                    <Text style={{ 
+                      fontSize: fontScale(12), 
+                      color: colors.accent, 
+                      marginLeft: scale(6),
+                      flex: 1,
+                    }}>
+                      {emailError}
+                    </Text>
+                  </View>
+                ) : null}
 
                 {/* Password Input */}
                 <AnimatedInput
@@ -910,7 +1021,7 @@ const createStyles = (colors, S) => {
       paddingVertical: verticalScale(14),
       fontSize: fontScale(15),
       fontWeight: '400',
-      padding: 0, // Remove default padding on Android
+      padding: 0,
     },
     checkboxContainer: {
       flexDirection: 'row',

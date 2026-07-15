@@ -80,6 +80,9 @@ const LIGHT = {
   divider: '#EAE6DE',
   loginLink: '#C8001A',
   cardShadowOpacity: 0.06,
+  disclaimerBg: '#FFF8F0',
+  disclaimerBorder: '#F4A261',
+  disclaimerText: '#C07A3A',
 };
 
 const DARK = {
@@ -105,6 +108,9 @@ const DARK = {
   divider: '#1E2A36',
   loginLink: '#E8192C',
   cardShadowOpacity: 0.35,
+  disclaimerBg: 'rgba(244,162,97,0.10)',
+  disclaimerBorder: '#F4A261',
+  disclaimerText: '#F4A261',
 };
 
 // ─── Role definitions ──────────────────────────────────────────────────────
@@ -218,6 +224,29 @@ function RoleCard({ role, isSelected, onSelect, C }) {
   );
 }
 
+// ─── Disclaimer Component ─────────────────────────────────────────────────
+function Disclaimer({ C }) {
+  const styles = makeStyles(C);
+  
+  return (
+    <View style={[styles.disclaimerContainer, { 
+      backgroundColor: C.disclaimerBg, 
+      borderLeftColor: C.disclaimerBorder 
+    }]}>
+      <View style={styles.disclaimerHeader}>
+        <Ionicons name="information-circle-outline" size={moderateScale(16)} color={C.disclaimerBorder} />
+        <Text style={[styles.disclaimerTitle, { color: C.disclaimerText }]}>
+          ⚠️ Note
+        </Text>
+      </View>
+      <Text style={[styles.disclaimerText, { color: C.disclaimerText }]}>
+        Viewer & Channel Owner emails must be <Text style={{ fontWeight: '700' }}>distinct & unique</Text>. 
+        Each email can only be used for one role.
+      </Text>
+    </View>
+  );
+}
+
 // ─── Main Screen ──────────────────────────────────────────────────────────
 export default function SelectRole() {
   const router = useRouter();
@@ -325,6 +354,11 @@ export default function SelectRole() {
                 C={C}
               />
             ))}
+          </View>
+
+          {/* Disclaimer */}
+          <View style={styles.disclaimerWrapper}>
+            <Disclaimer C={C} />
           </View>
 
           {/* Bottom Spacer */}
@@ -525,8 +559,37 @@ const makeStyles = (C) =>
       color: C.secondary,
     },
 
+    // ─── Disclaimer ────────────────────────────────────────────────────────
+    disclaimerWrapper: {
+      paddingHorizontal: scale(18),
+      marginTop: verticalScale(10),
+    },
+    disclaimerContainer: {
+      borderRadius: scale(10),
+      padding: scale(12),
+      paddingHorizontal: scale(14),
+      borderLeftWidth: 3,
+      flexDirection: 'column',
+    },
+    disclaimerHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(5),
+      marginBottom: verticalScale(2),
+    },
+    disclaimerTitle: {
+      fontSize: fontScale(12),
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    disclaimerText: {
+      fontSize: fontScale(11.5),
+      lineHeight: fontScale(16),
+      fontWeight: '400',
+    },
+
     bottomSpacer: {
-      height: verticalScale(14),
+      height: verticalScale(10),
     },
 
     // ─── Footer ─────────────────────────────────────────────────────────────

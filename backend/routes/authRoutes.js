@@ -1,3 +1,4 @@
+// backend/routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
 const { verifyFirebaseToken, optionalFirebaseToken } = require('../middleware/verifyFirebaseToken');
@@ -11,6 +12,7 @@ const {
   googleLogin,
   logout,
   refreshToken,
+  checkEmailOwnership,
 } = require('../controllers/authController');
 
 // Public routes
@@ -18,6 +20,7 @@ router.post('/register', optionalFirebaseToken, asyncHandler(register));
 router.post('/login', optionalFirebaseToken, asyncHandler(login));
 router.post('/google', asyncHandler(googleLogin));
 router.post('/reset-password', asyncHandler(resetPassword));
+router.get('/check-email', asyncHandler(checkEmailOwnership));
 
 // Protected routes
 router.get('/me', verifyFirebaseToken, asyncHandler(getCurrentUser));

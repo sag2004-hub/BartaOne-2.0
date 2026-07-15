@@ -18,6 +18,70 @@ const {
   SUCCESS_MESSAGES 
 } = require('../utils/constants');
 
+// ========================= CHECK EMAIL OWNERSHIP =========================
+exports.checkEmailOwnership = async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return sendBadRequest(res, 'Email is required');
+    }
+
+    console.log('🔍 Checking email ownership:', email);
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if user exists with this email and has owner role
+    const ownerUser = await User.findOne({ 
+      email: normalizedEmail,
+      role: USER_ROLES.OWNER
+    });
+
+    // Check if user exists with this email and has viewer role
+    const viewerUser = await User.findOne({ 
+      email: normalizedEmail,
+      role: USER_ROLES.VIEWER
+    });
+
+    // Check if user exists with this email and has admin role
+    const adminUser = await User.findOne({ 
+      email: normalizedEmail,
+      role: USER_ROLES.ADMIN
+    });
+
+    const isOwner = !!ownerUser;
+    const isViewer = !!viewerUser;
+    const isAdmin = !!adminUser;
+
+    let message = 'Email is available for registration';
+    let role = null;
+
+    if (isOwner) {
+      message = 'This email is already registered as a channel owner';
+      role = 'owner';
+    } else if (isViewer) {
+      message = 'This email is already registered as a viewer. Please use a different company email.';
+      role = 'viewer';
+    } else if (isAdmin) {
+      message = 'This email is already registered as an admin';
+      role = 'admin';
+    }
+
+    return sendSuccess(res, {
+      isOwner,
+      isViewer,
+      isAdmin,
+      email: normalizedEmail,
+      message,
+      role
+    });
+
+  } catch (error) {
+    console.error('❌ Check Email Ownership Error:', error);
+    return sendInternalError(res, ERROR_MESSAGES.INTERNAL_SERVER_ERROR);
+  }
+};
+
 // ========================= REGISTER =========================
 exports.register = async (req, res) => {
   try {
@@ -36,6 +100,20 @@ exports.register = async (req, res) => {
 
     console.log('🔑 Firebase UID:', firebaseUid);
     console.log('📝 Creating user with:', { firebaseUid, email, name, role, phone });
+
+    // ✅ Check if email is already registered as owner
+    const existingOwner = await User.findOne({ 
+      email: email.toLowerCase().trim(),
+      role: USER_ROLES.OWNER
+    });
+
+    if (existingOwner) {
+      console.log('⚠️ Email already registered as owner:', email);
+      return sendBadRequest(res, {
+        message: 'This email is already registered as a channel owner. Please login to your owner account.',
+        code: 'EMAIL_ALREADY_OWNER'
+      });
+    }
 
     // Check if user already exists
     let user = await User.findOne({ firebaseUid });

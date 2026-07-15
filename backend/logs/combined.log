@@ -5370,3 +5370,19 @@
 2026-07-15 19:24:23 [INFO]: 📥 GET /api/users/profile {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
 2026-07-15 19:24:23 [INFO]: ✅ GET /api/users/profile - 200 (50ms) {"status":200,"duration":50,"ip":"::ffff:192.168.29.173"}
 2026-07-15 19:24:23 [INFO]: ✅ GET /api/users/profile - 200 (50ms) {"status":200,"duration":50,"ip":"::ffff:192.168.29.173"}
+2026-07-15 19:37:35 [INFO]: 📥 GET /api/auth/check-email?email=abp%40gmail.com {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-15 19:37:35 [INFO]: ✅ GET /api/auth/check-email?email=abp%40gmail.com - 200 (69ms) {"status":200,"duration":69,"ip":"::ffff:192.168.29.173"}
+2026-07-15 19:38:03 [INFO]: 📥 GET /api/auth/check-email?email=abhas%40gmail.com {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-15 19:38:03 [INFO]: ✅ GET /api/auth/check-email?email=abhas%40gmail.com - 200 (54ms) {"status":200,"duration":54,"ip":"::ffff:192.168.29.173"}
+2026-07-15 19:38:10 [INFO]: 📥 GET /api/auth/check-email?email=skvanish509%40gmail.com {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-15 19:38:10 [INFO]: ✅ GET /api/auth/check-email?email=skvanish509%40gmail.com - 200 (49ms) {"status":200,"duration":49,"ip":"::ffff:192.168.29.173"}
+2026-07-15 19:38:17 [INFO]: 📥 GET /api/auth/check-email?email=sagnikdutta408%40gmail.com {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-15 19:38:17 [INFO]: ✅ GET /api/auth/check-email?email=sagnikdutta408%40gmail.com - 200 (47ms) {"status":200,"duration":47,"ip":"::ffff:192.168.29.173"}
+2026-07-15 19:38:29 [INFO]: 📥 GET /api/auth/check-email?email=skvanish509%40gmail.com {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-15 19:38:29 [INFO]: ✅ GET /api/auth/check-email?email=skvanish509%40gmail.com - 200 (50ms) {"status":200,"duration":50,"ip":"::ffff:192.168.29.173"}
+2026-07-15 19:38:35 [INFO]: 📥 GET /api/auth/check-email?email=abhas%40gmail.com {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-15 19:38:35 [INFO]: ✅ GET /api/auth/check-email?email=abhas%40gmail.com - 200 (50ms) {"status":200,"duration":50,"ip":"::ffff:192.168.29.173"}
+2026-07-15 19:46:40 [INFO]: 📥 GET /api/auth/check-email?email=skvanish509%40gmail.com {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-15 19:46:40 [INFO]: ✅ GET /api/auth/check-email?email=skvanish509%40gmail.com - 200 (168ms) {"status":200,"duration":168,"ip":"::ffff:192.168.29.173"}
+2026-07-15 19:46:48 [INFO]: 📥 GET /api/auth/check-email?email=abhas%40gmail.com {"ip":"::ffff:192.168.29.173","userAgent":"okhttp/4.12.0"}
+2026-07-15 19:46:48 [INFO]: ✅ GET /api/auth/check-email?email=abhas%40gmail.com - 200 (131ms) {"status":200,"duration":131,"ip":"::ffff:192.168.29.173"}

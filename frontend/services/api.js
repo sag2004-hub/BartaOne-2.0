@@ -160,6 +160,7 @@ const authAPI = {
   verifyEmail: (token) => api.post('/auth/verify-email', { token }),
   resetPassword: (email) => api.post('/auth/reset-password', { email }),
   googleLogin: (idToken) => api.post('/auth/google', { idToken }),
+  checkEmail: (email) => api.get(`/auth/check-email?email=${encodeURIComponent(email)}`), // ✅ Added
 };
 
 // User APIs
@@ -314,7 +315,6 @@ const newspaperAPI = {
   delete: (id) => api.delete(`/newspapers/${id}`),
   getByOwner: () => api.get('/newspapers/user'),
   getStats: (channelId) => api.get(`/newspapers/stats/${channelId}`),
-   getStats: (channelId) => api.get(`/newspapers/stats/${channelId}`),
   search: (query) => api.get(`/newspapers/search?q=${query}`),
 };
 
