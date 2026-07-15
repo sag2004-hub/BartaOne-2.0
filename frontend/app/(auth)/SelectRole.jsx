@@ -80,9 +80,11 @@ const LIGHT = {
   divider: '#EAE6DE',
   loginLink: '#C8001A',
   cardShadowOpacity: 0.06,
-  disclaimerBg: '#FFF8F0',
-  disclaimerBorder: '#F4A261',
+  disclaimerBg: 'rgba(255,255,255,0.55)',
+  disclaimerBorder: 'rgba(255,255,255,0.3)',
   disclaimerText: '#C07A3A',
+  disclaimerIcon: '#F4A261',
+  glassBorder: 'rgba(255,255,255,0.25)',
 };
 
 const DARK = {
@@ -108,9 +110,11 @@ const DARK = {
   divider: '#1E2A36',
   loginLink: '#E8192C',
   cardShadowOpacity: 0.35,
-  disclaimerBg: 'rgba(244,162,97,0.10)',
-  disclaimerBorder: '#F4A261',
+  disclaimerBg: 'rgba(22,27,34,0.65)',
+  disclaimerBorder: 'rgba(255,255,255,0.08)',
   disclaimerText: '#F4A261',
+  disclaimerIcon: '#F4A261',
+  glassBorder: 'rgba(255,255,255,0.06)',
 };
 
 // ─── Role definitions ──────────────────────────────────────────────────────
@@ -224,25 +228,40 @@ function RoleCard({ role, isSelected, onSelect, C }) {
   );
 }
 
-// ─── Disclaimer Component ─────────────────────────────────────────────────
+// ─── Glass Disclaimer Component ──────────────────────────────────────────
 function Disclaimer({ C }) {
   const styles = makeStyles(C);
   
   return (
-    <View style={[styles.disclaimerContainer, { 
-      backgroundColor: C.disclaimerBg, 
-      borderLeftColor: C.disclaimerBorder 
-    }]}>
-      <View style={styles.disclaimerHeader}>
-        <Ionicons name="information-circle-outline" size={moderateScale(16)} color={C.disclaimerBorder} />
-        <Text style={[styles.disclaimerTitle, { color: C.disclaimerText }]}>
-          ⚠️ Note
+    <View style={[
+      styles.disclaimerContainer,
+      {
+        backgroundColor: C.disclaimerBg,
+        borderColor: C.disclaimerBorder,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(4) },
+        shadowOpacity: 0.08,
+        shadowRadius: scale(12),
+        elevation: 3,
+      }
+    ]}>
+      {/* Glass effect overlay */}
+      <View style={[styles.glassOverlay, { borderColor: C.glassBorder }]} />
+      
+      <View style={styles.disclaimerContent}>
+        <View style={styles.disclaimerHeader}>
+          <View style={[styles.iconCircle, { backgroundColor: C.disclaimerIcon + '20' }]}>
+            <Ionicons name="information-circle-outline" size={moderateScale(18)} color={C.disclaimerIcon} />
+          </View>
+          <Text style={[styles.disclaimerTitle, { color: C.disclaimerText }]}>
+            Important Note
+          </Text>
+        </View>
+        <Text style={[styles.disclaimerText, { color: C.disclaimerText }]}>
+          Viewer & Channel Owner emails must be <Text style={{ fontWeight: '700' }}>distinct & unique</Text>. 
+          Each email can only be used for one role.
         </Text>
       </View>
-      <Text style={[styles.disclaimerText, { color: C.disclaimerText }]}>
-        Viewer & Channel Owner emails must be <Text style={{ fontWeight: '700' }}>distinct & unique</Text>. 
-        Each email can only be used for one role.
-      </Text>
     </View>
   );
 }
@@ -356,7 +375,7 @@ export default function SelectRole() {
             ))}
           </View>
 
-          {/* Disclaimer */}
+          {/* Glass Disclaimer */}
           <View style={styles.disclaimerWrapper}>
             <Disclaimer C={C} />
           </View>
@@ -559,23 +578,46 @@ const makeStyles = (C) =>
       color: C.secondary,
     },
 
-    // ─── Disclaimer ────────────────────────────────────────────────────────
+    // ─── Glass Disclaimer ──────────────────────────────────────────────────
     disclaimerWrapper: {
       paddingHorizontal: scale(18),
       marginTop: verticalScale(10),
     },
     disclaimerContainer: {
-      borderRadius: scale(10),
-      padding: scale(12),
-      paddingHorizontal: scale(14),
-      borderLeftWidth: 3,
-      flexDirection: 'column',
+      borderRadius: scale(12),
+      padding: scale(14),
+      paddingHorizontal: scale(16),
+      borderWidth: 1,
+      position: 'relative',
+      overflow: 'hidden',
+      backdropFilter: 'blur(10px)',
+    },
+    glassOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderWidth: 1,
+      borderRadius: scale(12),
+      opacity: 0.3,
+    },
+    disclaimerContent: {
+      position: 'relative',
+      zIndex: 1,
     },
     disclaimerHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: scale(5),
-      marginBottom: verticalScale(2),
+      gap: scale(8),
+      marginBottom: verticalScale(3),
+    },
+    iconCircle: {
+      width: scale(28),
+      height: scale(28),
+      borderRadius: scale(14),
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     disclaimerTitle: {
       fontSize: fontScale(12),
@@ -584,8 +626,9 @@ const makeStyles = (C) =>
     },
     disclaimerText: {
       fontSize: fontScale(11.5),
-      lineHeight: fontScale(16),
+      lineHeight: fontScale(16.5),
       fontWeight: '400',
+      paddingLeft: scale(4),
     },
 
     bottomSpacer: {
