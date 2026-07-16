@@ -50,11 +50,6 @@
       "expo-video",
       "expo-router",
       "react-native-video"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "your-project-id"
-      }
-    }
+    ]
   }
 }
