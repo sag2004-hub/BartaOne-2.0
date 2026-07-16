@@ -25,7 +25,13 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.bartaone.app"
+      "package": "com.bartaone.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/icon.png"
@@ -50,6 +56,12 @@
       "expo-video",
       "expo-router",
       "react-native-video"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "39bb2eb7-8379-4c82-b38d-235e53f24363"
+      }
+    }
   }
 }
