@@ -3,9 +3,7 @@ module.exports = function (api) {
 
   return {
     presets: ["babel-preset-expo"],
-
     plugins: [
-      // dotenv must come BEFORE reanimated
       [
         "module:react-native-dotenv",
         {
@@ -17,8 +15,6 @@ module.exports = function (api) {
           allowUndefined: true,
         },
       ],
-
-      // MUST be last plugin
       "react-native-reanimated/plugin",
     ],
   };

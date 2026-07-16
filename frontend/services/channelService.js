@@ -69,6 +69,40 @@ export const getChannelStats = async (channelId) => {
   }
 };
 
+// ─── Get Subscribers ────────────────────────────────────────────────────────
+// Backend route: GET /channels/subscribers/list
+export const getSubscribers = async () => {
+  try {
+    console.log('📡 Fetching subscribers list...');
+    const response = await api.get('/channels/subscribers/list');
+    
+    if (response.data?.success && response.data?.data) {
+      console.log(`✅ Found ${response.data.data.length || 0} subscribers`);
+      return response.data.data;
+    }
+    return [];
+  } catch (error) {
+    console.error('❌ Error fetching subscribers:', error);
+    return [];
+  }
+};
+
+// ─── Get Subscribers count only ────────────────────────────────────────────
+export const getSubscribersCount = async () => {
+  try {
+    console.log('📡 Fetching subscribers count...');
+    const response = await api.get('/channels/subscribers/list');
+    
+    if (response.data?.success && response.data?.data) {
+      return response.data.data.length || 0;
+    }
+    return 0;
+  } catch (error) {
+    console.error('❌ Error fetching subscribers count:', error);
+    return 0;
+  }
+};
+
 // Full channel service object
 export const channelService = {
   getAll: async (params = {}) => {
@@ -166,14 +200,14 @@ export const channelService = {
     }
   },
 
+  // Updated: Backend route is /channels/subscribers/list
   getSubscribers: async () => {
-    try {
-      const response = await api.get('/channels/subscribers');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching subscribers:', error);
-      throw error;
-    }
+    return getSubscribers();
+  },
+
+  // Get subscribers count
+  getSubscribersCount: async () => {
+    return getSubscribersCount();
   },
 
   getStats: getChannelStats,
@@ -189,4 +223,5 @@ export const channelService = {
   },
 };
 
+// ─── Exports ────────────────────────────────────────────────────────────────
 export default channelService;
